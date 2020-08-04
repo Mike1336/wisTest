@@ -1,0 +1,9 @@
+#items{
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-around;
+}
+.fixwidth{
+    width: 25%;
+    margin-top: 40px;
+}
