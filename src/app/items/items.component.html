@@ -1,8 +1,8 @@
     <div id="items">
      <mat-card class="example-card fixwidth" *ngFor="let i of items">
         <mat-card-header>
-          <button mat-icon-button class="example-icon favorite-icon" aria-label="Example icon-button with heart icon">
-            <mat-icon>favorite</mat-icon>
+          <button mat-icon-button class="example-icon favorite-icon favright" aria-label="Example icon-button with heart icon">
+            <mat-icon matBadge="15" matBadgeColor="warn">favorite</mat-icon>
           </button>
           <mat-card-title>{{i.name}}</mat-card-title>
           <mat-card-subtitle><strong>{{i.price}} ₽</strong></mat-card-subtitle>

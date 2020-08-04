@@ -11,6 +11,7 @@ import { MatCardModule } from '@angular/material/card';
 import { MatIconModule } from '@angular/material/icon';
 import { MatToolbarModule } from '@angular/material/toolbar';
 import { MatButtonModule } from '@angular/material/button';
+import { MatMenuModule } from '@angular/material/menu';
 import { RouterModule } from '@angular/router';
 import { ItemsComponent } from './items/items.component';
 import { HeaderComponent } from './header/header.component';
@@ -40,12 +41,8 @@ import { InMemoryDataService } from './in-memory-data.service';
     MatIconModule,
     MatToolbarModule,
     MatButtonModule,
-    RouterModule.forRoot([
-      { path: 'items', component: ItemsComponent },
-      { path: 'items/:itemId', component: ItemsComponent },
-      { path: 'cart', component: CartComponent },
-      { path: 'favorites', component: FavoritesComponent}
-    ])
+    MatMenuModule,
+    RouterModule
   ],
   providers: [],
   bootstrap: [AppComponent]
