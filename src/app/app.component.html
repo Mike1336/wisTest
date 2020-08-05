@@ -5,41 +5,32 @@
   <span class="example-spacer"></span>
   <div id='pages'>
     <button mat-icon-button [matMenuTriggerFor]="shortFav" class="example-icon favorite-icon" aria-label="Example icon-button with heart icon">
-      <mat-icon matBadge="15" matBadgeColor="warn" >favorite</mat-icon>
+      <mat-icon>favorite</mat-icon>
     </button>
     <mat-menu #shortFav="matMenu">
-      <button mat-menu-item>
-        <mat-icon>dialpad</mat-icon>
+      <!-- <button mat-menu-item>
         <span>Redial</span>
-      </button>
-      <button mat-menu-item disabled>
-        <mat-icon>voicemail</mat-icon>
-        <span>Check voice mail</span>
-      </button>
+      </button> -->
       <button mat-menu-item>
         <a routerLink="/favorites">
-        <mat-icon>notifications_off</mat-icon>
-        <span>Disable alerts</span>
+        <mat-icon>favorite</mat-icon>
+        <span>Link to the page</span>
         </a>
       </button>
     </mat-menu>
   
     <button mat-icon-button [matMenuTriggerFor]="shortCart" class="example-icon" aria-label="Example icon-button with share icon">
-      <mat-icon matBadge="15" matBadgeColor="warn">shopping_cart</mat-icon>
+      <mat-icon>shopping_cart</mat-icon>
     </button>
     <mat-menu #shortCart="matMenu">
-      <button mat-menu-item>
+      <!-- <button mat-menu-item>
         <mat-icon>dialpad</mat-icon>
         <span>Redial</span>
-      </button>
-      <button mat-menu-item disabled>
-        <mat-icon>voicemail</mat-icon>
-        <span>Check voice mail</span>
-      </button>
+      </button> -->
       <button mat-menu-item>
         <a routerLink="/cart">
-        <mat-icon>notifications_off</mat-icon>
-        <span>Disable alerts</span>
+        <mat-icon>shopping_cart</mat-icon>
+        <span>Link to the page</span>
       </a>
       </button>
     </mat-menu>

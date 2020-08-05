@@ -8502,6 +8502,311 @@ BidiModule.ɵinj = _angular_core__WEBPACK_IMPORTED_MODULE_0__["ɵɵdefineInjecto
 
 /***/ }),
 
+/***/ "./node_modules/@angular/cdk/__ivy_ngcc__/fesm2015/collections.js":
+/*!************************************************************************!*\
+  !*** ./node_modules/@angular/cdk/__ivy_ngcc__/fesm2015/collections.js ***!
+  \************************************************************************/
+/*! exports provided: ArrayDataSource, DataSource, SelectionModel, UniqueSelectionDispatcher, getMultipleValuesInSingleSelectionError, isDataSource */
+/***/ (function(module, __webpack_exports__, __webpack_require__) {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "ArrayDataSource", function() { return ArrayDataSource; });
+/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "DataSource", function() { return DataSource; });
+/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "SelectionModel", function() { return SelectionModel; });
+/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "UniqueSelectionDispatcher", function() { return UniqueSelectionDispatcher; });
+/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "getMultipleValuesInSingleSelectionError", function() { return getMultipleValuesInSingleSelectionError; });
+/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "isDataSource", function() { return isDataSource; });
+/* harmony import */ var rxjs__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! rxjs */ "./node_modules/rxjs/_esm2015/index.js");
+/* harmony import */ var _angular_core__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! @angular/core */ "./node_modules/@angular/core/__ivy_ngcc__/fesm2015/core.js");
+
+
+
+/**
+ * @license
+ * Copyright Google LLC All Rights Reserved.
+ *
+ * Use of this source code is governed by an MIT-style license that can be
+ * found in the LICENSE file at https://angular.io/license
+ */
+
+class DataSource {
+}
+/** Checks whether an object is a data source. */
+function isDataSource(value) {
+    // Check if the value is a DataSource by observing if it has a connect function. Cannot
+    // be checked as an `instanceof DataSource` since people could create their own sources
+    // that match the interface, but don't extend DataSource.
+    return value && typeof value.connect === 'function';
+}
+
+/**
+ * @license
+ * Copyright Google LLC All Rights Reserved.
+ *
+ * Use of this source code is governed by an MIT-style license that can be
+ * found in the LICENSE file at https://angular.io/license
+ */
+/** DataSource wrapper for a native array. */
+class ArrayDataSource extends DataSource {
+    constructor(_data) {
+        super();
+        this._data = _data;
+    }
+    connect() {
+        return Object(rxjs__WEBPACK_IMPORTED_MODULE_0__["isObservable"])(this._data) ? this._data : Object(rxjs__WEBPACK_IMPORTED_MODULE_0__["of"])(this._data);
+    }
+    disconnect() { }
+}
+
+/**
+ * @license
+ * Copyright Google LLC All Rights Reserved.
+ *
+ * Use of this source code is governed by an MIT-style license that can be
+ * found in the LICENSE file at https://angular.io/license
+ */
+
+/**
+ * @license
+ * Copyright Google LLC All Rights Reserved.
+ *
+ * Use of this source code is governed by an MIT-style license that can be
+ * found in the LICENSE file at https://angular.io/license
+ */
+/**
+ * Class to be used to power selecting one or more options from a list.
+ */
+class SelectionModel {
+    constructor(_multiple = false, initiallySelectedValues, _emitChanges = true) {
+        this._multiple = _multiple;
+        this._emitChanges = _emitChanges;
+        /** Currently-selected values. */
+        this._selection = new Set();
+        /** Keeps track of the deselected options that haven't been emitted by the change event. */
+        this._deselectedToEmit = [];
+        /** Keeps track of the selected options that haven't been emitted by the change event. */
+        this._selectedToEmit = [];
+        /** Event emitted when the value has changed. */
+        this.changed = new rxjs__WEBPACK_IMPORTED_MODULE_0__["Subject"]();
+        if (initiallySelectedValues && initiallySelectedValues.length) {
+            if (_multiple) {
+                initiallySelectedValues.forEach(value => this._markSelected(value));
+            }
+            else {
+                this._markSelected(initiallySelectedValues[0]);
+            }
+            // Clear the array in order to avoid firing the change event for preselected values.
+            this._selectedToEmit.length = 0;
+        }
+    }
+    /** Selected values. */
+    get selected() {
+        if (!this._selected) {
+            this._selected = Array.from(this._selection.values());
+        }
+        return this._selected;
+    }
+    /**
+     * Selects a value or an array of values.
+     */
+    select(...values) {
+        this._verifyValueAssignment(values);
+        values.forEach(value => this._markSelected(value));
+        this._emitChangeEvent();
+    }
+    /**
+     * Deselects a value or an array of values.
+     */
+    deselect(...values) {
+        this._verifyValueAssignment(values);
+        values.forEach(value => this._unmarkSelected(value));
+        this._emitChangeEvent();
+    }
+    /**
+     * Toggles a value between selected and deselected.
+     */
+    toggle(value) {
+        this.isSelected(value) ? this.deselect(value) : this.select(value);
+    }
+    /**
+     * Clears all of the selected values.
+     */
+    clear() {
+        this._unmarkAll();
+        this._emitChangeEvent();
+    }
+    /**
+     * Determines whether a value is selected.
+     */
+    isSelected(value) {
+        return this._selection.has(value);
+    }
+    /**
+     * Determines whether the model does not have a value.
+     */
+    isEmpty() {
+        return this._selection.size === 0;
+    }
+    /**
+     * Determines whether the model has a value.
+     */
+    hasValue() {
+        return !this.isEmpty();
+    }
+    /**
+     * Sorts the selected values based on a predicate function.
+     */
+    sort(predicate) {
+        if (this._multiple && this.selected) {
+            this._selected.sort(predicate);
+        }
+    }
+    /**
+     * Gets whether multiple values can be selected.
+     */
+    isMultipleSelection() {
+        return this._multiple;
+    }
+    /** Emits a change event and clears the records of selected and deselected values. */
+    _emitChangeEvent() {
+        // Clear the selected values so they can be re-cached.
+        this._selected = null;
+        if (this._selectedToEmit.length || this._deselectedToEmit.length) {
+            this.changed.next({
+                source: this,
+                added: this._selectedToEmit,
+                removed: this._deselectedToEmit
+            });
+            this._deselectedToEmit = [];
+            this._selectedToEmit = [];
+        }
+    }
+    /** Selects a value. */
+    _markSelected(value) {
+        if (!this.isSelected(value)) {
+            if (!this._multiple) {
+                this._unmarkAll();
+            }
+            this._selection.add(value);
+            if (this._emitChanges) {
+                this._selectedToEmit.push(value);
+            }
+        }
+    }
+    /** Deselects a value. */
+    _unmarkSelected(value) {
+        if (this.isSelected(value)) {
+            this._selection.delete(value);
+            if (this._emitChanges) {
+                this._deselectedToEmit.push(value);
+            }
+        }
+    }
+    /** Clears out the selected values. */
+    _unmarkAll() {
+        if (!this.isEmpty()) {
+            this._selection.forEach(value => this._unmarkSelected(value));
+        }
+    }
+    /**
+     * Verifies the value assignment and throws an error if the specified value array is
+     * including multiple values while the selection model is not supporting multiple values.
+     */
+    _verifyValueAssignment(values) {
+        if (values.length > 1 && !this._multiple) {
+            throw getMultipleValuesInSingleSelectionError();
+        }
+    }
+}
+/**
+ * Returns an error that reports that multiple values are passed into a selection model
+ * with a single value.
+ * @docs-private
+ */
+function getMultipleValuesInSingleSelectionError() {
+    return Error('Cannot pass multiple values into SelectionModel with single-value mode.');
+}
+
+/**
+ * @license
+ * Copyright Google LLC All Rights Reserved.
+ *
+ * Use of this source code is governed by an MIT-style license that can be
+ * found in the LICENSE file at https://angular.io/license
+ */
+/**
+ * Class to coordinate unique selection based on name.
+ * Intended to be consumed as an Angular service.
+ * This service is needed because native radio change events are only fired on the item currently
+ * being selected, and we still need to uncheck the previous selection.
+ *
+ * This service does not *store* any IDs and names because they may change at any time, so it is
+ * less error-prone if they are simply passed through when the events occur.
+ */
+class UniqueSelectionDispatcher {
+    constructor() {
+        this._listeners = [];
+    }
+    /**
+     * Notify other items that selection for the given name has been set.
+     * @param id ID of the item.
+     * @param name Name of the item.
+     */
+    notify(id, name) {
+        for (let listener of this._listeners) {
+            listener(id, name);
+        }
+    }
+    /**
+     * Listen for future changes to item selection.
+     * @return Function used to deregister listener
+     */
+    listen(listener) {
+        this._listeners.push(listener);
+        return () => {
+            this._listeners = this._listeners.filter((registered) => {
+                return listener !== registered;
+            });
+        };
+    }
+    ngOnDestroy() {
+        this._listeners = [];
+    }
+}
+UniqueSelectionDispatcher.ɵfac = function UniqueSelectionDispatcher_Factory(t) { return new (t || UniqueSelectionDispatcher)(); };
+UniqueSelectionDispatcher.ɵprov = Object(_angular_core__WEBPACK_IMPORTED_MODULE_1__["ɵɵdefineInjectable"])({ factory: function UniqueSelectionDispatcher_Factory() { return new UniqueSelectionDispatcher(); }, token: UniqueSelectionDispatcher, providedIn: "root" });
+/*@__PURE__*/ (function () { _angular_core__WEBPACK_IMPORTED_MODULE_1__["ɵsetClassMetadata"](UniqueSelectionDispatcher, [{
+        type: _angular_core__WEBPACK_IMPORTED_MODULE_1__["Injectable"],
+        args: [{ providedIn: 'root' }]
+    }], function () { return []; }, null); })();
+
+/**
+ * @license
+ * Copyright Google LLC All Rights Reserved.
+ *
+ * Use of this source code is governed by an MIT-style license that can be
+ * found in the LICENSE file at https://angular.io/license
+ */
+
+/**
+ * @license
+ * Copyright Google LLC All Rights Reserved.
+ *
+ * Use of this source code is governed by an MIT-style license that can be
+ * found in the LICENSE file at https://angular.io/license
+ */
+
+/**
+ * Generated bundle index. Do not edit.
+ */
+
+
+
+//# sourceMappingURL=collections.js.map
+
+/***/ }),
+
 /***/ "./node_modules/@angular/cdk/__ivy_ngcc__/fesm2015/keycodes.js":
 /*!*********************************************************************!*\
   !*** ./node_modules/@angular/cdk/__ivy_ngcc__/fesm2015/keycodes.js ***!
@@ -9027,6 +9332,3322 @@ ObserversModule.ɵinj = _angular_core__WEBPACK_IMPORTED_MODULE_1__["ɵɵdefineIn
 
 /***/ }),
 
+/***/ "./node_modules/@angular/cdk/__ivy_ngcc__/fesm2015/overlay.js":
+/*!********************************************************************!*\
+  !*** ./node_modules/@angular/cdk/__ivy_ngcc__/fesm2015/overlay.js ***!
+  \********************************************************************/
+/*! exports provided: CdkScrollable, ScrollDispatcher, ViewportRuler, BlockScrollStrategy, CdkConnectedOverlay, CdkOverlayOrigin, CloseScrollStrategy, ConnectedOverlayPositionChange, ConnectedPositionStrategy, ConnectionPositionPair, FlexibleConnectedPositionStrategy, FullscreenOverlayContainer, GlobalPositionStrategy, NoopScrollStrategy, OVERLAY_PROVIDERS, Overlay, OverlayConfig, OverlayContainer, OverlayKeyboardDispatcher, OverlayModule, OverlayOutsideClickDispatcher, OverlayPositionBuilder, OverlayRef, RepositionScrollStrategy, ScrollStrategyOptions, ScrollingVisibility, validateHorizontalPosition, validateVerticalPosition, ɵangular_material_src_cdk_overlay_overlay_a, ɵangular_material_src_cdk_overlay_overlay_b, ɵangular_material_src_cdk_overlay_overlay_c, ɵangular_material_src_cdk_overlay_overlay_d, ɵangular_material_src_cdk_overlay_overlay_e, ɵangular_material_src_cdk_overlay_overlay_f, ɵangular_material_src_cdk_overlay_overlay_g, ɵangular_material_src_cdk_overlay_overlay_h */
+/***/ (function(module, __webpack_exports__, __webpack_require__) {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "BlockScrollStrategy", function() { return BlockScrollStrategy; });
+/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "CdkConnectedOverlay", function() { return CdkConnectedOverlay; });
+/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "CdkOverlayOrigin", function() { return CdkOverlayOrigin; });
+/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "CloseScrollStrategy", function() { return CloseScrollStrategy; });
+/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "ConnectedOverlayPositionChange", function() { return ConnectedOverlayPositionChange; });
+/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "ConnectedPositionStrategy", function() { return ConnectedPositionStrategy; });
+/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "ConnectionPositionPair", function() { return ConnectionPositionPair; });
+/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "FlexibleConnectedPositionStrategy", function() { return FlexibleConnectedPositionStrategy; });
+/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "FullscreenOverlayContainer", function() { return FullscreenOverlayContainer; });
+/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "GlobalPositionStrategy", function() { return GlobalPositionStrategy; });
+/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "NoopScrollStrategy", function() { return NoopScrollStrategy; });
+/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "OVERLAY_PROVIDERS", function() { return OVERLAY_PROVIDERS; });
+/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "Overlay", function() { return Overlay; });
+/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "OverlayConfig", function() { return OverlayConfig; });
+/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "OverlayContainer", function() { return OverlayContainer; });
+/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "OverlayKeyboardDispatcher", function() { return OverlayKeyboardDispatcher; });
+/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "OverlayModule", function() { return OverlayModule; });
+/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "OverlayOutsideClickDispatcher", function() { return OverlayOutsideClickDispatcher; });
+/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "OverlayPositionBuilder", function() { return OverlayPositionBuilder; });
+/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "OverlayRef", function() { return OverlayRef; });
+/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "RepositionScrollStrategy", function() { return RepositionScrollStrategy; });
+/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "ScrollStrategyOptions", function() { return ScrollStrategyOptions; });
+/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "ScrollingVisibility", function() { return ScrollingVisibility; });
+/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "validateHorizontalPosition", function() { return validateHorizontalPosition; });
+/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "validateVerticalPosition", function() { return validateVerticalPosition; });
+/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "ɵangular_material_src_cdk_overlay_overlay_a", function() { return OVERLAY_KEYBOARD_DISPATCHER_PROVIDER_FACTORY; });
+/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "ɵangular_material_src_cdk_overlay_overlay_b", function() { return OVERLAY_KEYBOARD_DISPATCHER_PROVIDER; });
+/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "ɵangular_material_src_cdk_overlay_overlay_c", function() { return OVERLAY_CONTAINER_PROVIDER_FACTORY; });
+/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "ɵangular_material_src_cdk_overlay_overlay_d", function() { return OVERLAY_CONTAINER_PROVIDER; });
+/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "ɵangular_material_src_cdk_overlay_overlay_e", function() { return CDK_CONNECTED_OVERLAY_SCROLL_STRATEGY; });
+/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "ɵangular_material_src_cdk_overlay_overlay_f", function() { return CDK_CONNECTED_OVERLAY_SCROLL_STRATEGY_PROVIDER_FACTORY; });
+/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "ɵangular_material_src_cdk_overlay_overlay_g", function() { return CDK_CONNECTED_OVERLAY_SCROLL_STRATEGY_PROVIDER; });
+/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "ɵangular_material_src_cdk_overlay_overlay_h", function() { return BaseOverlayDispatcher; });
+/* harmony import */ var _angular_cdk_scrolling__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! @angular/cdk/scrolling */ "./node_modules/@angular/cdk/__ivy_ngcc__/fesm2015/scrolling.js");
+/* harmony import */ var _angular_core__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! @angular/core */ "./node_modules/@angular/core/__ivy_ngcc__/fesm2015/core.js");
+/* harmony import */ var _angular_cdk_platform__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! @angular/cdk/platform */ "./node_modules/@angular/cdk/__ivy_ngcc__/fesm2015/platform.js");
+/* harmony import */ var _angular_cdk_bidi__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! @angular/cdk/bidi */ "./node_modules/@angular/cdk/__ivy_ngcc__/fesm2015/bidi.js");
+/* harmony import */ var _angular_common__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(/*! @angular/common */ "./node_modules/@angular/common/__ivy_ngcc__/fesm2015/common.js");
+/* harmony reexport (safe) */ __webpack_require__.d(__webpack_exports__, "CdkScrollable", function() { return _angular_cdk_scrolling__WEBPACK_IMPORTED_MODULE_0__["CdkScrollable"]; });
+
+/* harmony reexport (safe) */ __webpack_require__.d(__webpack_exports__, "ScrollDispatcher", function() { return _angular_cdk_scrolling__WEBPACK_IMPORTED_MODULE_0__["ScrollDispatcher"]; });
+
+/* harmony reexport (safe) */ __webpack_require__.d(__webpack_exports__, "ViewportRuler", function() { return _angular_cdk_scrolling__WEBPACK_IMPORTED_MODULE_0__["ViewportRuler"]; });
+
+/* harmony import */ var _angular_cdk_coercion__WEBPACK_IMPORTED_MODULE_5__ = __webpack_require__(/*! @angular/cdk/coercion */ "./node_modules/@angular/cdk/fesm2015/coercion.js");
+/* harmony import */ var _angular_cdk_portal__WEBPACK_IMPORTED_MODULE_6__ = __webpack_require__(/*! @angular/cdk/portal */ "./node_modules/@angular/cdk/__ivy_ngcc__/fesm2015/portal.js");
+/* harmony import */ var rxjs__WEBPACK_IMPORTED_MODULE_7__ = __webpack_require__(/*! rxjs */ "./node_modules/rxjs/_esm2015/index.js");
+/* harmony import */ var rxjs_operators__WEBPACK_IMPORTED_MODULE_8__ = __webpack_require__(/*! rxjs/operators */ "./node_modules/rxjs/_esm2015/operators/index.js");
+/* harmony import */ var _angular_cdk_keycodes__WEBPACK_IMPORTED_MODULE_9__ = __webpack_require__(/*! @angular/cdk/keycodes */ "./node_modules/@angular/cdk/__ivy_ngcc__/fesm2015/keycodes.js");
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+/**
+ * @license
+ * Copyright Google LLC All Rights Reserved.
+ *
+ * Use of this source code is governed by an MIT-style license that can be
+ * found in the LICENSE file at https://angular.io/license
+ */
+/**
+ * Strategy that will prevent the user from scrolling while the overlay is visible.
+ */
+class BlockScrollStrategy {
+    constructor(_viewportRuler, document) {
+        this._viewportRuler = _viewportRuler;
+        this._previousHTMLStyles = { top: '', left: '' };
+        this._isEnabled = false;
+        this._document = document;
+    }
+    /** Attaches this scroll strategy to an overlay. */
+    attach() { }
+    /** Blocks page-level scroll while the attached overlay is open. */
+    enable() {
+        if (this._canBeEnabled()) {
+            const root = this._document.documentElement;
+            this._previousScrollPosition = this._viewportRuler.getViewportScrollPosition();
+            // Cache the previous inline styles in case the user had set them.
+            this._previousHTMLStyles.left = root.style.left || '';
+            this._previousHTMLStyles.top = root.style.top || '';
+            // Note: we're using the `html` node, instead of the `body`, because the `body` may
+            // have the user agent margin, whereas the `html` is guaranteed not to have one.
+            root.style.left = Object(_angular_cdk_coercion__WEBPACK_IMPORTED_MODULE_5__["coerceCssPixelValue"])(-this._previousScrollPosition.left);
+            root.style.top = Object(_angular_cdk_coercion__WEBPACK_IMPORTED_MODULE_5__["coerceCssPixelValue"])(-this._previousScrollPosition.top);
+            root.classList.add('cdk-global-scrollblock');
+            this._isEnabled = true;
+        }
+    }
+    /** Unblocks page-level scroll while the attached overlay is open. */
+    disable() {
+        if (this._isEnabled) {
+            const html = this._document.documentElement;
+            const body = this._document.body;
+            const htmlStyle = html.style;
+            const bodyStyle = body.style;
+            const previousHtmlScrollBehavior = htmlStyle.scrollBehavior || '';
+            const previousBodyScrollBehavior = bodyStyle.scrollBehavior || '';
+            this._isEnabled = false;
+            htmlStyle.left = this._previousHTMLStyles.left;
+            htmlStyle.top = this._previousHTMLStyles.top;
+            html.classList.remove('cdk-global-scrollblock');
+            // Disable user-defined smooth scrolling temporarily while we restore the scroll position.
+            // See https://developer.mozilla.org/en-US/docs/Web/CSS/scroll-behavior
+            htmlStyle.scrollBehavior = bodyStyle.scrollBehavior = 'auto';
+            window.scroll(this._previousScrollPosition.left, this._previousScrollPosition.top);
+            htmlStyle.scrollBehavior = previousHtmlScrollBehavior;
+            bodyStyle.scrollBehavior = previousBodyScrollBehavior;
+        }
+    }
+    _canBeEnabled() {
+        // Since the scroll strategies can't be singletons, we have to use a global CSS class
+        // (`cdk-global-scrollblock`) to make sure that we don't try to disable global
+        // scrolling multiple times.
+        const html = this._document.documentElement;
+        if (html.classList.contains('cdk-global-scrollblock') || this._isEnabled) {
+            return false;
+        }
+        const body = this._document.body;
+        const viewport = this._viewportRuler.getViewportSize();
+        return body.scrollHeight > viewport.height || body.scrollWidth > viewport.width;
+    }
+}
+
+/**
+ * @license
+ * Copyright Google LLC All Rights Reserved.
+ *
+ * Use of this source code is governed by an MIT-style license that can be
+ * found in the LICENSE file at https://angular.io/license
+ */
+/**
+ * Returns an error to be thrown when attempting to attach an already-attached scroll strategy.
+ */
+function getMatScrollStrategyAlreadyAttachedError() {
+    return Error(`Scroll strategy has already been attached.`);
+}
+
+/**
+ * Strategy that will close the overlay as soon as the user starts scrolling.
+ */
+class CloseScrollStrategy {
+    constructor(_scrollDispatcher, _ngZone, _viewportRuler, _config) {
+        this._scrollDispatcher = _scrollDispatcher;
+        this._ngZone = _ngZone;
+        this._viewportRuler = _viewportRuler;
+        this._config = _config;
+        this._scrollSubscription = null;
+        /** Detaches the overlay ref and disables the scroll strategy. */
+        this._detach = () => {
+            this.disable();
+            if (this._overlayRef.hasAttached()) {
+                this._ngZone.run(() => this._overlayRef.detach());
+            }
+        };
+    }
+    /** Attaches this scroll strategy to an overlay. */
+    attach(overlayRef) {
+        if (this._overlayRef) {
+            throw getMatScrollStrategyAlreadyAttachedError();
+        }
+        this._overlayRef = overlayRef;
+    }
+    /** Enables the closing of the attached overlay on scroll. */
+    enable() {
+        if (this._scrollSubscription) {
+            return;
+        }
+        const stream = this._scrollDispatcher.scrolled(0);
+        if (this._config && this._config.threshold && this._config.threshold > 1) {
+            this._initialScrollPosition = this._viewportRuler.getViewportScrollPosition().top;
+            this._scrollSubscription = stream.subscribe(() => {
+                const scrollPosition = this._viewportRuler.getViewportScrollPosition().top;
+                if (Math.abs(scrollPosition - this._initialScrollPosition) > this._config.threshold) {
+                    this._detach();
+                }
+                else {
+                    this._overlayRef.updatePosition();
+                }
+            });
+        }
+        else {
+            this._scrollSubscription = stream.subscribe(this._detach);
+        }
+    }
+    /** Disables the closing the attached overlay on scroll. */
+    disable() {
+        if (this._scrollSubscription) {
+            this._scrollSubscription.unsubscribe();
+            this._scrollSubscription = null;
+        }
+    }
+    detach() {
+        this.disable();
+        this._overlayRef = null;
+    }
+}
+
+/**
+ * @license
+ * Copyright Google LLC All Rights Reserved.
+ *
+ * Use of this source code is governed by an MIT-style license that can be
+ * found in the LICENSE file at https://angular.io/license
+ */
+/** Scroll strategy that doesn't do anything. */
+class NoopScrollStrategy {
+    /** Does nothing, as this scroll strategy is a no-op. */
+    enable() { }
+    /** Does nothing, as this scroll strategy is a no-op. */
+    disable() { }
+    /** Does nothing, as this scroll strategy is a no-op. */
+    attach() { }
+}
+
+/**
+ * @license
+ * Copyright Google LLC All Rights Reserved.
+ *
+ * Use of this source code is governed by an MIT-style license that can be
+ * found in the LICENSE file at https://angular.io/license
+ */
+// TODO(jelbourn): move this to live with the rest of the scrolling code
+// TODO(jelbourn): someday replace this with IntersectionObservers
+/**
+ * Gets whether an element is scrolled outside of view by any of its parent scrolling containers.
+ * @param element Dimensions of the element (from getBoundingClientRect)
+ * @param scrollContainers Dimensions of element's scrolling containers (from getBoundingClientRect)
+ * @returns Whether the element is scrolled out of view
+ * @docs-private
+ */
+function isElementScrolledOutsideView(element, scrollContainers) {
+    return scrollContainers.some(containerBounds => {
+        const outsideAbove = element.bottom < containerBounds.top;
+        const outsideBelow = element.top > containerBounds.bottom;
+        const outsideLeft = element.right < containerBounds.left;
+        const outsideRight = element.left > containerBounds.right;
+        return outsideAbove || outsideBelow || outsideLeft || outsideRight;
+    });
+}
+/**
+ * Gets whether an element is clipped by any of its scrolling containers.
+ * @param element Dimensions of the element (from getBoundingClientRect)
+ * @param scrollContainers Dimensions of element's scrolling containers (from getBoundingClientRect)
+ * @returns Whether the element is clipped
+ * @docs-private
+ */
+function isElementClippedByScrolling(element, scrollContainers) {
+    return scrollContainers.some(scrollContainerRect => {
+        const clippedAbove = element.top < scrollContainerRect.top;
+        const clippedBelow = element.bottom > scrollContainerRect.bottom;
+        const clippedLeft = element.left < scrollContainerRect.left;
+        const clippedRight = element.right > scrollContainerRect.right;
+        return clippedAbove || clippedBelow || clippedLeft || clippedRight;
+    });
+}
+
+/**
+ * @license
+ * Copyright Google LLC All Rights Reserved.
+ *
+ * Use of this source code is governed by an MIT-style license that can be
+ * found in the LICENSE file at https://angular.io/license
+ */
+/**
+ * Strategy that will update the element position as the user is scrolling.
+ */
+class RepositionScrollStrategy {
+    constructor(_scrollDispatcher, _viewportRuler, _ngZone, _config) {
+        this._scrollDispatcher = _scrollDispatcher;
+        this._viewportRuler = _viewportRuler;
+        this._ngZone = _ngZone;
+        this._config = _config;
+        this._scrollSubscription = null;
+    }
+    /** Attaches this scroll strategy to an overlay. */
+    attach(overlayRef) {
+        if (this._overlayRef) {
+            throw getMatScrollStrategyAlreadyAttachedError();
+        }
+        this._overlayRef = overlayRef;
+    }
+    /** Enables repositioning of the attached overlay on scroll. */
+    enable() {
+        if (!this._scrollSubscription) {
+            const throttle = this._config ? this._config.scrollThrottle : 0;
+            this._scrollSubscription = this._scrollDispatcher.scrolled(throttle).subscribe(() => {
+                this._overlayRef.updatePosition();
+                // TODO(crisbeto): make `close` on by default once all components can handle it.
+                if (this._config && this._config.autoClose) {
+                    const overlayRect = this._overlayRef.overlayElement.getBoundingClientRect();
+                    const { width, height } = this._viewportRuler.getViewportSize();
+                    // TODO(crisbeto): include all ancestor scroll containers here once
+                    // we have a way of exposing the trigger element to the scroll strategy.
+                    const parentRects = [{ width, height, bottom: height, right: width, top: 0, left: 0 }];
+                    if (isElementScrolledOutsideView(overlayRect, parentRects)) {
+                        this.disable();
+                        this._ngZone.run(() => this._overlayRef.detach());
+                    }
+                }
+            });
+        }
+    }
+    /** Disables repositioning of the attached overlay on scroll. */
+    disable() {
+        if (this._scrollSubscription) {
+            this._scrollSubscription.unsubscribe();
+            this._scrollSubscription = null;
+        }
+    }
+    detach() {
+        this.disable();
+        this._overlayRef = null;
+    }
+}
+
+/**
+ * @license
+ * Copyright Google LLC All Rights Reserved.
+ *
+ * Use of this source code is governed by an MIT-style license that can be
+ * found in the LICENSE file at https://angular.io/license
+ */
+/**
+ * Options for how an overlay will handle scrolling.
+ *
+ * Users can provide a custom value for `ScrollStrategyOptions` to replace the default
+ * behaviors. This class primarily acts as a factory for ScrollStrategy instances.
+ */
+class ScrollStrategyOptions {
+    constructor(_scrollDispatcher, _viewportRuler, _ngZone, document) {
+        this._scrollDispatcher = _scrollDispatcher;
+        this._viewportRuler = _viewportRuler;
+        this._ngZone = _ngZone;
+        /** Do nothing on scroll. */
+        this.noop = () => new NoopScrollStrategy();
+        /**
+         * Close the overlay as soon as the user scrolls.
+         * @param config Configuration to be used inside the scroll strategy.
+         */
+        this.close = (config) => new CloseScrollStrategy(this._scrollDispatcher, this._ngZone, this._viewportRuler, config);
+        /** Block scrolling. */
+        this.block = () => new BlockScrollStrategy(this._viewportRuler, this._document);
+        /**
+         * Update the overlay's position on scroll.
+         * @param config Configuration to be used inside the scroll strategy.
+         * Allows debouncing the reposition calls.
+         */
+        this.reposition = (config) => new RepositionScrollStrategy(this._scrollDispatcher, this._viewportRuler, this._ngZone, config);
+        this._document = document;
+    }
+}
+ScrollStrategyOptions.ɵfac = function ScrollStrategyOptions_Factory(t) { return new (t || ScrollStrategyOptions)(_angular_core__WEBPACK_IMPORTED_MODULE_1__["ɵɵinject"](_angular_cdk_scrolling__WEBPACK_IMPORTED_MODULE_0__["ScrollDispatcher"]), _angular_core__WEBPACK_IMPORTED_MODULE_1__["ɵɵinject"](_angular_cdk_scrolling__WEBPACK_IMPORTED_MODULE_0__["ViewportRuler"]), _angular_core__WEBPACK_IMPORTED_MODULE_1__["ɵɵinject"](_angular_core__WEBPACK_IMPORTED_MODULE_1__["NgZone"]), _angular_core__WEBPACK_IMPORTED_MODULE_1__["ɵɵinject"](_angular_common__WEBPACK_IMPORTED_MODULE_4__["DOCUMENT"])); };
+ScrollStrategyOptions.ɵprov = Object(_angular_core__WEBPACK_IMPORTED_MODULE_1__["ɵɵdefineInjectable"])({ factory: function ScrollStrategyOptions_Factory() { return new ScrollStrategyOptions(Object(_angular_core__WEBPACK_IMPORTED_MODULE_1__["ɵɵinject"])(_angular_cdk_scrolling__WEBPACK_IMPORTED_MODULE_0__["ScrollDispatcher"]), Object(_angular_core__WEBPACK_IMPORTED_MODULE_1__["ɵɵinject"])(_angular_cdk_scrolling__WEBPACK_IMPORTED_MODULE_0__["ViewportRuler"]), Object(_angular_core__WEBPACK_IMPORTED_MODULE_1__["ɵɵinject"])(_angular_core__WEBPACK_IMPORTED_MODULE_1__["NgZone"]), Object(_angular_core__WEBPACK_IMPORTED_MODULE_1__["ɵɵinject"])(_angular_common__WEBPACK_IMPORTED_MODULE_4__["DOCUMENT"])); }, token: ScrollStrategyOptions, providedIn: "root" });
+ScrollStrategyOptions.ctorParameters = () => [
+    { type: _angular_cdk_scrolling__WEBPACK_IMPORTED_MODULE_0__["ScrollDispatcher"] },
+    { type: _angular_cdk_scrolling__WEBPACK_IMPORTED_MODULE_0__["ViewportRuler"] },
+    { type: _angular_core__WEBPACK_IMPORTED_MODULE_1__["NgZone"] },
+    { type: undefined, decorators: [{ type: _angular_core__WEBPACK_IMPORTED_MODULE_1__["Inject"], args: [_angular_common__WEBPACK_IMPORTED_MODULE_4__["DOCUMENT"],] }] }
+];
+/*@__PURE__*/ (function () { _angular_core__WEBPACK_IMPORTED_MODULE_1__["ɵsetClassMetadata"](ScrollStrategyOptions, [{
+        type: _angular_core__WEBPACK_IMPORTED_MODULE_1__["Injectable"],
+        args: [{ providedIn: 'root' }]
+    }], function () { return [{ type: _angular_cdk_scrolling__WEBPACK_IMPORTED_MODULE_0__["ScrollDispatcher"] }, { type: _angular_cdk_scrolling__WEBPACK_IMPORTED_MODULE_0__["ViewportRuler"] }, { type: _angular_core__WEBPACK_IMPORTED_MODULE_1__["NgZone"] }, { type: undefined, decorators: [{
+                type: _angular_core__WEBPACK_IMPORTED_MODULE_1__["Inject"],
+                args: [_angular_common__WEBPACK_IMPORTED_MODULE_4__["DOCUMENT"]]
+            }] }]; }, null); })();
+
+/**
+ * @license
+ * Copyright Google LLC All Rights Reserved.
+ *
+ * Use of this source code is governed by an MIT-style license that can be
+ * found in the LICENSE file at https://angular.io/license
+ */
+
+/**
+ * @license
+ * Copyright Google LLC All Rights Reserved.
+ *
+ * Use of this source code is governed by an MIT-style license that can be
+ * found in the LICENSE file at https://angular.io/license
+ */
+/** Initial configuration used when creating an overlay. */
+class OverlayConfig {
+    constructor(config) {
+        /** Strategy to be used when handling scroll events while the overlay is open. */
+        this.scrollStrategy = new NoopScrollStrategy();
+        /** Custom class to add to the overlay pane. */
+        this.panelClass = '';
+        /** Whether the overlay has a backdrop. */
+        this.hasBackdrop = false;
+        /** Custom class to add to the backdrop */
+        this.backdropClass = 'cdk-overlay-dark-backdrop';
+        /**
+         * Whether the overlay should be disposed of when the user goes backwards/forwards in history.
+         * Note that this usually doesn't include clicking on links (unless the user is using
+         * the `HashLocationStrategy`).
+         */
+        this.disposeOnNavigation = false;
+        /**
+         * Array of HTML elements clicking on which should not be considered as outside click
+         */
+        this.excludeFromOutsideClick = [];
+        if (config) {
+            // Use `Iterable` instead of `Array` because TypeScript, as of 3.6.3,
+            // loses the array generic type in the `for of`. But we *also* have to use `Array` because
+            // typescript won't iterate over an `Iterable` unless you compile with `--downlevelIteration`
+            const configKeys = Object.keys(config);
+            for (const key of configKeys) {
+                if (config[key] !== undefined) {
+                    // TypeScript, as of version 3.5, sees the left-hand-side of this expression
+                    // as "I don't know *which* key this is, so the only valid value is the intersection
+                    // of all the posible values." In this case, that happens to be `undefined`. TypeScript
+                    // is not smart enough to see that the right-hand-side is actually an access of the same
+                    // exact type with the same exact key, meaning that the value type must be identical.
+                    // So we use `any` to work around this.
+                    this[key] = config[key];
+                }
+            }
+        }
+    }
+}
+
+/**
+ * @license
+ * Copyright Google LLC All Rights Reserved.
+ *
+ * Use of this source code is governed by an MIT-style license that can be
+ * found in the LICENSE file at https://angular.io/license
+ */
+/** The points of the origin element and the overlay element to connect. */
+class ConnectionPositionPair {
+    constructor(origin, overlay, 
+    /** Offset along the X axis. */
+    offsetX, 
+    /** Offset along the Y axis. */
+    offsetY, 
+    /** Class(es) to be applied to the panel while this position is active. */
+    panelClass) {
+        this.offsetX = offsetX;
+        this.offsetY = offsetY;
+        this.panelClass = panelClass;
+        this.originX = origin.originX;
+        this.originY = origin.originY;
+        this.overlayX = overlay.overlayX;
+        this.overlayY = overlay.overlayY;
+    }
+}
+/**
+ * Set of properties regarding the position of the origin and overlay relative to the viewport
+ * with respect to the containing Scrollable elements.
+ *
+ * The overlay and origin are clipped if any part of their bounding client rectangle exceeds the
+ * bounds of any one of the strategy's Scrollable's bounding client rectangle.
+ *
+ * The overlay and origin are outside view if there is no overlap between their bounding client
+ * rectangle and any one of the strategy's Scrollable's bounding client rectangle.
+ *
+ *       -----------                    -----------
+ *       | outside |                    | clipped |
+ *       |  view   |              --------------------------
+ *       |         |              |     |         |        |
+ *       ----------               |     -----------        |
+ *  --------------------------    |                        |
+ *  |                        |    |      Scrollable        |
+ *  |                        |    |                        |
+ *  |                        |     --------------------------
+ *  |      Scrollable        |
+ *  |                        |
+ *  --------------------------
+ *
+ *  @docs-private
+ */
+class ScrollingVisibility {
+}
+/** The change event emitted by the strategy when a fallback position is used. */
+class ConnectedOverlayPositionChange {
+    constructor(
+    /** The position used as a result of this change. */
+    connectionPair, 
+    /** @docs-private */
+    scrollableViewProperties) {
+        this.connectionPair = connectionPair;
+        this.scrollableViewProperties = scrollableViewProperties;
+    }
+}
+ConnectedOverlayPositionChange.ctorParameters = () => [
+    { type: ConnectionPositionPair },
+    { type: ScrollingVisibility, decorators: [{ type: _angular_core__WEBPACK_IMPORTED_MODULE_1__["Optional"] }] }
+];
+/**
+ * Validates whether a vertical position property matches the expected values.
+ * @param property Name of the property being validated.
+ * @param value Value of the property being validated.
+ * @docs-private
+ */
+function validateVerticalPosition(property, value) {
+    if (value !== 'top' && value !== 'bottom' && value !== 'center') {
+        throw Error(`ConnectedPosition: Invalid ${property} "${value}". ` +
+            `Expected "top", "bottom" or "center".`);
+    }
+}
+/**
+ * Validates whether a horizontal position property matches the expected values.
+ * @param property Name of the property being validated.
+ * @param value Value of the property being validated.
+ * @docs-private
+ */
+function validateHorizontalPosition(property, value) {
+    if (value !== 'start' && value !== 'end' && value !== 'center') {
+        throw Error(`ConnectedPosition: Invalid ${property} "${value}". ` +
+            `Expected "start", "end" or "center".`);
+    }
+}
+
+/**
+ * @license
+ * Copyright Google LLC All Rights Reserved.
+ *
+ * Use of this source code is governed by an MIT-style license that can be
+ * found in the LICENSE file at https://angular.io/license
+ */
+/**
+ * Service for dispatching events that land on the body to appropriate overlay ref,
+ * if any. It maintains a list of attached overlays to determine best suited overlay based
+ * on event target and order of overlay opens.
+ */
+class BaseOverlayDispatcher {
+    constructor(document) {
+        /** Currently attached overlays in the order they were attached. */
+        this._attachedOverlays = [];
+        this._document = document;
+    }
+    ngOnDestroy() {
+        this.detach();
+    }
+    /** Add a new overlay to the list of attached overlay refs. */
+    add(overlayRef) {
+        // Ensure that we don't get the same overlay multiple times.
+        this.remove(overlayRef);
+        this._attachedOverlays.push(overlayRef);
+    }
+    /** Remove an overlay from the list of attached overlay refs. */
+    remove(overlayRef) {
+        const index = this._attachedOverlays.indexOf(overlayRef);
+        if (index > -1) {
+            this._attachedOverlays.splice(index, 1);
+        }
+        // Remove the global listener once there are no more overlays.
+        if (this._attachedOverlays.length === 0) {
+            this.detach();
+        }
+    }
+}
+BaseOverlayDispatcher.ɵfac = function BaseOverlayDispatcher_Factory(t) { return new (t || BaseOverlayDispatcher)(_angular_core__WEBPACK_IMPORTED_MODULE_1__["ɵɵinject"](_angular_common__WEBPACK_IMPORTED_MODULE_4__["DOCUMENT"])); };
+BaseOverlayDispatcher.ɵprov = Object(_angular_core__WEBPACK_IMPORTED_MODULE_1__["ɵɵdefineInjectable"])({ factory: function BaseOverlayDispatcher_Factory() { return new BaseOverlayDispatcher(Object(_angular_core__WEBPACK_IMPORTED_MODULE_1__["ɵɵinject"])(_angular_common__WEBPACK_IMPORTED_MODULE_4__["DOCUMENT"])); }, token: BaseOverlayDispatcher, providedIn: "root" });
+BaseOverlayDispatcher.ctorParameters = () => [
+    { type: undefined, decorators: [{ type: _angular_core__WEBPACK_IMPORTED_MODULE_1__["Inject"], args: [_angular_common__WEBPACK_IMPORTED_MODULE_4__["DOCUMENT"],] }] }
+];
+/*@__PURE__*/ (function () { _angular_core__WEBPACK_IMPORTED_MODULE_1__["ɵsetClassMetadata"](BaseOverlayDispatcher, [{
+        type: _angular_core__WEBPACK_IMPORTED_MODULE_1__["Injectable"],
+        args: [{ providedIn: 'root' }]
+    }], function () { return [{ type: undefined, decorators: [{
+                type: _angular_core__WEBPACK_IMPORTED_MODULE_1__["Inject"],
+                args: [_angular_common__WEBPACK_IMPORTED_MODULE_4__["DOCUMENT"]]
+            }] }]; }, null); })();
+
+/**
+ * @license
+ * Copyright Google LLC All Rights Reserved.
+ *
+ * Use of this source code is governed by an MIT-style license that can be
+ * found in the LICENSE file at https://angular.io/license
+ */
+/**
+ * Service for dispatching keyboard events that land on the body to appropriate overlay ref,
+ * if any. It maintains a list of attached overlays to determine best suited overlay based
+ * on event target and order of overlay opens.
+ */
+class OverlayKeyboardDispatcher extends BaseOverlayDispatcher {
+    constructor(document) {
+        super(document);
+        /** Keyboard event listener that will be attached to the body. */
+        this._keydownListener = (event) => {
+            const overlays = this._attachedOverlays;
+            for (let i = overlays.length - 1; i > -1; i--) {
+                // Dispatch the keydown event to the top overlay which has subscribers to its keydown events.
+                // We want to target the most recent overlay, rather than trying to match where the event came
+                // from, because some components might open an overlay, but keep focus on a trigger element
+                // (e.g. for select and autocomplete). We skip overlays without keydown event subscriptions,
+                // because we don't want overlays that don't handle keyboard events to block the ones below
+                // them that do.
+                if (overlays[i]._keydownEvents.observers.length > 0) {
+                    overlays[i]._keydownEvents.next(event);
+                    break;
+                }
+            }
+        };
+    }
+    /** Add a new overlay to the list of attached overlay refs. */
+    add(overlayRef) {
+        super.add(overlayRef);
+        // Lazily start dispatcher once first overlay is added
+        if (!this._isAttached) {
+            this._document.body.addEventListener('keydown', this._keydownListener);
+            this._isAttached = true;
+        }
+    }
+    /** Detaches the global keyboard event listener. */
+    detach() {
+        if (this._isAttached) {
+            this._document.body.removeEventListener('keydown', this._keydownListener);
+            this._isAttached = false;
+        }
+    }
+}
+OverlayKeyboardDispatcher.ɵfac = function OverlayKeyboardDispatcher_Factory(t) { return new (t || OverlayKeyboardDispatcher)(_angular_core__WEBPACK_IMPORTED_MODULE_1__["ɵɵinject"](_angular_common__WEBPACK_IMPORTED_MODULE_4__["DOCUMENT"])); };
+OverlayKeyboardDispatcher.ɵprov = Object(_angular_core__WEBPACK_IMPORTED_MODULE_1__["ɵɵdefineInjectable"])({ factory: function OverlayKeyboardDispatcher_Factory() { return new OverlayKeyboardDispatcher(Object(_angular_core__WEBPACK_IMPORTED_MODULE_1__["ɵɵinject"])(_angular_common__WEBPACK_IMPORTED_MODULE_4__["DOCUMENT"])); }, token: OverlayKeyboardDispatcher, providedIn: "root" });
+OverlayKeyboardDispatcher.ctorParameters = () => [
+    { type: undefined, decorators: [{ type: _angular_core__WEBPACK_IMPORTED_MODULE_1__["Inject"], args: [_angular_common__WEBPACK_IMPORTED_MODULE_4__["DOCUMENT"],] }] }
+];
+/*@__PURE__*/ (function () { _angular_core__WEBPACK_IMPORTED_MODULE_1__["ɵsetClassMetadata"](OverlayKeyboardDispatcher, [{
+        type: _angular_core__WEBPACK_IMPORTED_MODULE_1__["Injectable"],
+        args: [{ providedIn: 'root' }]
+    }], function () { return [{ type: undefined, decorators: [{
+                type: _angular_core__WEBPACK_IMPORTED_MODULE_1__["Inject"],
+                args: [_angular_common__WEBPACK_IMPORTED_MODULE_4__["DOCUMENT"]]
+            }] }]; }, null); })();
+/** @docs-private @deprecated @breaking-change 8.0.0 */
+function OVERLAY_KEYBOARD_DISPATCHER_PROVIDER_FACTORY(dispatcher, _document) {
+    return dispatcher || new OverlayKeyboardDispatcher(_document);
+}
+/** @docs-private @deprecated @breaking-change 8.0.0 */
+const OVERLAY_KEYBOARD_DISPATCHER_PROVIDER = {
+    // If there is already an OverlayKeyboardDispatcher available, use that.
+    // Otherwise, provide a new one.
+    provide: OverlayKeyboardDispatcher,
+    deps: [
+        [new _angular_core__WEBPACK_IMPORTED_MODULE_1__["Optional"](), new _angular_core__WEBPACK_IMPORTED_MODULE_1__["SkipSelf"](), OverlayKeyboardDispatcher],
+        // Coerce to `InjectionToken` so that the `deps` match the "shape"
+        // of the type expected by Angular
+        _angular_common__WEBPACK_IMPORTED_MODULE_4__["DOCUMENT"]
+    ],
+    useFactory: OVERLAY_KEYBOARD_DISPATCHER_PROVIDER_FACTORY
+};
+
+/**
+ * @license
+ * Copyright Google LLC All Rights Reserved.
+ *
+ * Use of this source code is governed by an MIT-style license that can be
+ * found in the LICENSE file at https://angular.io/license
+ */
+/**
+ * Service for dispatching mouse click events that land on the body to appropriate overlay ref,
+ * if any. It maintains a list of attached overlays to determine best suited overlay based
+ * on event target and order of overlay opens.
+ */
+class OverlayOutsideClickDispatcher extends BaseOverlayDispatcher {
+    constructor(document, _platform) {
+        super(document);
+        this._platform = _platform;
+        this._cursorStyleIsSet = false;
+        /** Click event listener that will be attached to the body propagate phase. */
+        this._clickListener = (event) => {
+            // Get the target through the `composedPath` if possible to account for shadow DOM.
+            const target = event.composedPath ? event.composedPath()[0] : event.target;
+            const overlays = this._attachedOverlays;
+            // Dispatch the mouse event to the top overlay which has subscribers to its mouse events.
+            // We want to target all overlays for which the click could be considered as outside click.
+            // As soon as we reach an overlay for which the click is not outside click we break off
+            // the loop.
+            for (let i = overlays.length - 1; i > -1; i--) {
+                const overlayRef = overlays[i];
+                if (overlayRef._outsidePointerEvents.observers.length < 1) {
+                    continue;
+                }
+                const config = overlayRef.getConfig();
+                const excludeElements = [...config.excludeFromOutsideClick, overlayRef.overlayElement];
+                const isInsideClick = excludeElements.some(e => e.contains(target));
+                // If it is inside click just break - we should do nothing
+                // If it is outside click dispatch the mouse event, and proceed with the next overlay
+                if (isInsideClick) {
+                    break;
+                }
+                overlayRef._outsidePointerEvents.next(event);
+            }
+        };
+    }
+    /** Add a new overlay to the list of attached overlay refs. */
+    add(overlayRef) {
+        super.add(overlayRef);
+        // tslint:disable: max-line-length
+        // Safari on iOS does not generate click events for non-interactive
+        // elements. However, we want to receive a click for any element outside
+        // the overlay. We can force a "clickable" state by setting
+        // `cursor: pointer` on the document body.
+        // See https://developer.mozilla.org/en-US/docs/Web/API/Element/click_event#Safari_Mobile
+        // and https://developer.apple.com/library/archive/documentation/AppleApplications/Reference/SafariWebContent/HandlingEvents/HandlingEvents.html
+        // tslint:enable: max-line-length
+        if (!this._isAttached) {
+            this._document.body.addEventListener('click', this._clickListener, true);
+            // click event is not fired on iOS. To make element "clickable" we are
+            // setting the cursor to pointer
+            if (this._platform.IOS && !this._cursorStyleIsSet) {
+                this._cursorOriginalValue = this._document.body.style.cursor;
+                this._document.body.style.cursor = 'pointer';
+                this._cursorStyleIsSet = true;
+            }
+            this._isAttached = true;
+        }
+    }
+    /** Detaches the global keyboard event listener. */
+    detach() {
+        if (this._isAttached) {
+            this._document.body.removeEventListener('click', this._clickListener, true);
+            if (this._platform.IOS && this._cursorStyleIsSet) {
+                this._document.body.style.cursor = this._cursorOriginalValue;
+                this._cursorStyleIsSet = false;
+            }
+            this._isAttached = false;
+        }
+    }
+}
+OverlayOutsideClickDispatcher.ɵfac = function OverlayOutsideClickDispatcher_Factory(t) { return new (t || OverlayOutsideClickDispatcher)(_angular_core__WEBPACK_IMPORTED_MODULE_1__["ɵɵinject"](_angular_common__WEBPACK_IMPORTED_MODULE_4__["DOCUMENT"]), _angular_core__WEBPACK_IMPORTED_MODULE_1__["ɵɵinject"](_angular_cdk_platform__WEBPACK_IMPORTED_MODULE_2__["Platform"])); };
+OverlayOutsideClickDispatcher.ɵprov = Object(_angular_core__WEBPACK_IMPORTED_MODULE_1__["ɵɵdefineInjectable"])({ factory: function OverlayOutsideClickDispatcher_Factory() { return new OverlayOutsideClickDispatcher(Object(_angular_core__WEBPACK_IMPORTED_MODULE_1__["ɵɵinject"])(_angular_common__WEBPACK_IMPORTED_MODULE_4__["DOCUMENT"]), Object(_angular_core__WEBPACK_IMPORTED_MODULE_1__["ɵɵinject"])(_angular_cdk_platform__WEBPACK_IMPORTED_MODULE_2__["Platform"])); }, token: OverlayOutsideClickDispatcher, providedIn: "root" });
+OverlayOutsideClickDispatcher.ctorParameters = () => [
+    { type: undefined, decorators: [{ type: _angular_core__WEBPACK_IMPORTED_MODULE_1__["Inject"], args: [_angular_common__WEBPACK_IMPORTED_MODULE_4__["DOCUMENT"],] }] },
+    { type: _angular_cdk_platform__WEBPACK_IMPORTED_MODULE_2__["Platform"] }
+];
+/*@__PURE__*/ (function () { _angular_core__WEBPACK_IMPORTED_MODULE_1__["ɵsetClassMetadata"](OverlayOutsideClickDispatcher, [{
+        type: _angular_core__WEBPACK_IMPORTED_MODULE_1__["Injectable"],
+        args: [{ providedIn: 'root' }]
+    }], function () { return [{ type: undefined, decorators: [{
+                type: _angular_core__WEBPACK_IMPORTED_MODULE_1__["Inject"],
+                args: [_angular_common__WEBPACK_IMPORTED_MODULE_4__["DOCUMENT"]]
+            }] }, { type: _angular_cdk_platform__WEBPACK_IMPORTED_MODULE_2__["Platform"] }]; }, null); })();
+
+/**
+ * @license
+ * Copyright Google LLC All Rights Reserved.
+ *
+ * Use of this source code is governed by an MIT-style license that can be
+ * found in the LICENSE file at https://angular.io/license
+ */
+/**
+ * Whether we're in a testing environment.
+ * TODO(crisbeto): remove this once we have an overlay testing module.
+ */
+const isTestEnvironment = typeof window !== 'undefined' && !!window &&
+    !!(window.__karma__ || window.jasmine);
+/** Container inside which all overlays will render. */
+class OverlayContainer {
+    constructor(document, 
+    /**
+     * @deprecated `platform` parameter to become required.
+     * @breaking-change 10.0.0
+     */
+    _platform) {
+        this._platform = _platform;
+        this._document = document;
+    }
+    ngOnDestroy() {
+        const container = this._containerElement;
+        if (container && container.parentNode) {
+            container.parentNode.removeChild(container);
+        }
+    }
+    /**
+     * This method returns the overlay container element. It will lazily
+     * create the element the first time  it is called to facilitate using
+     * the container in non-browser environments.
+     * @returns the container element
+     */
+    getContainerElement() {
+        if (!this._containerElement) {
+            this._createContainer();
+        }
+        return this._containerElement;
+    }
+    /**
+     * Create the overlay container element, which is simply a div
+     * with the 'cdk-overlay-container' class on the document body.
+     */
+    _createContainer() {
+        // @breaking-change 10.0.0 Remove null check for `_platform`.
+        const isBrowser = this._platform ? this._platform.isBrowser : typeof window !== 'undefined';
+        const containerClass = 'cdk-overlay-container';
+        if (isBrowser || isTestEnvironment) {
+            const oppositePlatformContainers = this._document.querySelectorAll(`.${containerClass}[platform="server"], ` +
+                `.${containerClass}[platform="test"]`);
+            // Remove any old containers from the opposite platform.
+            // This can happen when transitioning from the server to the client.
+            for (let i = 0; i < oppositePlatformContainers.length; i++) {
+                oppositePlatformContainers[i].parentNode.removeChild(oppositePlatformContainers[i]);
+            }
+        }
+        const container = this._document.createElement('div');
+        container.classList.add(containerClass);
+        // A long time ago we kept adding new overlay containers whenever a new app was instantiated,
+        // but at some point we added logic which clears the duplicate ones in order to avoid leaks.
+        // The new logic was a little too aggressive since it was breaking some legitimate use cases.
+        // To mitigate the problem we made it so that only containers from a different platform are
+        // cleared, but the side-effect was that people started depending on the overly-aggressive
+        // logic to clean up their tests for them. Until we can introduce an overlay-specific testing
+        // module which does the cleanup, we try to detect that we're in a test environment and we
+        // always clear the container. See #17006.
+        // TODO(crisbeto): remove the test environment check once we have an overlay testing module.
+        if (isTestEnvironment) {
+            container.setAttribute('platform', 'test');
+        }
+        else if (!isBrowser) {
+            container.setAttribute('platform', 'server');
+        }
+        this._document.body.appendChild(container);
+        this._containerElement = container;
+    }
+}
+OverlayContainer.ɵfac = function OverlayContainer_Factory(t) { return new (t || OverlayContainer)(_angular_core__WEBPACK_IMPORTED_MODULE_1__["ɵɵinject"](_angular_common__WEBPACK_IMPORTED_MODULE_4__["DOCUMENT"]), _angular_core__WEBPACK_IMPORTED_MODULE_1__["ɵɵinject"](_angular_cdk_platform__WEBPACK_IMPORTED_MODULE_2__["Platform"])); };
+OverlayContainer.ɵprov = Object(_angular_core__WEBPACK_IMPORTED_MODULE_1__["ɵɵdefineInjectable"])({ factory: function OverlayContainer_Factory() { return new OverlayContainer(Object(_angular_core__WEBPACK_IMPORTED_MODULE_1__["ɵɵinject"])(_angular_common__WEBPACK_IMPORTED_MODULE_4__["DOCUMENT"]), Object(_angular_core__WEBPACK_IMPORTED_MODULE_1__["ɵɵinject"])(_angular_cdk_platform__WEBPACK_IMPORTED_MODULE_2__["Platform"])); }, token: OverlayContainer, providedIn: "root" });
+OverlayContainer.ctorParameters = () => [
+    { type: undefined, decorators: [{ type: _angular_core__WEBPACK_IMPORTED_MODULE_1__["Inject"], args: [_angular_common__WEBPACK_IMPORTED_MODULE_4__["DOCUMENT"],] }] },
+    { type: _angular_cdk_platform__WEBPACK_IMPORTED_MODULE_2__["Platform"] }
+];
+/*@__PURE__*/ (function () { _angular_core__WEBPACK_IMPORTED_MODULE_1__["ɵsetClassMetadata"](OverlayContainer, [{
+        type: _angular_core__WEBPACK_IMPORTED_MODULE_1__["Injectable"],
+        args: [{ providedIn: 'root' }]
+    }], function () { return [{ type: undefined, decorators: [{
+                type: _angular_core__WEBPACK_IMPORTED_MODULE_1__["Inject"],
+                args: [_angular_common__WEBPACK_IMPORTED_MODULE_4__["DOCUMENT"]]
+            }] }, { type: _angular_cdk_platform__WEBPACK_IMPORTED_MODULE_2__["Platform"] }]; }, null); })();
+/** @docs-private @deprecated @breaking-change 8.0.0 */
+function OVERLAY_CONTAINER_PROVIDER_FACTORY(parentContainer, _document) {
+    return parentContainer || new OverlayContainer(_document);
+}
+/** @docs-private @deprecated @breaking-change 8.0.0 */
+const OVERLAY_CONTAINER_PROVIDER = {
+    // If there is already an OverlayContainer available, use that. Otherwise, provide a new one.
+    provide: OverlayContainer,
+    deps: [
+        [new _angular_core__WEBPACK_IMPORTED_MODULE_1__["Optional"](), new _angular_core__WEBPACK_IMPORTED_MODULE_1__["SkipSelf"](), OverlayContainer],
+        _angular_common__WEBPACK_IMPORTED_MODULE_4__["DOCUMENT"] // We need to use the InjectionToken somewhere to keep TS happy
+    ],
+    useFactory: OVERLAY_CONTAINER_PROVIDER_FACTORY
+};
+
+/**
+ * @license
+ * Copyright Google LLC All Rights Reserved.
+ *
+ * Use of this source code is governed by an MIT-style license that can be
+ * found in the LICENSE file at https://angular.io/license
+ */
+/**
+ * Reference to an overlay that has been created with the Overlay service.
+ * Used to manipulate or dispose of said overlay.
+ */
+class OverlayRef {
+    constructor(_portalOutlet, _host, _pane, _config, _ngZone, _keyboardDispatcher, _document, 
+    // @breaking-change 8.0.0 `_location` parameter to be made required.
+    _location, 
+    // @breaking-change 9.0.0 `_mouseClickDispatcher` parameter to be made required.
+    _outsideClickDispatcher) {
+        this._portalOutlet = _portalOutlet;
+        this._host = _host;
+        this._pane = _pane;
+        this._config = _config;
+        this._ngZone = _ngZone;
+        this._keyboardDispatcher = _keyboardDispatcher;
+        this._document = _document;
+        this._location = _location;
+        this._outsideClickDispatcher = _outsideClickDispatcher;
+        this._backdropElement = null;
+        this._backdropClick = new rxjs__WEBPACK_IMPORTED_MODULE_7__["Subject"]();
+        this._attachments = new rxjs__WEBPACK_IMPORTED_MODULE_7__["Subject"]();
+        this._detachments = new rxjs__WEBPACK_IMPORTED_MODULE_7__["Subject"]();
+        this._locationChanges = rxjs__WEBPACK_IMPORTED_MODULE_7__["Subscription"].EMPTY;
+        this._backdropClickHandler = (event) => this._backdropClick.next(event);
+        /** Stream of keydown events dispatched to this overlay. */
+        this._keydownEvents = new rxjs__WEBPACK_IMPORTED_MODULE_7__["Subject"]();
+        /** Stream of mouse outside events dispatched to this overlay. */
+        this._outsidePointerEvents = new rxjs__WEBPACK_IMPORTED_MODULE_7__["Subject"]();
+        if (_config.scrollStrategy) {
+            this._scrollStrategy = _config.scrollStrategy;
+            this._scrollStrategy.attach(this);
+        }
+        this._positionStrategy = _config.positionStrategy;
+    }
+    /** The overlay's HTML element */
+    get overlayElement() {
+        return this._pane;
+    }
+    /** The overlay's backdrop HTML element. */
+    get backdropElement() {
+        return this._backdropElement;
+    }
+    /**
+     * Wrapper around the panel element. Can be used for advanced
+     * positioning where a wrapper with specific styling is
+     * required around the overlay pane.
+     */
+    get hostElement() {
+        return this._host;
+    }
+    /**
+     * Attaches content, given via a Portal, to the overlay.
+     * If the overlay is configured to have a backdrop, it will be created.
+     *
+     * @param portal Portal instance to which to attach the overlay.
+     * @returns The portal attachment result.
+     */
+    attach(portal) {
+        let attachResult = this._portalOutlet.attach(portal);
+        // Update the pane element with the given configuration.
+        if (!this._host.parentElement && this._previousHostParent) {
+            this._previousHostParent.appendChild(this._host);
+        }
+        if (this._positionStrategy) {
+            this._positionStrategy.attach(this);
+        }
+        this._updateStackingOrder();
+        this._updateElementSize();
+        this._updateElementDirection();
+        if (this._scrollStrategy) {
+            this._scrollStrategy.enable();
+        }
+        // Update the position once the zone is stable so that the overlay will be fully rendered
+        // before attempting to position it, as the position may depend on the size of the rendered
+        // content.
+        this._ngZone.onStable
+            .asObservable()
+            .pipe(Object(rxjs_operators__WEBPACK_IMPORTED_MODULE_8__["take"])(1))
+            .subscribe(() => {
+            // The overlay could've been detached before the zone has stabilized.
+            if (this.hasAttached()) {
+                this.updatePosition();
+            }
+        });
+        // Enable pointer events for the overlay pane element.
+        this._togglePointerEvents(true);
+        if (this._config.hasBackdrop) {
+            this._attachBackdrop();
+        }
+        if (this._config.panelClass) {
+            this._toggleClasses(this._pane, this._config.panelClass, true);
+        }
+        // Only emit the `attachments` event once all other setup is done.
+        this._attachments.next();
+        // Track this overlay by the keyboard dispatcher
+        this._keyboardDispatcher.add(this);
+        // @breaking-change 8.0.0 remove the null check for `_location`
+        // once the constructor parameter is made required.
+        if (this._config.disposeOnNavigation && this._location) {
+            this._locationChanges = this._location.subscribe(() => this.dispose());
+        }
+        // @breaking-change 9.0.0 remove the null check for `_mouseClickDispatcher`
+        if (this._outsideClickDispatcher) {
+            this._outsideClickDispatcher.add(this);
+        }
+        return attachResult;
+    }
+    /**
+     * Detaches an overlay from a portal.
+     * @returns The portal detachment result.
+     */
+    detach() {
+        if (!this.hasAttached()) {
+            return;
+        }
+        this.detachBackdrop();
+        // When the overlay is detached, the pane element should disable pointer events.
+        // This is necessary because otherwise the pane element will cover the page and disable
+        // pointer events therefore. Depends on the position strategy and the applied pane boundaries.
+        this._togglePointerEvents(false);
+        if (this._positionStrategy && this._positionStrategy.detach) {
+            this._positionStrategy.detach();
+        }
+        if (this._scrollStrategy) {
+            this._scrollStrategy.disable();
+        }
+        const detachmentResult = this._portalOutlet.detach();
+        // Only emit after everything is detached.
+        this._detachments.next();
+        // Remove this overlay from keyboard dispatcher tracking.
+        this._keyboardDispatcher.remove(this);
+        // Keeping the host element in the DOM can cause scroll jank, because it still gets
+        // rendered, even though it's transparent and unclickable which is why we remove it.
+        this._detachContentWhenStable();
+        // Stop listening for location changes.
+        this._locationChanges.unsubscribe();
+        // @breaking-change 9.0.0 remove the null check for `_outsideClickDispatcher`
+        if (this._outsideClickDispatcher) {
+            this._outsideClickDispatcher.remove(this);
+        }
+        return detachmentResult;
+    }
+    /** Cleans up the overlay from the DOM. */
+    dispose() {
+        const isAttached = this.hasAttached();
+        if (this._positionStrategy) {
+            this._positionStrategy.dispose();
+        }
+        this._disposeScrollStrategy();
+        this.detachBackdrop();
+        this._locationChanges.unsubscribe();
+        this._keyboardDispatcher.remove(this);
+        this._portalOutlet.dispose();
+        this._attachments.complete();
+        this._backdropClick.complete();
+        this._keydownEvents.complete();
+        this._outsidePointerEvents.complete();
+        // @breaking-change 9.0.0 remove the null check for `_outsideClickDispatcher`
+        if (this._outsideClickDispatcher) {
+            this._outsideClickDispatcher.remove(this);
+        }
+        if (this._host && this._host.parentNode) {
+            this._host.parentNode.removeChild(this._host);
+            this._host = null;
+        }
+        this._previousHostParent = this._pane = null;
+        if (isAttached) {
+            this._detachments.next();
+        }
+        this._detachments.complete();
+    }
+    /** Whether the overlay has attached content. */
+    hasAttached() {
+        return this._portalOutlet.hasAttached();
+    }
+    /** Gets an observable that emits when the backdrop has been clicked. */
+    backdropClick() {
+        return this._backdropClick.asObservable();
+    }
+    /** Gets an observable that emits when the overlay has been attached. */
+    attachments() {
+        return this._attachments.asObservable();
+    }
+    /** Gets an observable that emits when the overlay has been detached. */
+    detachments() {
+        return this._detachments.asObservable();
+    }
+    /** Gets an observable of keydown events targeted to this overlay. */
+    keydownEvents() {
+        return this._keydownEvents.asObservable();
+    }
+    /** Gets an observable of pointer events targeted outside this overlay. */
+    outsidePointerEvents() {
+        return this._outsidePointerEvents.asObservable();
+    }
+    /** Gets the current overlay configuration, which is immutable. */
+    getConfig() {
+        return this._config;
+    }
+    /** Updates the position of the overlay based on the position strategy. */
+    updatePosition() {
+        if (this._positionStrategy) {
+            this._positionStrategy.apply();
+        }
+    }
+    /** Switches to a new position strategy and updates the overlay position. */
+    updatePositionStrategy(strategy) {
+        if (strategy === this._positionStrategy) {
+            return;
+        }
+        if (this._positionStrategy) {
+            this._positionStrategy.dispose();
+        }
+        this._positionStrategy = strategy;
+        if (this.hasAttached()) {
+            strategy.attach(this);
+            this.updatePosition();
+        }
+    }
+    /** Update the size properties of the overlay. */
+    updateSize(sizeConfig) {
+        this._config = Object.assign(Object.assign({}, this._config), sizeConfig);
+        this._updateElementSize();
+    }
+    /** Sets the LTR/RTL direction for the overlay. */
+    setDirection(dir) {
+        this._config = Object.assign(Object.assign({}, this._config), { direction: dir });
+        this._updateElementDirection();
+    }
+    /** Add a CSS class or an array of classes to the overlay pane. */
+    addPanelClass(classes) {
+        if (this._pane) {
+            this._toggleClasses(this._pane, classes, true);
+        }
+    }
+    /** Remove a CSS class or an array of classes from the overlay pane. */
+    removePanelClass(classes) {
+        if (this._pane) {
+            this._toggleClasses(this._pane, classes, false);
+        }
+    }
+    /**
+     * Returns the layout direction of the overlay panel.
+     */
+    getDirection() {
+        const direction = this._config.direction;
+        if (!direction) {
+            return 'ltr';
+        }
+        return typeof direction === 'string' ? direction : direction.value;
+    }
+    /** Switches to a new scroll strategy. */
+    updateScrollStrategy(strategy) {
+        if (strategy === this._scrollStrategy) {
+            return;
+        }
+        this._disposeScrollStrategy();
+        this._scrollStrategy = strategy;
+        if (this.hasAttached()) {
+            strategy.attach(this);
+            strategy.enable();
+        }
+    }
+    /** Updates the text direction of the overlay panel. */
+    _updateElementDirection() {
+        this._host.setAttribute('dir', this.getDirection());
+    }
+    /** Updates the size of the overlay element based on the overlay config. */
+    _updateElementSize() {
+        if (!this._pane) {
+            return;
+        }
+        const style = this._pane.style;
+        style.width = Object(_angular_cdk_coercion__WEBPACK_IMPORTED_MODULE_5__["coerceCssPixelValue"])(this._config.width);
+        style.height = Object(_angular_cdk_coercion__WEBPACK_IMPORTED_MODULE_5__["coerceCssPixelValue"])(this._config.height);
+        style.minWidth = Object(_angular_cdk_coercion__WEBPACK_IMPORTED_MODULE_5__["coerceCssPixelValue"])(this._config.minWidth);
+        style.minHeight = Object(_angular_cdk_coercion__WEBPACK_IMPORTED_MODULE_5__["coerceCssPixelValue"])(this._config.minHeight);
+        style.maxWidth = Object(_angular_cdk_coercion__WEBPACK_IMPORTED_MODULE_5__["coerceCssPixelValue"])(this._config.maxWidth);
+        style.maxHeight = Object(_angular_cdk_coercion__WEBPACK_IMPORTED_MODULE_5__["coerceCssPixelValue"])(this._config.maxHeight);
+    }
+    /** Toggles the pointer events for the overlay pane element. */
+    _togglePointerEvents(enablePointer) {
+        this._pane.style.pointerEvents = enablePointer ? 'auto' : 'none';
+    }
+    /** Attaches a backdrop for this overlay. */
+    _attachBackdrop() {
+        const showingClass = 'cdk-overlay-backdrop-showing';
+        this._backdropElement = this._document.createElement('div');
+        this._backdropElement.classList.add('cdk-overlay-backdrop');
+        if (this._config.backdropClass) {
+            this._toggleClasses(this._backdropElement, this._config.backdropClass, true);
+        }
+        // Insert the backdrop before the pane in the DOM order,
+        // in order to handle stacked overlays properly.
+        this._host.parentElement.insertBefore(this._backdropElement, this._host);
+        // Forward backdrop clicks such that the consumer of the overlay can perform whatever
+        // action desired when such a click occurs (usually closing the overlay).
+        this._backdropElement.addEventListener('click', this._backdropClickHandler);
+        // Add class to fade-in the backdrop after one frame.
+        if (typeof requestAnimationFrame !== 'undefined') {
+            this._ngZone.runOutsideAngular(() => {
+                requestAnimationFrame(() => {
+                    if (this._backdropElement) {
+                        this._backdropElement.classList.add(showingClass);
+                    }
+                });
+            });
+        }
+        else {
+            this._backdropElement.classList.add(showingClass);
+        }
+    }
+    /**
+     * Updates the stacking order of the element, moving it to the top if necessary.
+     * This is required in cases where one overlay was detached, while another one,
+     * that should be behind it, was destroyed. The next time both of them are opened,
+     * the stacking will be wrong, because the detached element's pane will still be
+     * in its original DOM position.
+     */
+    _updateStackingOrder() {
+        if (this._host.nextSibling) {
+            this._host.parentNode.appendChild(this._host);
+        }
+    }
+    /** Detaches the backdrop (if any) associated with the overlay. */
+    detachBackdrop() {
+        let backdropToDetach = this._backdropElement;
+        if (!backdropToDetach) {
+            return;
+        }
+        let timeoutId;
+        let finishDetach = () => {
+            // It may not be attached to anything in certain cases (e.g. unit tests).
+            if (backdropToDetach) {
+                backdropToDetach.removeEventListener('click', this._backdropClickHandler);
+                backdropToDetach.removeEventListener('transitionend', finishDetach);
+                if (backdropToDetach.parentNode) {
+                    backdropToDetach.parentNode.removeChild(backdropToDetach);
+                }
+            }
+            // It is possible that a new portal has been attached to this overlay since we started
+            // removing the backdrop. If that is the case, only clear the backdrop reference if it
+            // is still the same instance that we started to remove.
+            if (this._backdropElement == backdropToDetach) {
+                this._backdropElement = null;
+            }
+            if (this._config.backdropClass) {
+                this._toggleClasses(backdropToDetach, this._config.backdropClass, false);
+            }
+            clearTimeout(timeoutId);
+        };
+        backdropToDetach.classList.remove('cdk-overlay-backdrop-showing');
+        this._ngZone.runOutsideAngular(() => {
+            backdropToDetach.addEventListener('transitionend', finishDetach);
+        });
+        // If the backdrop doesn't have a transition, the `transitionend` event won't fire.
+        // In this case we make it unclickable and we try to remove it after a delay.
+        backdropToDetach.style.pointerEvents = 'none';
+        // Run this outside the Angular zone because there's nothing that Angular cares about.
+        // If it were to run inside the Angular zone, every test that used Overlay would have to be
+        // either async or fakeAsync.
+        timeoutId = this._ngZone.runOutsideAngular(() => setTimeout(finishDetach, 500));
+    }
+    /** Toggles a single CSS class or an array of classes on an element. */
+    _toggleClasses(element, cssClasses, isAdd) {
+        const classList = element.classList;
+        Object(_angular_cdk_coercion__WEBPACK_IMPORTED_MODULE_5__["coerceArray"])(cssClasses).forEach(cssClass => {
+            // We can't do a spread here, because IE doesn't support setting multiple classes.
+            // Also trying to add an empty string to a DOMTokenList will throw.
+            if (cssClass) {
+                isAdd ? classList.add(cssClass) : classList.remove(cssClass);
+            }
+        });
+    }
+    /** Detaches the overlay content next time the zone stabilizes. */
+    _detachContentWhenStable() {
+        // Normally we wouldn't have to explicitly run this outside the `NgZone`, however
+        // if the consumer is using `zone-patch-rxjs`, the `Subscription.unsubscribe` call will
+        // be patched to run inside the zone, which will throw us into an infinite loop.
+        this._ngZone.runOutsideAngular(() => {
+            // We can't remove the host here immediately, because the overlay pane's content
+            // might still be animating. This stream helps us avoid interrupting the animation
+            // by waiting for the pane to become empty.
+            const subscription = this._ngZone.onStable
+                .asObservable()
+                .pipe(Object(rxjs_operators__WEBPACK_IMPORTED_MODULE_8__["takeUntil"])(Object(rxjs__WEBPACK_IMPORTED_MODULE_7__["merge"])(this._attachments, this._detachments)))
+                .subscribe(() => {
+                // Needs a couple of checks for the pane and host, because
+                // they may have been removed by the time the zone stabilizes.
+                if (!this._pane || !this._host || this._pane.children.length === 0) {
+                    if (this._pane && this._config.panelClass) {
+                        this._toggleClasses(this._pane, this._config.panelClass, false);
+                    }
+                    if (this._host && this._host.parentElement) {
+                        this._previousHostParent = this._host.parentElement;
+                        this._previousHostParent.removeChild(this._host);
+                    }
+                    subscription.unsubscribe();
+                }
+            });
+        });
+    }
+    /** Disposes of a scroll strategy. */
+    _disposeScrollStrategy() {
+        const scrollStrategy = this._scrollStrategy;
+        if (scrollStrategy) {
+            scrollStrategy.disable();
+            if (scrollStrategy.detach) {
+                scrollStrategy.detach();
+            }
+        }
+    }
+}
+
+/**
+ * @license
+ * Copyright Google LLC All Rights Reserved.
+ *
+ * Use of this source code is governed by an MIT-style license that can be
+ * found in the LICENSE file at https://angular.io/license
+ */
+// TODO: refactor clipping detection into a separate thing (part of scrolling module)
+// TODO: doesn't handle both flexible width and height when it has to scroll along both axis.
+/** Class to be added to the overlay bounding box. */
+const boundingBoxClass = 'cdk-overlay-connected-position-bounding-box';
+/** Regex used to split a string on its CSS units. */
+const cssUnitPattern = /([A-Za-z%]+)$/;
+/**
+ * A strategy for positioning overlays. Using this strategy, an overlay is given an
+ * implicit position relative some origin element. The relative position is defined in terms of
+ * a point on the origin element that is connected to a point on the overlay element. For example,
+ * a basic dropdown is connecting the bottom-left corner of the origin to the top-left corner
+ * of the overlay.
+ */
+class FlexibleConnectedPositionStrategy {
+    constructor(connectedTo, _viewportRuler, _document, _platform, _overlayContainer) {
+        this._viewportRuler = _viewportRuler;
+        this._document = _document;
+        this._platform = _platform;
+        this._overlayContainer = _overlayContainer;
+        /** Last size used for the bounding box. Used to avoid resizing the overlay after open. */
+        this._lastBoundingBoxSize = { width: 0, height: 0 };
+        /** Whether the overlay was pushed in a previous positioning. */
+        this._isPushed = false;
+        /** Whether the overlay can be pushed on-screen on the initial open. */
+        this._canPush = true;
+        /** Whether the overlay can grow via flexible width/height after the initial open. */
+        this._growAfterOpen = false;
+        /** Whether the overlay's width and height can be constrained to fit within the viewport. */
+        this._hasFlexibleDimensions = true;
+        /** Whether the overlay position is locked. */
+        this._positionLocked = false;
+        /** Amount of space that must be maintained between the overlay and the edge of the viewport. */
+        this._viewportMargin = 0;
+        /** The Scrollable containers used to check scrollable view properties on position change. */
+        this._scrollables = [];
+        /** Ordered list of preferred positions, from most to least desirable. */
+        this._preferredPositions = [];
+        /** Subject that emits whenever the position changes. */
+        this._positionChanges = new rxjs__WEBPACK_IMPORTED_MODULE_7__["Subject"]();
+        /** Subscription to viewport size changes. */
+        this._resizeSubscription = rxjs__WEBPACK_IMPORTED_MODULE_7__["Subscription"].EMPTY;
+        /** Default offset for the overlay along the x axis. */
+        this._offsetX = 0;
+        /** Default offset for the overlay along the y axis. */
+        this._offsetY = 0;
+        /** Keeps track of the CSS classes that the position strategy has applied on the overlay panel. */
+        this._appliedPanelClasses = [];
+        /** Observable sequence of position changes. */
+        this.positionChanges = this._positionChanges.asObservable();
+        this.setOrigin(connectedTo);
+    }
+    /** Ordered list of preferred positions, from most to least desirable. */
+    get positions() {
+        return this._preferredPositions;
+    }
+    /** Attaches this position strategy to an overlay. */
+    attach(overlayRef) {
+        if (this._overlayRef && overlayRef !== this._overlayRef) {
+            throw Error('This position strategy is already attached to an overlay');
+        }
+        this._validatePositions();
+        overlayRef.hostElement.classList.add(boundingBoxClass);
+        this._overlayRef = overlayRef;
+        this._boundingBox = overlayRef.hostElement;
+        this._pane = overlayRef.overlayElement;
+        this._isDisposed = false;
+        this._isInitialRender = true;
+        this._lastPosition = null;
+        this._resizeSubscription.unsubscribe();
+        this._resizeSubscription = this._viewportRuler.change().subscribe(() => {
+            // When the window is resized, we want to trigger the next reposition as if it
+            // was an initial render, in order for the strategy to pick a new optimal position,
+            // otherwise position locking will cause it to stay at the old one.
+            this._isInitialRender = true;
+            this.apply();
+        });
+    }
+    /**
+     * Updates the position of the overlay element, using whichever preferred position relative
+     * to the origin best fits on-screen.
+     *
+     * The selection of a position goes as follows:
+     *  - If any positions fit completely within the viewport as-is,
+     *      choose the first position that does so.
+     *  - If flexible dimensions are enabled and at least one satifies the given minimum width/height,
+     *      choose the position with the greatest available size modified by the positions' weight.
+     *  - If pushing is enabled, take the position that went off-screen the least and push it
+     *      on-screen.
+     *  - If none of the previous criteria were met, use the position that goes off-screen the least.
+     * @docs-private
+     */
+    apply() {
+        // We shouldn't do anything if the strategy was disposed or we're on the server.
+        if (this._isDisposed || !this._platform.isBrowser) {
+            return;
+        }
+        // If the position has been applied already (e.g. when the overlay was opened) and the
+        // consumer opted into locking in the position, re-use the old position, in order to
+        // prevent the overlay from jumping around.
+        if (!this._isInitialRender && this._positionLocked && this._lastPosition) {
+            this.reapplyLastPosition();
+            return;
+        }
+        this._clearPanelClasses();
+        this._resetOverlayElementStyles();
+        this._resetBoundingBoxStyles();
+        // We need the bounding rects for the origin and the overlay to determine how to position
+        // the overlay relative to the origin.
+        // We use the viewport rect to determine whether a position would go off-screen.
+        this._viewportRect = this._getNarrowedViewportRect();
+        this._originRect = this._getOriginRect();
+        this._overlayRect = this._pane.getBoundingClientRect();
+        const originRect = this._originRect;
+        const overlayRect = this._overlayRect;
+        const viewportRect = this._viewportRect;
+        // Positions where the overlay will fit with flexible dimensions.
+        const flexibleFits = [];
+        // Fallback if none of the preferred positions fit within the viewport.
+        let fallback;
+        // Go through each of the preferred positions looking for a good fit.
+        // If a good fit is found, it will be applied immediately.
+        for (let pos of this._preferredPositions) {
+            // Get the exact (x, y) coordinate for the point-of-origin on the origin element.
+            let originPoint = this._getOriginPoint(originRect, pos);
+            // From that point-of-origin, get the exact (x, y) coordinate for the top-left corner of the
+            // overlay in this position. We use the top-left corner for calculations and later translate
+            // this into an appropriate (top, left, bottom, right) style.
+            let overlayPoint = this._getOverlayPoint(originPoint, overlayRect, pos);
+            // Calculate how well the overlay would fit into the viewport with this point.
+            let overlayFit = this._getOverlayFit(overlayPoint, overlayRect, viewportRect, pos);
+            // If the overlay, without any further work, fits into the viewport, use this position.
+            if (overlayFit.isCompletelyWithinViewport) {
+                this._isPushed = false;
+                this._applyPosition(pos, originPoint);
+                return;
+            }
+            // If the overlay has flexible dimensions, we can use this position
+            // so long as there's enough space for the minimum dimensions.
+            if (this._canFitWithFlexibleDimensions(overlayFit, overlayPoint, viewportRect)) {
+                // Save positions where the overlay will fit with flexible dimensions. We will use these
+                // if none of the positions fit *without* flexible dimensions.
+                flexibleFits.push({
+                    position: pos,
+                    origin: originPoint,
+                    overlayRect,
+                    boundingBoxRect: this._calculateBoundingBoxRect(originPoint, pos)
+                });
+                continue;
+            }
+            // If the current preferred position does not fit on the screen, remember the position
+            // if it has more visible area on-screen than we've seen and move onto the next preferred
+            // position.
+            if (!fallback || fallback.overlayFit.visibleArea < overlayFit.visibleArea) {
+                fallback = { overlayFit, overlayPoint, originPoint, position: pos, overlayRect };
+            }
+        }
+        // If there are any positions where the overlay would fit with flexible dimensions, choose the
+        // one that has the greatest area available modified by the position's weight
+        if (flexibleFits.length) {
+            let bestFit = null;
+            let bestScore = -1;
+            for (const fit of flexibleFits) {
+                const score = fit.boundingBoxRect.width * fit.boundingBoxRect.height * (fit.position.weight || 1);
+                if (score > bestScore) {
+                    bestScore = score;
+                    bestFit = fit;
+                }
+            }
+            this._isPushed = false;
+            this._applyPosition(bestFit.position, bestFit.origin);
+            return;
+        }
+        // When none of the preferred positions fit within the viewport, take the position
+        // that went off-screen the least and attempt to push it on-screen.
+        if (this._canPush) {
+            // TODO(jelbourn): after pushing, the opening "direction" of the overlay might not make sense.
+            this._isPushed = true;
+            this._applyPosition(fallback.position, fallback.originPoint);
+            return;
+        }
+        // All options for getting the overlay within the viewport have been exhausted, so go with the
+        // position that went off-screen the least.
+        this._applyPosition(fallback.position, fallback.originPoint);
+    }
+    detach() {
+        this._clearPanelClasses();
+        this._lastPosition = null;
+        this._previousPushAmount = null;
+        this._resizeSubscription.unsubscribe();
+    }
+    /** Cleanup after the element gets destroyed. */
+    dispose() {
+        if (this._isDisposed) {
+            return;
+        }
+        // We can't use `_resetBoundingBoxStyles` here, because it resets
+        // some properties to zero, rather than removing them.
+        if (this._boundingBox) {
+            extendStyles(this._boundingBox.style, {
+                top: '',
+                left: '',
+                right: '',
+                bottom: '',
+                height: '',
+                width: '',
+                alignItems: '',
+                justifyContent: '',
+            });
+        }
+        if (this._pane) {
+            this._resetOverlayElementStyles();
+        }
+        if (this._overlayRef) {
+            this._overlayRef.hostElement.classList.remove(boundingBoxClass);
+        }
+        this.detach();
+        this._positionChanges.complete();
+        this._overlayRef = this._boundingBox = null;
+        this._isDisposed = true;
+    }
+    /**
+     * This re-aligns the overlay element with the trigger in its last calculated position,
+     * even if a position higher in the "preferred positions" list would now fit. This
+     * allows one to re-align the panel without changing the orientation of the panel.
+     */
+    reapplyLastPosition() {
+        if (!this._isDisposed && (!this._platform || this._platform.isBrowser)) {
+            this._originRect = this._getOriginRect();
+            this._overlayRect = this._pane.getBoundingClientRect();
+            this._viewportRect = this._getNarrowedViewportRect();
+            const lastPosition = this._lastPosition || this._preferredPositions[0];
+            const originPoint = this._getOriginPoint(this._originRect, lastPosition);
+            this._applyPosition(lastPosition, originPoint);
+        }
+    }
+    /**
+     * Sets the list of Scrollable containers that host the origin element so that
+     * on reposition we can evaluate if it or the overlay has been clipped or outside view. Every
+     * Scrollable must be an ancestor element of the strategy's origin element.
+     */
+    withScrollableContainers(scrollables) {
+        this._scrollables = scrollables;
+        return this;
+    }
+    /**
+     * Adds new preferred positions.
+     * @param positions List of positions options for this overlay.
+     */
+    withPositions(positions) {
+        this._preferredPositions = positions;
+        // If the last calculated position object isn't part of the positions anymore, clear
+        // it in order to avoid it being picked up if the consumer tries to re-apply.
+        if (positions.indexOf(this._lastPosition) === -1) {
+            this._lastPosition = null;
+        }
+        this._validatePositions();
+        return this;
+    }
+    /**
+     * Sets a minimum distance the overlay may be positioned to the edge of the viewport.
+     * @param margin Required margin between the overlay and the viewport edge in pixels.
+     */
+    withViewportMargin(margin) {
+        this._viewportMargin = margin;
+        return this;
+    }
+    /** Sets whether the overlay's width and height can be constrained to fit within the viewport. */
+    withFlexibleDimensions(flexibleDimensions = true) {
+        this._hasFlexibleDimensions = flexibleDimensions;
+        return this;
+    }
+    /** Sets whether the overlay can grow after the initial open via flexible width/height. */
+    withGrowAfterOpen(growAfterOpen = true) {
+        this._growAfterOpen = growAfterOpen;
+        return this;
+    }
+    /** Sets whether the overlay can be pushed on-screen if none of the provided positions fit. */
+    withPush(canPush = true) {
+        this._canPush = canPush;
+        return this;
+    }
+    /**
+     * Sets whether the overlay's position should be locked in after it is positioned
+     * initially. When an overlay is locked in, it won't attempt to reposition itself
+     * when the position is re-applied (e.g. when the user scrolls away).
+     * @param isLocked Whether the overlay should locked in.
+     */
+    withLockedPosition(isLocked = true) {
+        this._positionLocked = isLocked;
+        return this;
+    }
+    /**
+     * Sets the origin, relative to which to position the overlay.
+     * Using an element origin is useful for building components that need to be positioned
+     * relatively to a trigger (e.g. dropdown menus or tooltips), whereas using a point can be
+     * used for cases like contextual menus which open relative to the user's pointer.
+     * @param origin Reference to the new origin.
+     */
+    setOrigin(origin) {
+        this._origin = origin;
+        return this;
+    }
+    /**
+     * Sets the default offset for the overlay's connection point on the x-axis.
+     * @param offset New offset in the X axis.
+     */
+    withDefaultOffsetX(offset) {
+        this._offsetX = offset;
+        return this;
+    }
+    /**
+     * Sets the default offset for the overlay's connection point on the y-axis.
+     * @param offset New offset in the Y axis.
+     */
+    withDefaultOffsetY(offset) {
+        this._offsetY = offset;
+        return this;
+    }
+    /**
+     * Configures that the position strategy should set a `transform-origin` on some elements
+     * inside the overlay, depending on the current position that is being applied. This is
+     * useful for the cases where the origin of an animation can change depending on the
+     * alignment of the overlay.
+     * @param selector CSS selector that will be used to find the target
+     *    elements onto which to set the transform origin.
+     */
+    withTransformOriginOn(selector) {
+        this._transformOriginSelector = selector;
+        return this;
+    }
+    /**
+     * Gets the (x, y) coordinate of a connection point on the origin based on a relative position.
+     */
+    _getOriginPoint(originRect, pos) {
+        let x;
+        if (pos.originX == 'center') {
+            // Note: when centering we should always use the `left`
+            // offset, otherwise the position will be wrong in RTL.
+            x = originRect.left + (originRect.width / 2);
+        }
+        else {
+            const startX = this._isRtl() ? originRect.right : originRect.left;
+            const endX = this._isRtl() ? originRect.left : originRect.right;
+            x = pos.originX == 'start' ? startX : endX;
+        }
+        let y;
+        if (pos.originY == 'center') {
+            y = originRect.top + (originRect.height / 2);
+        }
+        else {
+            y = pos.originY == 'top' ? originRect.top : originRect.bottom;
+        }
+        return { x, y };
+    }
+    /**
+     * Gets the (x, y) coordinate of the top-left corner of the overlay given a given position and
+     * origin point to which the overlay should be connected.
+     */
+    _getOverlayPoint(originPoint, overlayRect, pos) {
+        // Calculate the (overlayStartX, overlayStartY), the start of the
+        // potential overlay position relative to the origin point.
+        let overlayStartX;
+        if (pos.overlayX == 'center') {
+            overlayStartX = -overlayRect.width / 2;
+        }
+        else if (pos.overlayX === 'start') {
+            overlayStartX = this._isRtl() ? -overlayRect.width : 0;
+        }
+        else {
+            overlayStartX = this._isRtl() ? 0 : -overlayRect.width;
+        }
+        let overlayStartY;
+        if (pos.overlayY == 'center') {
+            overlayStartY = -overlayRect.height / 2;
+        }
+        else {
+            overlayStartY = pos.overlayY == 'top' ? 0 : -overlayRect.height;
+        }
+        // The (x, y) coordinates of the overlay.
+        return {
+            x: originPoint.x + overlayStartX,
+            y: originPoint.y + overlayStartY,
+        };
+    }
+    /** Gets how well an overlay at the given point will fit within the viewport. */
+    _getOverlayFit(point, overlay, viewport, position) {
+        let { x, y } = point;
+        let offsetX = this._getOffset(position, 'x');
+        let offsetY = this._getOffset(position, 'y');
+        // Account for the offsets since they could push the overlay out of the viewport.
+        if (offsetX) {
+            x += offsetX;
+        }
+        if (offsetY) {
+            y += offsetY;
+        }
+        // How much the overlay would overflow at this position, on each side.
+        let leftOverflow = 0 - x;
+        let rightOverflow = (x + overlay.width) - viewport.width;
+        let topOverflow = 0 - y;
+        let bottomOverflow = (y + overlay.height) - viewport.height;
+        // Visible parts of the element on each axis.
+        let visibleWidth = this._subtractOverflows(overlay.width, leftOverflow, rightOverflow);
+        let visibleHeight = this._subtractOverflows(overlay.height, topOverflow, bottomOverflow);
+        let visibleArea = visibleWidth * visibleHeight;
+        return {
+            visibleArea,
+            isCompletelyWithinViewport: (overlay.width * overlay.height) === visibleArea,
+            fitsInViewportVertically: visibleHeight === overlay.height,
+            fitsInViewportHorizontally: visibleWidth == overlay.width,
+        };
+    }
+    /**
+     * Whether the overlay can fit within the viewport when it may resize either its width or height.
+     * @param fit How well the overlay fits in the viewport at some position.
+     * @param point The (x, y) coordinates of the overlat at some position.
+     * @param viewport The geometry of the viewport.
+     */
+    _canFitWithFlexibleDimensions(fit, point, viewport) {
+        if (this._hasFlexibleDimensions) {
+            const availableHeight = viewport.bottom - point.y;
+            const availableWidth = viewport.right - point.x;
+            const minHeight = getPixelValue(this._overlayRef.getConfig().minHeight);
+            const minWidth = getPixelValue(this._overlayRef.getConfig().minWidth);
+            const verticalFit = fit.fitsInViewportVertically ||
+                (minHeight != null && minHeight <= availableHeight);
+            const horizontalFit = fit.fitsInViewportHorizontally ||
+                (minWidth != null && minWidth <= availableWidth);
+            return verticalFit && horizontalFit;
+        }
+        return false;
+    }
+    /**
+     * Gets the point at which the overlay can be "pushed" on-screen. If the overlay is larger than
+     * the viewport, the top-left corner will be pushed on-screen (with overflow occuring on the
+     * right and bottom).
+     *
+     * @param start Starting point from which the overlay is pushed.
+     * @param overlay Dimensions of the overlay.
+     * @param scrollPosition Current viewport scroll position.
+     * @returns The point at which to position the overlay after pushing. This is effectively a new
+     *     originPoint.
+     */
+    _pushOverlayOnScreen(start, overlay, scrollPosition) {
+        // If the position is locked and we've pushed the overlay already, reuse the previous push
+        // amount, rather than pushing it again. If we were to continue pushing, the element would
+        // remain in the viewport, which goes against the expectations when position locking is enabled.
+        if (this._previousPushAmount && this._positionLocked) {
+            return {
+                x: start.x + this._previousPushAmount.x,
+                y: start.y + this._previousPushAmount.y
+            };
+        }
+        const viewport = this._viewportRect;
+        // Determine how much the overlay goes outside the viewport on each
+        // side, which we'll use to decide which direction to push it.
+        const overflowRight = Math.max(start.x + overlay.width - viewport.right, 0);
+        const overflowBottom = Math.max(start.y + overlay.height - viewport.bottom, 0);
+        const overflowTop = Math.max(viewport.top - scrollPosition.top - start.y, 0);
+        const overflowLeft = Math.max(viewport.left - scrollPosition.left - start.x, 0);
+        // Amount by which to push the overlay in each axis such that it remains on-screen.
+        let pushX = 0;
+        let pushY = 0;
+        // If the overlay fits completely within the bounds of the viewport, push it from whichever
+        // direction is goes off-screen. Otherwise, push the top-left corner such that its in the
+        // viewport and allow for the trailing end of the overlay to go out of bounds.
+        if (overlay.width <= viewport.width) {
+            pushX = overflowLeft || -overflowRight;
+        }
+        else {
+            pushX = start.x < this._viewportMargin ? (viewport.left - scrollPosition.left) - start.x : 0;
+        }
+        if (overlay.height <= viewport.height) {
+            pushY = overflowTop || -overflowBottom;
+        }
+        else {
+            pushY = start.y < this._viewportMargin ? (viewport.top - scrollPosition.top) - start.y : 0;
+        }
+        this._previousPushAmount = { x: pushX, y: pushY };
+        return {
+            x: start.x + pushX,
+            y: start.y + pushY,
+        };
+    }
+    /**
+     * Applies a computed position to the overlay and emits a position change.
+     * @param position The position preference
+     * @param originPoint The point on the origin element where the overlay is connected.
+     */
+    _applyPosition(position, originPoint) {
+        this._setTransformOrigin(position);
+        this._setOverlayElementStyles(originPoint, position);
+        this._setBoundingBoxStyles(originPoint, position);
+        if (position.panelClass) {
+            this._addPanelClasses(position.panelClass);
+        }
+        // Save the last connected position in case the position needs to be re-calculated.
+        this._lastPosition = position;
+        // Notify that the position has been changed along with its change properties.
+        // We only emit if we've got any subscriptions, because the scroll visibility
+        // calculcations can be somewhat expensive.
+        if (this._positionChanges.observers.length) {
+            const scrollableViewProperties = this._getScrollVisibility();
+            const changeEvent = new ConnectedOverlayPositionChange(position, scrollableViewProperties);
+            this._positionChanges.next(changeEvent);
+        }
+        this._isInitialRender = false;
+    }
+    /** Sets the transform origin based on the configured selector and the passed-in position.  */
+    _setTransformOrigin(position) {
+        if (!this._transformOriginSelector) {
+            return;
+        }
+        const elements = this._boundingBox.querySelectorAll(this._transformOriginSelector);
+        let xOrigin;
+        let yOrigin = position.overlayY;
+        if (position.overlayX === 'center') {
+            xOrigin = 'center';
+        }
+        else if (this._isRtl()) {
+            xOrigin = position.overlayX === 'start' ? 'right' : 'left';
+        }
+        else {
+            xOrigin = position.overlayX === 'start' ? 'left' : 'right';
+        }
+        for (let i = 0; i < elements.length; i++) {
+            elements[i].style.transformOrigin = `${xOrigin} ${yOrigin}`;
+        }
+    }
+    /**
+     * Gets the position and size of the overlay's sizing container.
+     *
+     * This method does no measuring and applies no styles so that we can cheaply compute the
+     * bounds for all positions and choose the best fit based on these results.
+     */
+    _calculateBoundingBoxRect(origin, position) {
+        const viewport = this._viewportRect;
+        const isRtl = this._isRtl();
+        let height, top, bottom;
+        if (position.overlayY === 'top') {
+            // Overlay is opening "downward" and thus is bound by the bottom viewport edge.
+            top = origin.y;
+            height = viewport.height - top + this._viewportMargin;
+        }
+        else if (position.overlayY === 'bottom') {
+            // Overlay is opening "upward" and thus is bound by the top viewport edge. We need to add
+            // the viewport margin back in, because the viewport rect is narrowed down to remove the
+            // margin, whereas the `origin` position is calculated based on its `ClientRect`.
+            bottom = viewport.height - origin.y + this._viewportMargin * 2;
+            height = viewport.height - bottom + this._viewportMargin;
+        }
+        else {
+            // If neither top nor bottom, it means that the overlay is vertically centered on the
+            // origin point. Note that we want the position relative to the viewport, rather than
+            // the page, which is why we don't use something like `viewport.bottom - origin.y` and
+            // `origin.y - viewport.top`.
+            const smallestDistanceToViewportEdge = Math.min(viewport.bottom - origin.y + viewport.top, origin.y);
+            const previousHeight = this._lastBoundingBoxSize.height;
+            height = smallestDistanceToViewportEdge * 2;
+            top = origin.y - smallestDistanceToViewportEdge;
+            if (height > previousHeight && !this._isInitialRender && !this._growAfterOpen) {
+                top = origin.y - (previousHeight / 2);
+            }
+        }
+        // The overlay is opening 'right-ward' (the content flows to the right).
+        const isBoundedByRightViewportEdge = (position.overlayX === 'start' && !isRtl) ||
+            (position.overlayX === 'end' && isRtl);
+        // The overlay is opening 'left-ward' (the content flows to the left).
+        const isBoundedByLeftViewportEdge = (position.overlayX === 'end' && !isRtl) ||
+            (position.overlayX === 'start' && isRtl);
+        let width, left, right;
+        if (isBoundedByLeftViewportEdge) {
+            right = viewport.width - origin.x + this._viewportMargin;
+            width = origin.x - this._viewportMargin;
+        }
+        else if (isBoundedByRightViewportEdge) {
+            left = origin.x;
+            width = viewport.right - origin.x;
+        }
+        else {
+            // If neither start nor end, it means that the overlay is horizontally centered on the
+            // origin point. Note that we want the position relative to the viewport, rather than
+            // the page, which is why we don't use something like `viewport.right - origin.x` and
+            // `origin.x - viewport.left`.
+            const smallestDistanceToViewportEdge = Math.min(viewport.right - origin.x + viewport.left, origin.x);
+            const previousWidth = this._lastBoundingBoxSize.width;
+            width = smallestDistanceToViewportEdge * 2;
+            left = origin.x - smallestDistanceToViewportEdge;
+            if (width > previousWidth && !this._isInitialRender && !this._growAfterOpen) {
+                left = origin.x - (previousWidth / 2);
+            }
+        }
+        return { top: top, left: left, bottom: bottom, right: right, width, height };
+    }
+    /**
+     * Sets the position and size of the overlay's sizing wrapper. The wrapper is positioned on the
+     * origin's connection point and stetches to the bounds of the viewport.
+     *
+     * @param origin The point on the origin element where the overlay is connected.
+     * @param position The position preference
+     */
+    _setBoundingBoxStyles(origin, position) {
+        const boundingBoxRect = this._calculateBoundingBoxRect(origin, position);
+        // It's weird if the overlay *grows* while scrolling, so we take the last size into account
+        // when applying a new size.
+        if (!this._isInitialRender && !this._growAfterOpen) {
+            boundingBoxRect.height = Math.min(boundingBoxRect.height, this._lastBoundingBoxSize.height);
+            boundingBoxRect.width = Math.min(boundingBoxRect.width, this._lastBoundingBoxSize.width);
+        }
+        const styles = {};
+        if (this._hasExactPosition()) {
+            styles.top = styles.left = '0';
+            styles.bottom = styles.right = styles.maxHeight = styles.maxWidth = '';
+            styles.width = styles.height = '100%';
+        }
+        else {
+            const maxHeight = this._overlayRef.getConfig().maxHeight;
+            const maxWidth = this._overlayRef.getConfig().maxWidth;
+            styles.height = Object(_angular_cdk_coercion__WEBPACK_IMPORTED_MODULE_5__["coerceCssPixelValue"])(boundingBoxRect.height);
+            styles.top = Object(_angular_cdk_coercion__WEBPACK_IMPORTED_MODULE_5__["coerceCssPixelValue"])(boundingBoxRect.top);
+            styles.bottom = Object(_angular_cdk_coercion__WEBPACK_IMPORTED_MODULE_5__["coerceCssPixelValue"])(boundingBoxRect.bottom);
+            styles.width = Object(_angular_cdk_coercion__WEBPACK_IMPORTED_MODULE_5__["coerceCssPixelValue"])(boundingBoxRect.width);
+            styles.left = Object(_angular_cdk_coercion__WEBPACK_IMPORTED_MODULE_5__["coerceCssPixelValue"])(boundingBoxRect.left);
+            styles.right = Object(_angular_cdk_coercion__WEBPACK_IMPORTED_MODULE_5__["coerceCssPixelValue"])(boundingBoxRect.right);
+            // Push the pane content towards the proper direction.
+            if (position.overlayX === 'center') {
+                styles.alignItems = 'center';
+            }
+            else {
+                styles.alignItems = position.overlayX === 'end' ? 'flex-end' : 'flex-start';
+            }
+            if (position.overlayY === 'center') {
+                styles.justifyContent = 'center';
+            }
+            else {
+                styles.justifyContent = position.overlayY === 'bottom' ? 'flex-end' : 'flex-start';
+            }
+            if (maxHeight) {
+                styles.maxHeight = Object(_angular_cdk_coercion__WEBPACK_IMPORTED_MODULE_5__["coerceCssPixelValue"])(maxHeight);
+            }
+            if (maxWidth) {
+                styles.maxWidth = Object(_angular_cdk_coercion__WEBPACK_IMPORTED_MODULE_5__["coerceCssPixelValue"])(maxWidth);
+            }
+        }
+        this._lastBoundingBoxSize = boundingBoxRect;
+        extendStyles(this._boundingBox.style, styles);
+    }
+    /** Resets the styles for the bounding box so that a new positioning can be computed. */
+    _resetBoundingBoxStyles() {
+        extendStyles(this._boundingBox.style, {
+            top: '0',
+            left: '0',
+            right: '0',
+            bottom: '0',
+            height: '',
+            width: '',
+            alignItems: '',
+            justifyContent: '',
+        });
+    }
+    /** Resets the styles for the overlay pane so that a new positioning can be computed. */
+    _resetOverlayElementStyles() {
+        extendStyles(this._pane.style, {
+            top: '',
+            left: '',
+            bottom: '',
+            right: '',
+            position: '',
+            transform: '',
+        });
+    }
+    /** Sets positioning styles to the overlay element. */
+    _setOverlayElementStyles(originPoint, position) {
+        const styles = {};
+        const hasExactPosition = this._hasExactPosition();
+        const hasFlexibleDimensions = this._hasFlexibleDimensions;
+        const config = this._overlayRef.getConfig();
+        if (hasExactPosition) {
+            const scrollPosition = this._viewportRuler.getViewportScrollPosition();
+            extendStyles(styles, this._getExactOverlayY(position, originPoint, scrollPosition));
+            extendStyles(styles, this._getExactOverlayX(position, originPoint, scrollPosition));
+        }
+        else {
+            styles.position = 'static';
+        }
+        // Use a transform to apply the offsets. We do this because the `center` positions rely on
+        // being in the normal flex flow and setting a `top` / `left` at all will completely throw
+        // off the position. We also can't use margins, because they won't have an effect in some
+        // cases where the element doesn't have anything to "push off of". Finally, this works
+        // better both with flexible and non-flexible positioning.
+        let transformString = '';
+        let offsetX = this._getOffset(position, 'x');
+        let offsetY = this._getOffset(position, 'y');
+        if (offsetX) {
+            transformString += `translateX(${offsetX}px) `;
+        }
+        if (offsetY) {
+            transformString += `translateY(${offsetY}px)`;
+        }
+        styles.transform = transformString.trim();
+        // If a maxWidth or maxHeight is specified on the overlay, we remove them. We do this because
+        // we need these values to both be set to "100%" for the automatic flexible sizing to work.
+        // The maxHeight and maxWidth are set on the boundingBox in order to enforce the constraint.
+        // Note that this doesn't apply when we have an exact position, in which case we do want to
+        // apply them because they'll be cleared from the bounding box.
+        if (config.maxHeight) {
+            if (hasExactPosition) {
+                styles.maxHeight = Object(_angular_cdk_coercion__WEBPACK_IMPORTED_MODULE_5__["coerceCssPixelValue"])(config.maxHeight);
+            }
+            else if (hasFlexibleDimensions) {
+                styles.maxHeight = '';
+            }
+        }
+        if (config.maxWidth) {
+            if (hasExactPosition) {
+                styles.maxWidth = Object(_angular_cdk_coercion__WEBPACK_IMPORTED_MODULE_5__["coerceCssPixelValue"])(config.maxWidth);
+            }
+            else if (hasFlexibleDimensions) {
+                styles.maxWidth = '';
+            }
+        }
+        extendStyles(this._pane.style, styles);
+    }
+    /** Gets the exact top/bottom for the overlay when not using flexible sizing or when pushing. */
+    _getExactOverlayY(position, originPoint, scrollPosition) {
+        // Reset any existing styles. This is necessary in case the
+        // preferred position has changed since the last `apply`.
+        let styles = { top: '', bottom: '' };
+        let overlayPoint = this._getOverlayPoint(originPoint, this._overlayRect, position);
+        if (this._isPushed) {
+            overlayPoint = this._pushOverlayOnScreen(overlayPoint, this._overlayRect, scrollPosition);
+        }
+        let virtualKeyboardOffset = this._overlayContainer.getContainerElement().getBoundingClientRect().top;
+        // Normally this would be zero, however when the overlay is attached to an input (e.g. in an
+        // autocomplete), mobile browsers will shift everything in order to put the input in the middle
+        // of the screen and to make space for the virtual keyboard. We need to account for this offset,
+        // otherwise our positioning will be thrown off.
+        overlayPoint.y -= virtualKeyboardOffset;
+        // We want to set either `top` or `bottom` based on whether the overlay wants to appear
+        // above or below the origin and the direction in which the element will expand.
+        if (position.overlayY === 'bottom') {
+            // When using `bottom`, we adjust the y position such that it is the distance
+            // from the bottom of the viewport rather than the top.
+            const documentHeight = this._document.documentElement.clientHeight;
+            styles.bottom = `${documentHeight - (overlayPoint.y + this._overlayRect.height)}px`;
+        }
+        else {
+            styles.top = Object(_angular_cdk_coercion__WEBPACK_IMPORTED_MODULE_5__["coerceCssPixelValue"])(overlayPoint.y);
+        }
+        return styles;
+    }
+    /** Gets the exact left/right for the overlay when not using flexible sizing or when pushing. */
+    _getExactOverlayX(position, originPoint, scrollPosition) {
+        // Reset any existing styles. This is necessary in case the preferred position has
+        // changed since the last `apply`.
+        let styles = { left: '', right: '' };
+        let overlayPoint = this._getOverlayPoint(originPoint, this._overlayRect, position);
+        if (this._isPushed) {
+            overlayPoint = this._pushOverlayOnScreen(overlayPoint, this._overlayRect, scrollPosition);
+        }
+        // We want to set either `left` or `right` based on whether the overlay wants to appear "before"
+        // or "after" the origin, which determines the direction in which the element will expand.
+        // For the horizontal axis, the meaning of "before" and "after" change based on whether the
+        // page is in RTL or LTR.
+        let horizontalStyleProperty;
+        if (this._isRtl()) {
+            horizontalStyleProperty = position.overlayX === 'end' ? 'left' : 'right';
+        }
+        else {
+            horizontalStyleProperty = position.overlayX === 'end' ? 'right' : 'left';
+        }
+        // When we're setting `right`, we adjust the x position such that it is the distance
+        // from the right edge of the viewport rather than the left edge.
+        if (horizontalStyleProperty === 'right') {
+            const documentWidth = this._document.documentElement.clientWidth;
+            styles.right = `${documentWidth - (overlayPoint.x + this._overlayRect.width)}px`;
+        }
+        else {
+            styles.left = Object(_angular_cdk_coercion__WEBPACK_IMPORTED_MODULE_5__["coerceCssPixelValue"])(overlayPoint.x);
+        }
+        return styles;
+    }
+    /**
+     * Gets the view properties of the trigger and overlay, including whether they are clipped
+     * or completely outside the view of any of the strategy's scrollables.
+     */
+    _getScrollVisibility() {
+        // Note: needs fresh rects since the position could've changed.
+        const originBounds = this._getOriginRect();
+        const overlayBounds = this._pane.getBoundingClientRect();
+        // TODO(jelbourn): instead of needing all of the client rects for these scrolling containers
+        // every time, we should be able to use the scrollTop of the containers if the size of those
+        // containers hasn't changed.
+        const scrollContainerBounds = this._scrollables.map(scrollable => {
+            return scrollable.getElementRef().nativeElement.getBoundingClientRect();
+        });
+        return {
+            isOriginClipped: isElementClippedByScrolling(originBounds, scrollContainerBounds),
+            isOriginOutsideView: isElementScrolledOutsideView(originBounds, scrollContainerBounds),
+            isOverlayClipped: isElementClippedByScrolling(overlayBounds, scrollContainerBounds),
+            isOverlayOutsideView: isElementScrolledOutsideView(overlayBounds, scrollContainerBounds),
+        };
+    }
+    /** Subtracts the amount that an element is overflowing on an axis from its length. */
+    _subtractOverflows(length, ...overflows) {
+        return overflows.reduce((currentValue, currentOverflow) => {
+            return currentValue - Math.max(currentOverflow, 0);
+        }, length);
+    }
+    /** Narrows the given viewport rect by the current _viewportMargin. */
+    _getNarrowedViewportRect() {
+        // We recalculate the viewport rect here ourselves, rather than using the ViewportRuler,
+        // because we want to use the `clientWidth` and `clientHeight` as the base. The difference
+        // being that the client properties don't include the scrollbar, as opposed to `innerWidth`
+        // and `innerHeight` that do. This is necessary, because the overlay container uses
+        // 100% `width` and `height` which don't include the scrollbar either.
+        const width = this._document.documentElement.clientWidth;
+        const height = this._document.documentElement.clientHeight;
+        const scrollPosition = this._viewportRuler.getViewportScrollPosition();
+        return {
+            top: scrollPosition.top + this._viewportMargin,
+            left: scrollPosition.left + this._viewportMargin,
+            right: scrollPosition.left + width - this._viewportMargin,
+            bottom: scrollPosition.top + height - this._viewportMargin,
+            width: width - (2 * this._viewportMargin),
+            height: height - (2 * this._viewportMargin),
+        };
+    }
+    /** Whether the we're dealing with an RTL context */
+    _isRtl() {
+        return this._overlayRef.getDirection() === 'rtl';
+    }
+    /** Determines whether the overlay uses exact or flexible positioning. */
+    _hasExactPosition() {
+        return !this._hasFlexibleDimensions || this._isPushed;
+    }
+    /** Retrieves the offset of a position along the x or y axis. */
+    _getOffset(position, axis) {
+        if (axis === 'x') {
+            // We don't do something like `position['offset' + axis]` in
+            // order to avoid breking minifiers that rename properties.
+            return position.offsetX == null ? this._offsetX : position.offsetX;
+        }
+        return position.offsetY == null ? this._offsetY : position.offsetY;
+    }
+    /** Validates that the current position match the expected values. */
+    _validatePositions() {
+        if (!this._preferredPositions.length) {
+            throw Error('FlexibleConnectedPositionStrategy: At least one position is required.');
+        }
+        // TODO(crisbeto): remove these once Angular's template type
+        // checking is advanced enough to catch these cases.
+        this._preferredPositions.forEach(pair => {
+            validateHorizontalPosition('originX', pair.originX);
+            validateVerticalPosition('originY', pair.originY);
+            validateHorizontalPosition('overlayX', pair.overlayX);
+            validateVerticalPosition('overlayY', pair.overlayY);
+        });
+    }
+    /** Adds a single CSS class or an array of classes on the overlay panel. */
+    _addPanelClasses(cssClasses) {
+        if (this._pane) {
+            Object(_angular_cdk_coercion__WEBPACK_IMPORTED_MODULE_5__["coerceArray"])(cssClasses).forEach(cssClass => {
+                if (cssClass !== '' && this._appliedPanelClasses.indexOf(cssClass) === -1) {
+                    this._appliedPanelClasses.push(cssClass);
+                    this._pane.classList.add(cssClass);
+                }
+            });
+        }
+    }
+    /** Clears the classes that the position strategy has applied from the overlay panel. */
+    _clearPanelClasses() {
+        if (this._pane) {
+            this._appliedPanelClasses.forEach(cssClass => {
+                this._pane.classList.remove(cssClass);
+            });
+            this._appliedPanelClasses = [];
+        }
+    }
+    /** Returns the ClientRect of the current origin. */
+    _getOriginRect() {
+        const origin = this._origin;
+        if (origin instanceof _angular_core__WEBPACK_IMPORTED_MODULE_1__["ElementRef"]) {
+            return origin.nativeElement.getBoundingClientRect();
+        }
+        // Check for Element so SVG elements are also supported.
+        if (origin instanceof Element) {
+            return origin.getBoundingClientRect();
+        }
+        const width = origin.width || 0;
+        const height = origin.height || 0;
+        // If the origin is a point, return a client rect as if it was a 0x0 element at the point.
+        return {
+            top: origin.y,
+            bottom: origin.y + height,
+            left: origin.x,
+            right: origin.x + width,
+            height,
+            width
+        };
+    }
+}
+/** Shallow-extends a stylesheet object with another stylesheet object. */
+function extendStyles(destination, source) {
+    for (let key in source) {
+        if (source.hasOwnProperty(key)) {
+            destination[key] = source[key];
+        }
+    }
+    return destination;
+}
+/**
+ * Extracts the pixel value as a number from a value, if it's a number
+ * or a CSS pixel string (e.g. `1337px`). Otherwise returns null.
+ */
+function getPixelValue(input) {
+    if (typeof input !== 'number' && input != null) {
+        const [value, units] = input.split(cssUnitPattern);
+        return (!units || units === 'px') ? parseFloat(value) : null;
+    }
+    return input || null;
+}
+
+/**
+ * @license
+ * Copyright Google LLC All Rights Reserved.
+ *
+ * Use of this source code is governed by an MIT-style license that can be
+ * found in the LICENSE file at https://angular.io/license
+ */
+/**
+ * A strategy for positioning overlays. Using this strategy, an overlay is given an
+ * implicit position relative to some origin element. The relative position is defined in terms of
+ * a point on the origin element that is connected to a point on the overlay element. For example,
+ * a basic dropdown is connecting the bottom-left corner of the origin to the top-left corner
+ * of the overlay.
+ * @deprecated Use `FlexibleConnectedPositionStrategy` instead.
+ * @breaking-change 8.0.0
+ */
+class ConnectedPositionStrategy {
+    constructor(originPos, overlayPos, connectedTo, viewportRuler, document, platform, overlayContainer) {
+        /** Ordered list of preferred positions, from most to least desirable. */
+        this._preferredPositions = [];
+        // Since the `ConnectedPositionStrategy` is deprecated and we don't want to maintain
+        // the extra logic, we create an instance of the positioning strategy that has some
+        // defaults that make it behave as the old position strategy and to which we'll
+        // proxy all of the API calls.
+        this._positionStrategy = new FlexibleConnectedPositionStrategy(connectedTo, viewportRuler, document, platform, overlayContainer)
+            .withFlexibleDimensions(false)
+            .withPush(false)
+            .withViewportMargin(0);
+        this.withFallbackPosition(originPos, overlayPos);
+    }
+    /** Whether the we're dealing with an RTL context */
+    get _isRtl() {
+        return this._overlayRef.getDirection() === 'rtl';
+    }
+    /** Emits an event when the connection point changes. */
+    get onPositionChange() {
+        return this._positionStrategy.positionChanges;
+    }
+    /** Ordered list of preferred positions, from most to least desirable. */
+    get positions() {
+        return this._preferredPositions;
+    }
+    /** Attach this position strategy to an overlay. */
+    attach(overlayRef) {
+        this._overlayRef = overlayRef;
+        this._positionStrategy.attach(overlayRef);
+        if (this._direction) {
+            overlayRef.setDirection(this._direction);
+            this._direction = null;
+        }
+    }
+    /** Disposes all resources used by the position strategy. */
+    dispose() {
+        this._positionStrategy.dispose();
+    }
+    /** @docs-private */
+    detach() {
+        this._positionStrategy.detach();
+    }
+    /**
+     * Updates the position of the overlay element, using whichever preferred position relative
+     * to the origin fits on-screen.
+     * @docs-private
+     */
+    apply() {
+        this._positionStrategy.apply();
+    }
+    /**
+     * Re-positions the overlay element with the trigger in its last calculated position,
+     * even if a position higher in the "preferred positions" list would now fit. This
+     * allows one to re-align the panel without changing the orientation of the panel.
+     */
+    recalculateLastPosition() {
+        this._positionStrategy.reapplyLastPosition();
+    }
+    /**
+     * Sets the list of Scrollable containers that host the origin element so that
+     * on reposition we can evaluate if it or the overlay has been clipped or outside view. Every
+     * Scrollable must be an ancestor element of the strategy's origin element.
+     */
+    withScrollableContainers(scrollables) {
+        this._positionStrategy.withScrollableContainers(scrollables);
+    }
+    /**
+     * Adds a new preferred fallback position.
+     * @param originPos
+     * @param overlayPos
+     */
+    withFallbackPosition(originPos, overlayPos, offsetX, offsetY) {
+        const position = new ConnectionPositionPair(originPos, overlayPos, offsetX, offsetY);
+        this._preferredPositions.push(position);
+        this._positionStrategy.withPositions(this._preferredPositions);
+        return this;
+    }
+    /**
+     * Sets the layout direction so the overlay's position can be adjusted to match.
+     * @param dir New layout direction.
+     */
+    withDirection(dir) {
+        // Since the direction might be declared before the strategy is attached,
+        // we save the value in a temporary property and we'll transfer it to the
+        // overlay ref on attachment.
+        if (this._overlayRef) {
+            this._overlayRef.setDirection(dir);
+        }
+        else {
+            this._direction = dir;
+        }
+        return this;
+    }
+    /**
+     * Sets an offset for the overlay's connection point on the x-axis
+     * @param offset New offset in the X axis.
+     */
+    withOffsetX(offset) {
+        this._positionStrategy.withDefaultOffsetX(offset);
+        return this;
+    }
+    /**
+     * Sets an offset for the overlay's connection point on the y-axis
+     * @param  offset New offset in the Y axis.
+     */
+    withOffsetY(offset) {
+        this._positionStrategy.withDefaultOffsetY(offset);
+        return this;
+    }
+    /**
+     * Sets whether the overlay's position should be locked in after it is positioned
+     * initially. When an overlay is locked in, it won't attempt to reposition itself
+     * when the position is re-applied (e.g. when the user scrolls away).
+     * @param isLocked Whether the overlay should locked in.
+     */
+    withLockedPosition(isLocked) {
+        this._positionStrategy.withLockedPosition(isLocked);
+        return this;
+    }
+    /**
+     * Overwrites the current set of positions with an array of new ones.
+     * @param positions Position pairs to be set on the strategy.
+     */
+    withPositions(positions) {
+        this._preferredPositions = positions.slice();
+        this._positionStrategy.withPositions(this._preferredPositions);
+        return this;
+    }
+    /**
+     * Sets the origin element, relative to which to position the overlay.
+     * @param origin Reference to the new origin element.
+     */
+    setOrigin(origin) {
+        this._positionStrategy.setOrigin(origin);
+        return this;
+    }
+}
+
+/**
+ * @license
+ * Copyright Google LLC All Rights Reserved.
+ *
+ * Use of this source code is governed by an MIT-style license that can be
+ * found in the LICENSE file at https://angular.io/license
+ */
+/** Class to be added to the overlay pane wrapper. */
+const wrapperClass = 'cdk-global-overlay-wrapper';
+/**
+ * A strategy for positioning overlays. Using this strategy, an overlay is given an
+ * explicit position relative to the browser's viewport. We use flexbox, instead of
+ * transforms, in order to avoid issues with subpixel rendering which can cause the
+ * element to become blurry.
+ */
+class GlobalPositionStrategy {
+    constructor() {
+        this._cssPosition = 'static';
+        this._topOffset = '';
+        this._bottomOffset = '';
+        this._leftOffset = '';
+        this._rightOffset = '';
+        this._alignItems = '';
+        this._justifyContent = '';
+        this._width = '';
+        this._height = '';
+    }
+    attach(overlayRef) {
+        const config = overlayRef.getConfig();
+        this._overlayRef = overlayRef;
+        if (this._width && !config.width) {
+            overlayRef.updateSize({ width: this._width });
+        }
+        if (this._height && !config.height) {
+            overlayRef.updateSize({ height: this._height });
+        }
+        overlayRef.hostElement.classList.add(wrapperClass);
+        this._isDisposed = false;
+    }
+    /**
+     * Sets the top position of the overlay. Clears any previously set vertical position.
+     * @param value New top offset.
+     */
+    top(value = '') {
+        this._bottomOffset = '';
+        this._topOffset = value;
+        this._alignItems = 'flex-start';
+        return this;
+    }
+    /**
+     * Sets the left position of the overlay. Clears any previously set horizontal position.
+     * @param value New left offset.
+     */
+    left(value = '') {
+        this._rightOffset = '';
+        this._leftOffset = value;
+        this._justifyContent = 'flex-start';
+        return this;
+    }
+    /**
+     * Sets the bottom position of the overlay. Clears any previously set vertical position.
+     * @param value New bottom offset.
+     */
+    bottom(value = '') {
+        this._topOffset = '';
+        this._bottomOffset = value;
+        this._alignItems = 'flex-end';
+        return this;
+    }
+    /**
+     * Sets the right position of the overlay. Clears any previously set horizontal position.
+     * @param value New right offset.
+     */
+    right(value = '') {
+        this._leftOffset = '';
+        this._rightOffset = value;
+        this._justifyContent = 'flex-end';
+        return this;
+    }
+    /**
+     * Sets the overlay width and clears any previously set width.
+     * @param value New width for the overlay
+     * @deprecated Pass the `width` through the `OverlayConfig`.
+     * @breaking-change 8.0.0
+     */
+    width(value = '') {
+        if (this._overlayRef) {
+            this._overlayRef.updateSize({ width: value });
+        }
+        else {
+            this._width = value;
+        }
+        return this;
+    }
+    /**
+     * Sets the overlay height and clears any previously set height.
+     * @param value New height for the overlay
+     * @deprecated Pass the `height` through the `OverlayConfig`.
+     * @breaking-change 8.0.0
+     */
+    height(value = '') {
+        if (this._overlayRef) {
+            this._overlayRef.updateSize({ height: value });
+        }
+        else {
+            this._height = value;
+        }
+        return this;
+    }
+    /**
+     * Centers the overlay horizontally with an optional offset.
+     * Clears any previously set horizontal position.
+     *
+     * @param offset Overlay offset from the horizontal center.
+     */
+    centerHorizontally(offset = '') {
+        this.left(offset);
+        this._justifyContent = 'center';
+        return this;
+    }
+    /**
+     * Centers the overlay vertically with an optional offset.
+     * Clears any previously set vertical position.
+     *
+     * @param offset Overlay offset from the vertical center.
+     */
+    centerVertically(offset = '') {
+        this.top(offset);
+        this._alignItems = 'center';
+        return this;
+    }
+    /**
+     * Apply the position to the element.
+     * @docs-private
+     */
+    apply() {
+        // Since the overlay ref applies the strategy asynchronously, it could
+        // have been disposed before it ends up being applied. If that is the
+        // case, we shouldn't do anything.
+        if (!this._overlayRef || !this._overlayRef.hasAttached()) {
+            return;
+        }
+        const styles = this._overlayRef.overlayElement.style;
+        const parentStyles = this._overlayRef.hostElement.style;
+        const config = this._overlayRef.getConfig();
+        const { width, height, maxWidth, maxHeight } = config;
+        const shouldBeFlushHorizontally = (width === '100%' || width === '100vw') &&
+            (!maxWidth || maxWidth === '100%' || maxWidth === '100vw');
+        const shouldBeFlushVertically = (height === '100%' || height === '100vh') &&
+            (!maxHeight || maxHeight === '100%' || maxHeight === '100vh');
+        styles.position = this._cssPosition;
+        styles.marginLeft = shouldBeFlushHorizontally ? '0' : this._leftOffset;
+        styles.marginTop = shouldBeFlushVertically ? '0' : this._topOffset;
+        styles.marginBottom = this._bottomOffset;
+        styles.marginRight = this._rightOffset;
+        if (shouldBeFlushHorizontally) {
+            parentStyles.justifyContent = 'flex-start';
+        }
+        else if (this._justifyContent === 'center') {
+            parentStyles.justifyContent = 'center';
+        }
+        else if (this._overlayRef.getConfig().direction === 'rtl') {
+            // In RTL the browser will invert `flex-start` and `flex-end` automatically, but we
+            // don't want that because our positioning is explicitly `left` and `right`, hence
+            // why we do another inversion to ensure that the overlay stays in the same position.
+            // TODO: reconsider this if we add `start` and `end` methods.
+            if (this._justifyContent === 'flex-start') {
+                parentStyles.justifyContent = 'flex-end';
+            }
+            else if (this._justifyContent === 'flex-end') {
+                parentStyles.justifyContent = 'flex-start';
+            }
+        }
+        else {
+            parentStyles.justifyContent = this._justifyContent;
+        }
+        parentStyles.alignItems = shouldBeFlushVertically ? 'flex-start' : this._alignItems;
+    }
+    /**
+     * Cleans up the DOM changes from the position strategy.
+     * @docs-private
+     */
+    dispose() {
+        if (this._isDisposed || !this._overlayRef) {
+            return;
+        }
+        const styles = this._overlayRef.overlayElement.style;
+        const parent = this._overlayRef.hostElement;
+        const parentStyles = parent.style;
+        parent.classList.remove(wrapperClass);
+        parentStyles.justifyContent = parentStyles.alignItems = styles.marginTop =
+            styles.marginBottom = styles.marginLeft = styles.marginRight = styles.position = '';
+        this._overlayRef = null;
+        this._isDisposed = true;
+    }
+}
+
+/**
+ * @license
+ * Copyright Google LLC All Rights Reserved.
+ *
+ * Use of this source code is governed by an MIT-style license that can be
+ * found in the LICENSE file at https://angular.io/license
+ */
+/** Builder for overlay position strategy. */
+class OverlayPositionBuilder {
+    constructor(_viewportRuler, _document, _platform, _overlayContainer) {
+        this._viewportRuler = _viewportRuler;
+        this._document = _document;
+        this._platform = _platform;
+        this._overlayContainer = _overlayContainer;
+    }
+    /**
+     * Creates a global position strategy.
+     */
+    global() {
+        return new GlobalPositionStrategy();
+    }
+    /**
+     * Creates a relative position strategy.
+     * @param elementRef
+     * @param originPos
+     * @param overlayPos
+     * @deprecated Use `flexibleConnectedTo` instead.
+     * @breaking-change 8.0.0
+     */
+    connectedTo(elementRef, originPos, overlayPos) {
+        return new ConnectedPositionStrategy(originPos, overlayPos, elementRef, this._viewportRuler, this._document, this._platform, this._overlayContainer);
+    }
+    /**
+     * Creates a flexible position strategy.
+     * @param origin Origin relative to which to position the overlay.
+     */
+    flexibleConnectedTo(origin) {
+        return new FlexibleConnectedPositionStrategy(origin, this._viewportRuler, this._document, this._platform, this._overlayContainer);
+    }
+}
+OverlayPositionBuilder.ɵfac = function OverlayPositionBuilder_Factory(t) { return new (t || OverlayPositionBuilder)(_angular_core__WEBPACK_IMPORTED_MODULE_1__["ɵɵinject"](_angular_cdk_scrolling__WEBPACK_IMPORTED_MODULE_0__["ViewportRuler"]), _angular_core__WEBPACK_IMPORTED_MODULE_1__["ɵɵinject"](_angular_common__WEBPACK_IMPORTED_MODULE_4__["DOCUMENT"]), _angular_core__WEBPACK_IMPORTED_MODULE_1__["ɵɵinject"](_angular_cdk_platform__WEBPACK_IMPORTED_MODULE_2__["Platform"]), _angular_core__WEBPACK_IMPORTED_MODULE_1__["ɵɵinject"](OverlayContainer)); };
+OverlayPositionBuilder.ɵprov = Object(_angular_core__WEBPACK_IMPORTED_MODULE_1__["ɵɵdefineInjectable"])({ factory: function OverlayPositionBuilder_Factory() { return new OverlayPositionBuilder(Object(_angular_core__WEBPACK_IMPORTED_MODULE_1__["ɵɵinject"])(_angular_cdk_scrolling__WEBPACK_IMPORTED_MODULE_0__["ViewportRuler"]), Object(_angular_core__WEBPACK_IMPORTED_MODULE_1__["ɵɵinject"])(_angular_common__WEBPACK_IMPORTED_MODULE_4__["DOCUMENT"]), Object(_angular_core__WEBPACK_IMPORTED_MODULE_1__["ɵɵinject"])(_angular_cdk_platform__WEBPACK_IMPORTED_MODULE_2__["Platform"]), Object(_angular_core__WEBPACK_IMPORTED_MODULE_1__["ɵɵinject"])(OverlayContainer)); }, token: OverlayPositionBuilder, providedIn: "root" });
+OverlayPositionBuilder.ctorParameters = () => [
+    { type: _angular_cdk_scrolling__WEBPACK_IMPORTED_MODULE_0__["ViewportRuler"] },
+    { type: undefined, decorators: [{ type: _angular_core__WEBPACK_IMPORTED_MODULE_1__["Inject"], args: [_angular_common__WEBPACK_IMPORTED_MODULE_4__["DOCUMENT"],] }] },
+    { type: _angular_cdk_platform__WEBPACK_IMPORTED_MODULE_2__["Platform"] },
+    { type: OverlayContainer }
+];
+/*@__PURE__*/ (function () { _angular_core__WEBPACK_IMPORTED_MODULE_1__["ɵsetClassMetadata"](OverlayPositionBuilder, [{
+        type: _angular_core__WEBPACK_IMPORTED_MODULE_1__["Injectable"],
+        args: [{ providedIn: 'root' }]
+    }], function () { return [{ type: _angular_cdk_scrolling__WEBPACK_IMPORTED_MODULE_0__["ViewportRuler"] }, { type: undefined, decorators: [{
+                type: _angular_core__WEBPACK_IMPORTED_MODULE_1__["Inject"],
+                args: [_angular_common__WEBPACK_IMPORTED_MODULE_4__["DOCUMENT"]]
+            }] }, { type: _angular_cdk_platform__WEBPACK_IMPORTED_MODULE_2__["Platform"] }, { type: OverlayContainer }]; }, null); })();
+
+/**
+ * @license
+ * Copyright Google LLC All Rights Reserved.
+ *
+ * Use of this source code is governed by an MIT-style license that can be
+ * found in the LICENSE file at https://angular.io/license
+ */
+/** Next overlay unique ID. */
+let nextUniqueId = 0;
+// Note that Overlay is *not* scoped to the app root because of the ComponentFactoryResolver
+// which needs to be different depending on where OverlayModule is imported.
+/**
+ * Service to create Overlays. Overlays are dynamically added pieces of floating UI, meant to be
+ * used as a low-level building block for other components. Dialogs, tooltips, menus,
+ * selects, etc. can all be built using overlays. The service should primarily be used by authors
+ * of re-usable components rather than developers building end-user applications.
+ *
+ * An overlay *is* a PortalOutlet, so any kind of Portal can be loaded into one.
+ */
+class Overlay {
+    constructor(
+    /** Scrolling strategies that can be used when creating an overlay. */
+    scrollStrategies, _overlayContainer, _componentFactoryResolver, _positionBuilder, _keyboardDispatcher, _injector, _ngZone, _document, _directionality, 
+    // @breaking-change 8.0.0 `_location` parameter to be made required.
+    _location, 
+    // @breaking-change 9.0.0 `_outsideClickDispatcher` parameter to be made required.
+    _outsideClickDispatcher) {
+        this.scrollStrategies = scrollStrategies;
+        this._overlayContainer = _overlayContainer;
+        this._componentFactoryResolver = _componentFactoryResolver;
+        this._positionBuilder = _positionBuilder;
+        this._keyboardDispatcher = _keyboardDispatcher;
+        this._injector = _injector;
+        this._ngZone = _ngZone;
+        this._document = _document;
+        this._directionality = _directionality;
+        this._location = _location;
+        this._outsideClickDispatcher = _outsideClickDispatcher;
+    }
+    /**
+     * Creates an overlay.
+     * @param config Configuration applied to the overlay.
+     * @returns Reference to the created overlay.
+     */
+    create(config) {
+        const host = this._createHostElement();
+        const pane = this._createPaneElement(host);
+        const portalOutlet = this._createPortalOutlet(pane);
+        const overlayConfig = new OverlayConfig(config);
+        overlayConfig.direction = overlayConfig.direction || this._directionality.value;
+        return new OverlayRef(portalOutlet, host, pane, overlayConfig, this._ngZone, this._keyboardDispatcher, this._document, this._location, this._outsideClickDispatcher);
+    }
+    /**
+     * Gets a position builder that can be used, via fluent API,
+     * to construct and configure a position strategy.
+     * @returns An overlay position builder.
+     */
+    position() {
+        return this._positionBuilder;
+    }
+    /**
+     * Creates the DOM element for an overlay and appends it to the overlay container.
+     * @returns Newly-created pane element
+     */
+    _createPaneElement(host) {
+        const pane = this._document.createElement('div');
+        pane.id = `cdk-overlay-${nextUniqueId++}`;
+        pane.classList.add('cdk-overlay-pane');
+        host.appendChild(pane);
+        return pane;
+    }
+    /**
+     * Creates the host element that wraps around an overlay
+     * and can be used for advanced positioning.
+     * @returns Newly-create host element.
+     */
+    _createHostElement() {
+        const host = this._document.createElement('div');
+        this._overlayContainer.getContainerElement().appendChild(host);
+        return host;
+    }
+    /**
+     * Create a DomPortalOutlet into which the overlay content can be loaded.
+     * @param pane The DOM element to turn into a portal outlet.
+     * @returns A portal outlet for the given DOM element.
+     */
+    _createPortalOutlet(pane) {
+        // We have to resolve the ApplicationRef later in order to allow people
+        // to use overlay-based providers during app initialization.
+        if (!this._appRef) {
+            this._appRef = this._injector.get(_angular_core__WEBPACK_IMPORTED_MODULE_1__["ApplicationRef"]);
+        }
+        return new _angular_cdk_portal__WEBPACK_IMPORTED_MODULE_6__["DomPortalOutlet"](pane, this._componentFactoryResolver, this._appRef, this._injector, this._document);
+    }
+}
+Overlay.ɵfac = function Overlay_Factory(t) { return new (t || Overlay)(_angular_core__WEBPACK_IMPORTED_MODULE_1__["ɵɵinject"](ScrollStrategyOptions), _angular_core__WEBPACK_IMPORTED_MODULE_1__["ɵɵinject"](OverlayContainer), _angular_core__WEBPACK_IMPORTED_MODULE_1__["ɵɵinject"](_angular_core__WEBPACK_IMPORTED_MODULE_1__["ComponentFactoryResolver"]), _angular_core__WEBPACK_IMPORTED_MODULE_1__["ɵɵinject"](OverlayPositionBuilder), _angular_core__WEBPACK_IMPORTED_MODULE_1__["ɵɵinject"](OverlayKeyboardDispatcher), _angular_core__WEBPACK_IMPORTED_MODULE_1__["ɵɵinject"](_angular_core__WEBPACK_IMPORTED_MODULE_1__["Injector"]), _angular_core__WEBPACK_IMPORTED_MODULE_1__["ɵɵinject"](_angular_core__WEBPACK_IMPORTED_MODULE_1__["NgZone"]), _angular_core__WEBPACK_IMPORTED_MODULE_1__["ɵɵinject"](_angular_common__WEBPACK_IMPORTED_MODULE_4__["DOCUMENT"]), _angular_core__WEBPACK_IMPORTED_MODULE_1__["ɵɵinject"](_angular_cdk_bidi__WEBPACK_IMPORTED_MODULE_3__["Directionality"]), _angular_core__WEBPACK_IMPORTED_MODULE_1__["ɵɵinject"](_angular_common__WEBPACK_IMPORTED_MODULE_4__["Location"], 8), _angular_core__WEBPACK_IMPORTED_MODULE_1__["ɵɵinject"](OverlayOutsideClickDispatcher, 8)); };
+Overlay.ɵprov = _angular_core__WEBPACK_IMPORTED_MODULE_1__["ɵɵdefineInjectable"]({ token: Overlay, factory: Overlay.ɵfac });
+Overlay.ctorParameters = () => [
+    { type: ScrollStrategyOptions },
+    { type: OverlayContainer },
+    { type: _angular_core__WEBPACK_IMPORTED_MODULE_1__["ComponentFactoryResolver"] },
+    { type: OverlayPositionBuilder },
+    { type: OverlayKeyboardDispatcher },
+    { type: _angular_core__WEBPACK_IMPORTED_MODULE_1__["Injector"] },
+    { type: _angular_core__WEBPACK_IMPORTED_MODULE_1__["NgZone"] },
+    { type: undefined, decorators: [{ type: _angular_core__WEBPACK_IMPORTED_MODULE_1__["Inject"], args: [_angular_common__WEBPACK_IMPORTED_MODULE_4__["DOCUMENT"],] }] },
+    { type: _angular_cdk_bidi__WEBPACK_IMPORTED_MODULE_3__["Directionality"] },
+    { type: _angular_common__WEBPACK_IMPORTED_MODULE_4__["Location"], decorators: [{ type: _angular_core__WEBPACK_IMPORTED_MODULE_1__["Optional"] }] },
+    { type: OverlayOutsideClickDispatcher, decorators: [{ type: _angular_core__WEBPACK_IMPORTED_MODULE_1__["Optional"] }] }
+];
+/*@__PURE__*/ (function () { _angular_core__WEBPACK_IMPORTED_MODULE_1__["ɵsetClassMetadata"](Overlay, [{
+        type: _angular_core__WEBPACK_IMPORTED_MODULE_1__["Injectable"]
+    }], function () { return [{ type: ScrollStrategyOptions }, { type: OverlayContainer }, { type: _angular_core__WEBPACK_IMPORTED_MODULE_1__["ComponentFactoryResolver"] }, { type: OverlayPositionBuilder }, { type: OverlayKeyboardDispatcher }, { type: _angular_core__WEBPACK_IMPORTED_MODULE_1__["Injector"] }, { type: _angular_core__WEBPACK_IMPORTED_MODULE_1__["NgZone"] }, { type: undefined, decorators: [{
+                type: _angular_core__WEBPACK_IMPORTED_MODULE_1__["Inject"],
+                args: [_angular_common__WEBPACK_IMPORTED_MODULE_4__["DOCUMENT"]]
+            }] }, { type: _angular_cdk_bidi__WEBPACK_IMPORTED_MODULE_3__["Directionality"] }, { type: _angular_common__WEBPACK_IMPORTED_MODULE_4__["Location"], decorators: [{
+                type: _angular_core__WEBPACK_IMPORTED_MODULE_1__["Optional"]
+            }] }, { type: OverlayOutsideClickDispatcher, decorators: [{
+                type: _angular_core__WEBPACK_IMPORTED_MODULE_1__["Optional"]
+            }] }]; }, null); })();
+
+/**
+ * @license
+ * Copyright Google LLC All Rights Reserved.
+ *
+ * Use of this source code is governed by an MIT-style license that can be
+ * found in the LICENSE file at https://angular.io/license
+ */
+/** Default set of positions for the overlay. Follows the behavior of a dropdown. */
+const defaultPositionList = [
+    {
+        originX: 'start',
+        originY: 'bottom',
+        overlayX: 'start',
+        overlayY: 'top'
+    },
+    {
+        originX: 'start',
+        originY: 'top',
+        overlayX: 'start',
+        overlayY: 'bottom'
+    },
+    {
+        originX: 'end',
+        originY: 'top',
+        overlayX: 'end',
+        overlayY: 'bottom'
+    },
+    {
+        originX: 'end',
+        originY: 'bottom',
+        overlayX: 'end',
+        overlayY: 'top'
+    }
+];
+/** Injection token that determines the scroll handling while the connected overlay is open. */
+const CDK_CONNECTED_OVERLAY_SCROLL_STRATEGY = new _angular_core__WEBPACK_IMPORTED_MODULE_1__["InjectionToken"]('cdk-connected-overlay-scroll-strategy');
+/** @docs-private @deprecated @breaking-change 8.0.0 */
+function CDK_CONNECTED_OVERLAY_SCROLL_STRATEGY_FACTORY(overlay) {
+    return (config) => overlay.scrollStrategies.reposition(config);
+}
+/**
+ * Directive applied to an element to make it usable as an origin for an Overlay using a
+ * ConnectedPositionStrategy.
+ */
+class CdkOverlayOrigin {
+    constructor(
+    /** Reference to the element on which the directive is applied. */
+    elementRef) {
+        this.elementRef = elementRef;
+    }
+}
+CdkOverlayOrigin.ɵfac = function CdkOverlayOrigin_Factory(t) { return new (t || CdkOverlayOrigin)(_angular_core__WEBPACK_IMPORTED_MODULE_1__["ɵɵdirectiveInject"](_angular_core__WEBPACK_IMPORTED_MODULE_1__["ElementRef"])); };
+CdkOverlayOrigin.ɵdir = _angular_core__WEBPACK_IMPORTED_MODULE_1__["ɵɵdefineDirective"]({ type: CdkOverlayOrigin, selectors: [["", "cdk-overlay-origin", ""], ["", "overlay-origin", ""], ["", "cdkOverlayOrigin", ""]], exportAs: ["cdkOverlayOrigin"] });
+CdkOverlayOrigin.ctorParameters = () => [
+    { type: _angular_core__WEBPACK_IMPORTED_MODULE_1__["ElementRef"] }
+];
+/*@__PURE__*/ (function () { _angular_core__WEBPACK_IMPORTED_MODULE_1__["ɵsetClassMetadata"](CdkOverlayOrigin, [{
+        type: _angular_core__WEBPACK_IMPORTED_MODULE_1__["Directive"],
+        args: [{
+                selector: '[cdk-overlay-origin], [overlay-origin], [cdkOverlayOrigin]',
+                exportAs: 'cdkOverlayOrigin'
+            }]
+    }], function () { return [{ type: _angular_core__WEBPACK_IMPORTED_MODULE_1__["ElementRef"] }]; }, null); })();
+/**
+ * Directive to facilitate declarative creation of an
+ * Overlay using a FlexibleConnectedPositionStrategy.
+ */
+class CdkConnectedOverlay {
+    // TODO(jelbourn): inputs for size, scroll behavior, animation, etc.
+    constructor(_overlay, templateRef, viewContainerRef, scrollStrategyFactory, _dir) {
+        this._overlay = _overlay;
+        this._dir = _dir;
+        this._hasBackdrop = false;
+        this._lockPosition = false;
+        this._growAfterOpen = false;
+        this._flexibleDimensions = false;
+        this._push = false;
+        this._backdropSubscription = rxjs__WEBPACK_IMPORTED_MODULE_7__["Subscription"].EMPTY;
+        this._attachSubscription = rxjs__WEBPACK_IMPORTED_MODULE_7__["Subscription"].EMPTY;
+        this._detachSubscription = rxjs__WEBPACK_IMPORTED_MODULE_7__["Subscription"].EMPTY;
+        /** Margin between the overlay and the viewport edges. */
+        this.viewportMargin = 0;
+        /** Whether the overlay is open. */
+        this.open = false;
+        /** Event emitted when the backdrop is clicked. */
+        this.backdropClick = new _angular_core__WEBPACK_IMPORTED_MODULE_1__["EventEmitter"]();
+        /** Event emitted when the position has changed. */
+        this.positionChange = new _angular_core__WEBPACK_IMPORTED_MODULE_1__["EventEmitter"]();
+        /** Event emitted when the overlay has been attached. */
+        this.attach = new _angular_core__WEBPACK_IMPORTED_MODULE_1__["EventEmitter"]();
+        /** Event emitted when the overlay has been detached. */
+        this.detach = new _angular_core__WEBPACK_IMPORTED_MODULE_1__["EventEmitter"]();
+        /** Emits when there are keyboard events that are targeted at the overlay. */
+        this.overlayKeydown = new _angular_core__WEBPACK_IMPORTED_MODULE_1__["EventEmitter"]();
+        /** Emits when there are mouse outside click events that are targeted at the overlay. */
+        this.overlayOutsideClick = new _angular_core__WEBPACK_IMPORTED_MODULE_1__["EventEmitter"]();
+        this._templatePortal = new _angular_cdk_portal__WEBPACK_IMPORTED_MODULE_6__["TemplatePortal"](templateRef, viewContainerRef);
+        this._scrollStrategyFactory = scrollStrategyFactory;
+        this.scrollStrategy = this._scrollStrategyFactory();
+    }
+    /** The offset in pixels for the overlay connection point on the x-axis */
+    get offsetX() { return this._offsetX; }
+    set offsetX(offsetX) {
+        this._offsetX = offsetX;
+        if (this._position) {
+            this._updatePositionStrategy(this._position);
+        }
+    }
+    /** The offset in pixels for the overlay connection point on the y-axis */
+    get offsetY() { return this._offsetY; }
+    set offsetY(offsetY) {
+        this._offsetY = offsetY;
+        if (this._position) {
+            this._updatePositionStrategy(this._position);
+        }
+    }
+    /** Whether or not the overlay should attach a backdrop. */
+    get hasBackdrop() { return this._hasBackdrop; }
+    set hasBackdrop(value) { this._hasBackdrop = Object(_angular_cdk_coercion__WEBPACK_IMPORTED_MODULE_5__["coerceBooleanProperty"])(value); }
+    /** Whether or not the overlay should be locked when scrolling. */
+    get lockPosition() { return this._lockPosition; }
+    set lockPosition(value) { this._lockPosition = Object(_angular_cdk_coercion__WEBPACK_IMPORTED_MODULE_5__["coerceBooleanProperty"])(value); }
+    /** Whether the overlay's width and height can be constrained to fit within the viewport. */
+    get flexibleDimensions() { return this._flexibleDimensions; }
+    set flexibleDimensions(value) {
+        this._flexibleDimensions = Object(_angular_cdk_coercion__WEBPACK_IMPORTED_MODULE_5__["coerceBooleanProperty"])(value);
+    }
+    /** Whether the overlay can grow after the initial open when flexible positioning is turned on. */
+    get growAfterOpen() { return this._growAfterOpen; }
+    set growAfterOpen(value) { this._growAfterOpen = Object(_angular_cdk_coercion__WEBPACK_IMPORTED_MODULE_5__["coerceBooleanProperty"])(value); }
+    /** Whether the overlay can be pushed on-screen if none of the provided positions fit. */
+    get push() { return this._push; }
+    set push(value) { this._push = Object(_angular_cdk_coercion__WEBPACK_IMPORTED_MODULE_5__["coerceBooleanProperty"])(value); }
+    /** The associated overlay reference. */
+    get overlayRef() {
+        return this._overlayRef;
+    }
+    /** The element's layout direction. */
+    get dir() {
+        return this._dir ? this._dir.value : 'ltr';
+    }
+    ngOnDestroy() {
+        this._attachSubscription.unsubscribe();
+        this._detachSubscription.unsubscribe();
+        this._backdropSubscription.unsubscribe();
+        if (this._overlayRef) {
+            this._overlayRef.dispose();
+        }
+    }
+    ngOnChanges(changes) {
+        if (this._position) {
+            this._updatePositionStrategy(this._position);
+            this._overlayRef.updateSize({
+                width: this.width,
+                minWidth: this.minWidth,
+                height: this.height,
+                minHeight: this.minHeight,
+            });
+            if (changes['origin'] && this.open) {
+                this._position.apply();
+            }
+        }
+        if (changes['open']) {
+            this.open ? this._attachOverlay() : this._detachOverlay();
+        }
+    }
+    /** Creates an overlay */
+    _createOverlay() {
+        if (!this.positions || !this.positions.length) {
+            this.positions = defaultPositionList;
+        }
+        const overlayRef = this._overlayRef = this._overlay.create(this._buildConfig());
+        this._attachSubscription = overlayRef.attachments().subscribe(() => this.attach.emit());
+        this._detachSubscription = overlayRef.detachments().subscribe(() => this.detach.emit());
+        overlayRef.keydownEvents().subscribe((event) => {
+            this.overlayKeydown.next(event);
+            if (event.keyCode === _angular_cdk_keycodes__WEBPACK_IMPORTED_MODULE_9__["ESCAPE"] && !Object(_angular_cdk_keycodes__WEBPACK_IMPORTED_MODULE_9__["hasModifierKey"])(event)) {
+                event.preventDefault();
+                this._detachOverlay();
+            }
+        });
+        this._overlayRef.outsidePointerEvents().subscribe((event) => {
+            this.overlayOutsideClick.next(event);
+        });
+    }
+    /** Builds the overlay config based on the directive's inputs */
+    _buildConfig() {
+        const positionStrategy = this._position =
+            this.positionStrategy || this._createPositionStrategy();
+        const overlayConfig = new OverlayConfig({
+            direction: this._dir,
+            positionStrategy,
+            scrollStrategy: this.scrollStrategy,
+            hasBackdrop: this.hasBackdrop
+        });
+        if (this.width || this.width === 0) {
+            overlayConfig.width = this.width;
+        }
+        if (this.height || this.height === 0) {
+            overlayConfig.height = this.height;
+        }
+        if (this.minWidth || this.minWidth === 0) {
+            overlayConfig.minWidth = this.minWidth;
+        }
+        if (this.minHeight || this.minHeight === 0) {
+            overlayConfig.minHeight = this.minHeight;
+        }
+        if (this.backdropClass) {
+            overlayConfig.backdropClass = this.backdropClass;
+        }
+        if (this.panelClass) {
+            overlayConfig.panelClass = this.panelClass;
+        }
+        return overlayConfig;
+    }
+    /** Updates the state of a position strategy, based on the values of the directive inputs. */
+    _updatePositionStrategy(positionStrategy) {
+        const positions = this.positions.map(currentPosition => ({
+            originX: currentPosition.originX,
+            originY: currentPosition.originY,
+            overlayX: currentPosition.overlayX,
+            overlayY: currentPosition.overlayY,
+            offsetX: currentPosition.offsetX || this.offsetX,
+            offsetY: currentPosition.offsetY || this.offsetY,
+            panelClass: currentPosition.panelClass || undefined,
+        }));
+        return positionStrategy
+            .setOrigin(this.origin.elementRef)
+            .withPositions(positions)
+            .withFlexibleDimensions(this.flexibleDimensions)
+            .withPush(this.push)
+            .withGrowAfterOpen(this.growAfterOpen)
+            .withViewportMargin(this.viewportMargin)
+            .withLockedPosition(this.lockPosition)
+            .withTransformOriginOn(this.transformOriginSelector);
+    }
+    /** Returns the position strategy of the overlay to be set on the overlay config */
+    _createPositionStrategy() {
+        const strategy = this._overlay.position().flexibleConnectedTo(this.origin.elementRef);
+        this._updatePositionStrategy(strategy);
+        strategy.positionChanges.subscribe(p => this.positionChange.emit(p));
+        return strategy;
+    }
+    /** Attaches the overlay and subscribes to backdrop clicks if backdrop exists */
+    _attachOverlay() {
+        if (!this._overlayRef) {
+            this._createOverlay();
+        }
+        else {
+            // Update the overlay size, in case the directive's inputs have changed
+            this._overlayRef.getConfig().hasBackdrop = this.hasBackdrop;
+        }
+        if (!this._overlayRef.hasAttached()) {
+            this._overlayRef.attach(this._templatePortal);
+        }
+        if (this.hasBackdrop) {
+            this._backdropSubscription = this._overlayRef.backdropClick().subscribe(event => {
+                this.backdropClick.emit(event);
+            });
+        }
+        else {
+            this._backdropSubscription.unsubscribe();
+        }
+    }
+    /** Detaches the overlay and unsubscribes to backdrop clicks if backdrop exists */
+    _detachOverlay() {
+        if (this._overlayRef) {
+            this._overlayRef.detach();
+        }
+        this._backdropSubscription.unsubscribe();
+    }
+}
+CdkConnectedOverlay.ɵfac = function CdkConnectedOverlay_Factory(t) { return new (t || CdkConnectedOverlay)(_angular_core__WEBPACK_IMPORTED_MODULE_1__["ɵɵdirectiveInject"](Overlay), _angular_core__WEBPACK_IMPORTED_MODULE_1__["ɵɵdirectiveInject"](_angular_core__WEBPACK_IMPORTED_MODULE_1__["TemplateRef"]), _angular_core__WEBPACK_IMPORTED_MODULE_1__["ɵɵdirectiveInject"](_angular_core__WEBPACK_IMPORTED_MODULE_1__["ViewContainerRef"]), _angular_core__WEBPACK_IMPORTED_MODULE_1__["ɵɵdirectiveInject"](CDK_CONNECTED_OVERLAY_SCROLL_STRATEGY), _angular_core__WEBPACK_IMPORTED_MODULE_1__["ɵɵdirectiveInject"](_angular_cdk_bidi__WEBPACK_IMPORTED_MODULE_3__["Directionality"], 8)); };
+CdkConnectedOverlay.ɵdir = _angular_core__WEBPACK_IMPORTED_MODULE_1__["ɵɵdefineDirective"]({ type: CdkConnectedOverlay, selectors: [["", "cdk-connected-overlay", ""], ["", "connected-overlay", ""], ["", "cdkConnectedOverlay", ""]], inputs: { viewportMargin: ["cdkConnectedOverlayViewportMargin", "viewportMargin"], open: ["cdkConnectedOverlayOpen", "open"], scrollStrategy: ["cdkConnectedOverlayScrollStrategy", "scrollStrategy"], offsetX: ["cdkConnectedOverlayOffsetX", "offsetX"], offsetY: ["cdkConnectedOverlayOffsetY", "offsetY"], hasBackdrop: ["cdkConnectedOverlayHasBackdrop", "hasBackdrop"], lockPosition: ["cdkConnectedOverlayLockPosition", "lockPosition"], flexibleDimensions: ["cdkConnectedOverlayFlexibleDimensions", "flexibleDimensions"], growAfterOpen: ["cdkConnectedOverlayGrowAfterOpen", "growAfterOpen"], push: ["cdkConnectedOverlayPush", "push"], positions: ["cdkConnectedOverlayPositions", "positions"], origin: ["cdkConnectedOverlayOrigin", "origin"], positionStrategy: ["cdkConnectedOverlayPositionStrategy", "positionStrategy"], width: ["cdkConnectedOverlayWidth", "width"], height: ["cdkConnectedOverlayHeight", "height"], minWidth: ["cdkConnectedOverlayMinWidth", "minWidth"], minHeight: ["cdkConnectedOverlayMinHeight", "minHeight"], backdropClass: ["cdkConnectedOverlayBackdropClass", "backdropClass"], panelClass: ["cdkConnectedOverlayPanelClass", "panelClass"], transformOriginSelector: ["cdkConnectedOverlayTransformOriginOn", "transformOriginSelector"] }, outputs: { backdropClick: "backdropClick", positionChange: "positionChange", attach: "attach", detach: "detach", overlayKeydown: "overlayKeydown", overlayOutsideClick: "overlayOutsideClick" }, exportAs: ["cdkConnectedOverlay"], features: [_angular_core__WEBPACK_IMPORTED_MODULE_1__["ɵɵNgOnChangesFeature"]] });
+CdkConnectedOverlay.ctorParameters = () => [
+    { type: Overlay },
+    { type: _angular_core__WEBPACK_IMPORTED_MODULE_1__["TemplateRef"] },
+    { type: _angular_core__WEBPACK_IMPORTED_MODULE_1__["ViewContainerRef"] },
+    { type: undefined, decorators: [{ type: _angular_core__WEBPACK_IMPORTED_MODULE_1__["Inject"], args: [CDK_CONNECTED_OVERLAY_SCROLL_STRATEGY,] }] },
+    { type: _angular_cdk_bidi__WEBPACK_IMPORTED_MODULE_3__["Directionality"], decorators: [{ type: _angular_core__WEBPACK_IMPORTED_MODULE_1__["Optional"] }] }
+];
+CdkConnectedOverlay.propDecorators = {
+    origin: [{ type: _angular_core__WEBPACK_IMPORTED_MODULE_1__["Input"], args: ['cdkConnectedOverlayOrigin',] }],
+    positions: [{ type: _angular_core__WEBPACK_IMPORTED_MODULE_1__["Input"], args: ['cdkConnectedOverlayPositions',] }],
+    positionStrategy: [{ type: _angular_core__WEBPACK_IMPORTED_MODULE_1__["Input"], args: ['cdkConnectedOverlayPositionStrategy',] }],
+    offsetX: [{ type: _angular_core__WEBPACK_IMPORTED_MODULE_1__["Input"], args: ['cdkConnectedOverlayOffsetX',] }],
+    offsetY: [{ type: _angular_core__WEBPACK_IMPORTED_MODULE_1__["Input"], args: ['cdkConnectedOverlayOffsetY',] }],
+    width: [{ type: _angular_core__WEBPACK_IMPORTED_MODULE_1__["Input"], args: ['cdkConnectedOverlayWidth',] }],
+    height: [{ type: _angular_core__WEBPACK_IMPORTED_MODULE_1__["Input"], args: ['cdkConnectedOverlayHeight',] }],
+    minWidth: [{ type: _angular_core__WEBPACK_IMPORTED_MODULE_1__["Input"], args: ['cdkConnectedOverlayMinWidth',] }],
+    minHeight: [{ type: _angular_core__WEBPACK_IMPORTED_MODULE_1__["Input"], args: ['cdkConnectedOverlayMinHeight',] }],
+    backdropClass: [{ type: _angular_core__WEBPACK_IMPORTED_MODULE_1__["Input"], args: ['cdkConnectedOverlayBackdropClass',] }],
+    panelClass: [{ type: _angular_core__WEBPACK_IMPORTED_MODULE_1__["Input"], args: ['cdkConnectedOverlayPanelClass',] }],
+    viewportMargin: [{ type: _angular_core__WEBPACK_IMPORTED_MODULE_1__["Input"], args: ['cdkConnectedOverlayViewportMargin',] }],
+    scrollStrategy: [{ type: _angular_core__WEBPACK_IMPORTED_MODULE_1__["Input"], args: ['cdkConnectedOverlayScrollStrategy',] }],
+    open: [{ type: _angular_core__WEBPACK_IMPORTED_MODULE_1__["Input"], args: ['cdkConnectedOverlayOpen',] }],
+    transformOriginSelector: [{ type: _angular_core__WEBPACK_IMPORTED_MODULE_1__["Input"], args: ['cdkConnectedOverlayTransformOriginOn',] }],
+    hasBackdrop: [{ type: _angular_core__WEBPACK_IMPORTED_MODULE_1__["Input"], args: ['cdkConnectedOverlayHasBackdrop',] }],
+    lockPosition: [{ type: _angular_core__WEBPACK_IMPORTED_MODULE_1__["Input"], args: ['cdkConnectedOverlayLockPosition',] }],
+    flexibleDimensions: [{ type: _angular_core__WEBPACK_IMPORTED_MODULE_1__["Input"], args: ['cdkConnectedOverlayFlexibleDimensions',] }],
+    growAfterOpen: [{ type: _angular_core__WEBPACK_IMPORTED_MODULE_1__["Input"], args: ['cdkConnectedOverlayGrowAfterOpen',] }],
+    push: [{ type: _angular_core__WEBPACK_IMPORTED_MODULE_1__["Input"], args: ['cdkConnectedOverlayPush',] }],
+    backdropClick: [{ type: _angular_core__WEBPACK_IMPORTED_MODULE_1__["Output"] }],
+    positionChange: [{ type: _angular_core__WEBPACK_IMPORTED_MODULE_1__["Output"] }],
+    attach: [{ type: _angular_core__WEBPACK_IMPORTED_MODULE_1__["Output"] }],
+    detach: [{ type: _angular_core__WEBPACK_IMPORTED_MODULE_1__["Output"] }],
+    overlayKeydown: [{ type: _angular_core__WEBPACK_IMPORTED_MODULE_1__["Output"] }],
+    overlayOutsideClick: [{ type: _angular_core__WEBPACK_IMPORTED_MODULE_1__["Output"] }]
+};
+/*@__PURE__*/ (function () { _angular_core__WEBPACK_IMPORTED_MODULE_1__["ɵsetClassMetadata"](CdkConnectedOverlay, [{
+        type: _angular_core__WEBPACK_IMPORTED_MODULE_1__["Directive"],
+        args: [{
+                selector: '[cdk-connected-overlay], [connected-overlay], [cdkConnectedOverlay]',
+                exportAs: 'cdkConnectedOverlay'
+            }]
+    }], function () { return [{ type: Overlay }, { type: _angular_core__WEBPACK_IMPORTED_MODULE_1__["TemplateRef"] }, { type: _angular_core__WEBPACK_IMPORTED_MODULE_1__["ViewContainerRef"] }, { type: undefined, decorators: [{
+                type: _angular_core__WEBPACK_IMPORTED_MODULE_1__["Inject"],
+                args: [CDK_CONNECTED_OVERLAY_SCROLL_STRATEGY]
+            }] }, { type: _angular_cdk_bidi__WEBPACK_IMPORTED_MODULE_3__["Directionality"], decorators: [{
+                type: _angular_core__WEBPACK_IMPORTED_MODULE_1__["Optional"]
+            }] }]; }, { viewportMargin: [{
+            type: _angular_core__WEBPACK_IMPORTED_MODULE_1__["Input"],
+            args: ['cdkConnectedOverlayViewportMargin']
+        }], open: [{
+            type: _angular_core__WEBPACK_IMPORTED_MODULE_1__["Input"],
+            args: ['cdkConnectedOverlayOpen']
+        }], backdropClick: [{
+            type: _angular_core__WEBPACK_IMPORTED_MODULE_1__["Output"]
+        }], positionChange: [{
+            type: _angular_core__WEBPACK_IMPORTED_MODULE_1__["Output"]
+        }], attach: [{
+            type: _angular_core__WEBPACK_IMPORTED_MODULE_1__["Output"]
+        }], detach: [{
+            type: _angular_core__WEBPACK_IMPORTED_MODULE_1__["Output"]
+        }], overlayKeydown: [{
+            type: _angular_core__WEBPACK_IMPORTED_MODULE_1__["Output"]
+        }], overlayOutsideClick: [{
+            type: _angular_core__WEBPACK_IMPORTED_MODULE_1__["Output"]
+        }], scrollStrategy: [{
+            type: _angular_core__WEBPACK_IMPORTED_MODULE_1__["Input"],
+            args: ['cdkConnectedOverlayScrollStrategy']
+        }], offsetX: [{
+            type: _angular_core__WEBPACK_IMPORTED_MODULE_1__["Input"],
+            args: ['cdkConnectedOverlayOffsetX']
+        }], offsetY: [{
+            type: _angular_core__WEBPACK_IMPORTED_MODULE_1__["Input"],
+            args: ['cdkConnectedOverlayOffsetY']
+        }], hasBackdrop: [{
+            type: _angular_core__WEBPACK_IMPORTED_MODULE_1__["Input"],
+            args: ['cdkConnectedOverlayHasBackdrop']
+        }], lockPosition: [{
+            type: _angular_core__WEBPACK_IMPORTED_MODULE_1__["Input"],
+            args: ['cdkConnectedOverlayLockPosition']
+        }], flexibleDimensions: [{
+            type: _angular_core__WEBPACK_IMPORTED_MODULE_1__["Input"],
+            args: ['cdkConnectedOverlayFlexibleDimensions']
+        }], growAfterOpen: [{
+            type: _angular_core__WEBPACK_IMPORTED_MODULE_1__["Input"],
+            args: ['cdkConnectedOverlayGrowAfterOpen']
+        }], push: [{
+            type: _angular_core__WEBPACK_IMPORTED_MODULE_1__["Input"],
+            args: ['cdkConnectedOverlayPush']
+        }], positions: [{
+            type: _angular_core__WEBPACK_IMPORTED_MODULE_1__["Input"],
+            args: ['cdkConnectedOverlayPositions']
+        }], origin: [{
+            type: _angular_core__WEBPACK_IMPORTED_MODULE_1__["Input"],
+            args: ['cdkConnectedOverlayOrigin']
+        }], positionStrategy: [{
+            type: _angular_core__WEBPACK_IMPORTED_MODULE_1__["Input"],
+            args: ['cdkConnectedOverlayPositionStrategy']
+        }], width: [{
+            type: _angular_core__WEBPACK_IMPORTED_MODULE_1__["Input"],
+            args: ['cdkConnectedOverlayWidth']
+        }], height: [{
+            type: _angular_core__WEBPACK_IMPORTED_MODULE_1__["Input"],
+            args: ['cdkConnectedOverlayHeight']
+        }], minWidth: [{
+            type: _angular_core__WEBPACK_IMPORTED_MODULE_1__["Input"],
+            args: ['cdkConnectedOverlayMinWidth']
+        }], minHeight: [{
+            type: _angular_core__WEBPACK_IMPORTED_MODULE_1__["Input"],
+            args: ['cdkConnectedOverlayMinHeight']
+        }], backdropClass: [{
+            type: _angular_core__WEBPACK_IMPORTED_MODULE_1__["Input"],
+            args: ['cdkConnectedOverlayBackdropClass']
+        }], panelClass: [{
+            type: _angular_core__WEBPACK_IMPORTED_MODULE_1__["Input"],
+            args: ['cdkConnectedOverlayPanelClass']
+        }], transformOriginSelector: [{
+            type: _angular_core__WEBPACK_IMPORTED_MODULE_1__["Input"],
+            args: ['cdkConnectedOverlayTransformOriginOn']
+        }] }); })();
+/** @docs-private */
+function CDK_CONNECTED_OVERLAY_SCROLL_STRATEGY_PROVIDER_FACTORY(overlay) {
+    return () => overlay.scrollStrategies.reposition();
+}
+/** @docs-private */
+const CDK_CONNECTED_OVERLAY_SCROLL_STRATEGY_PROVIDER = {
+    provide: CDK_CONNECTED_OVERLAY_SCROLL_STRATEGY,
+    deps: [Overlay],
+    useFactory: CDK_CONNECTED_OVERLAY_SCROLL_STRATEGY_PROVIDER_FACTORY,
+};
+
+/**
+ * @license
+ * Copyright Google LLC All Rights Reserved.
+ *
+ * Use of this source code is governed by an MIT-style license that can be
+ * found in the LICENSE file at https://angular.io/license
+ */
+class OverlayModule {
+}
+OverlayModule.ɵmod = _angular_core__WEBPACK_IMPORTED_MODULE_1__["ɵɵdefineNgModule"]({ type: OverlayModule });
+OverlayModule.ɵinj = _angular_core__WEBPACK_IMPORTED_MODULE_1__["ɵɵdefineInjector"]({ factory: function OverlayModule_Factory(t) { return new (t || OverlayModule)(); }, providers: [
+        Overlay,
+        CDK_CONNECTED_OVERLAY_SCROLL_STRATEGY_PROVIDER,
+    ], imports: [[_angular_cdk_bidi__WEBPACK_IMPORTED_MODULE_3__["BidiModule"], _angular_cdk_portal__WEBPACK_IMPORTED_MODULE_6__["PortalModule"], _angular_cdk_scrolling__WEBPACK_IMPORTED_MODULE_0__["ScrollingModule"]], _angular_cdk_scrolling__WEBPACK_IMPORTED_MODULE_0__["ScrollingModule"]] });
+(function () { (typeof ngJitMode === "undefined" || ngJitMode) && _angular_core__WEBPACK_IMPORTED_MODULE_1__["ɵɵsetNgModuleScope"](OverlayModule, { declarations: function () { return [CdkConnectedOverlay, CdkOverlayOrigin]; }, imports: function () { return [_angular_cdk_bidi__WEBPACK_IMPORTED_MODULE_3__["BidiModule"], _angular_cdk_portal__WEBPACK_IMPORTED_MODULE_6__["PortalModule"], _angular_cdk_scrolling__WEBPACK_IMPORTED_MODULE_0__["ScrollingModule"]]; }, exports: function () { return [CdkConnectedOverlay, CdkOverlayOrigin, _angular_cdk_scrolling__WEBPACK_IMPORTED_MODULE_0__["ScrollingModule"]]; } }); })();
+/*@__PURE__*/ (function () { _angular_core__WEBPACK_IMPORTED_MODULE_1__["ɵsetClassMetadata"](OverlayModule, [{
+        type: _angular_core__WEBPACK_IMPORTED_MODULE_1__["NgModule"],
+        args: [{
+                imports: [_angular_cdk_bidi__WEBPACK_IMPORTED_MODULE_3__["BidiModule"], _angular_cdk_portal__WEBPACK_IMPORTED_MODULE_6__["PortalModule"], _angular_cdk_scrolling__WEBPACK_IMPORTED_MODULE_0__["ScrollingModule"]],
+                exports: [CdkConnectedOverlay, CdkOverlayOrigin, _angular_cdk_scrolling__WEBPACK_IMPORTED_MODULE_0__["ScrollingModule"]],
+                declarations: [CdkConnectedOverlay, CdkOverlayOrigin],
+                providers: [
+                    Overlay,
+                    CDK_CONNECTED_OVERLAY_SCROLL_STRATEGY_PROVIDER,
+                ]
+            }]
+    }], null, null); })();
+/**
+ * @deprecated Use `OverlayModule` instead.
+ * @breaking-change 8.0.0
+ * @docs-private
+ */
+const OVERLAY_PROVIDERS = [
+    Overlay,
+    OverlayPositionBuilder,
+    OVERLAY_KEYBOARD_DISPATCHER_PROVIDER,
+    OVERLAY_CONTAINER_PROVIDER,
+    CDK_CONNECTED_OVERLAY_SCROLL_STRATEGY_PROVIDER,
+];
+
+/**
+ * @license
+ * Copyright Google LLC All Rights Reserved.
+ *
+ * Use of this source code is governed by an MIT-style license that can be
+ * found in the LICENSE file at https://angular.io/license
+ */
+
+/**
+ * @license
+ * Copyright Google LLC All Rights Reserved.
+ *
+ * Use of this source code is governed by an MIT-style license that can be
+ * found in the LICENSE file at https://angular.io/license
+ */
+/**
+ * Alternative to OverlayContainer that supports correct displaying of overlay elements in
+ * Fullscreen mode
+ * https://developer.mozilla.org/en-US/docs/Web/API/Element/requestFullScreen
+ *
+ * Should be provided in the root component.
+ */
+class FullscreenOverlayContainer extends OverlayContainer {
+    constructor(_document, 
+    /**
+     * @deprecated `platform` parameter to become required.
+     * @breaking-change 10.0.0
+     */
+    platform) {
+        super(_document, platform);
+    }
+    ngOnDestroy() {
+        super.ngOnDestroy();
+        if (this._fullScreenEventName && this._fullScreenListener) {
+            this._document.removeEventListener(this._fullScreenEventName, this._fullScreenListener);
+        }
+    }
+    _createContainer() {
+        super._createContainer();
+        this._adjustParentForFullscreenChange();
+        this._addFullscreenChangeListener(() => this._adjustParentForFullscreenChange());
+    }
+    _adjustParentForFullscreenChange() {
+        if (!this._containerElement) {
+            return;
+        }
+        const fullscreenElement = this.getFullscreenElement();
+        const parent = fullscreenElement || this._document.body;
+        parent.appendChild(this._containerElement);
+    }
+    _addFullscreenChangeListener(fn) {
+        const eventName = this._getEventName();
+        if (eventName) {
+            if (this._fullScreenListener) {
+                this._document.removeEventListener(eventName, this._fullScreenListener);
+            }
+            this._document.addEventListener(eventName, fn);
+            this._fullScreenListener = fn;
+        }
+    }
+    _getEventName() {
+        if (!this._fullScreenEventName) {
+            const _document = this._document;
+            if (_document.fullscreenEnabled) {
+                this._fullScreenEventName = 'fullscreenchange';
+            }
+            else if (_document.webkitFullscreenEnabled) {
+                this._fullScreenEventName = 'webkitfullscreenchange';
+            }
+            else if (_document.mozFullScreenEnabled) {
+                this._fullScreenEventName = 'mozfullscreenchange';
+            }
+            else if (_document.msFullscreenEnabled) {
+                this._fullScreenEventName = 'MSFullscreenChange';
+            }
+        }
+        return this._fullScreenEventName;
+    }
+    /**
+     * When the page is put into fullscreen mode, a specific element is specified.
+     * Only that element and its children are visible when in fullscreen mode.
+     */
+    getFullscreenElement() {
+        const _document = this._document;
+        return _document.fullscreenElement ||
+            _document.webkitFullscreenElement ||
+            _document.mozFullScreenElement ||
+            _document.msFullscreenElement ||
+            null;
+    }
+}
+FullscreenOverlayContainer.ɵfac = function FullscreenOverlayContainer_Factory(t) { return new (t || FullscreenOverlayContainer)(_angular_core__WEBPACK_IMPORTED_MODULE_1__["ɵɵinject"](_angular_common__WEBPACK_IMPORTED_MODULE_4__["DOCUMENT"]), _angular_core__WEBPACK_IMPORTED_MODULE_1__["ɵɵinject"](_angular_cdk_platform__WEBPACK_IMPORTED_MODULE_2__["Platform"])); };
+FullscreenOverlayContainer.ɵprov = Object(_angular_core__WEBPACK_IMPORTED_MODULE_1__["ɵɵdefineInjectable"])({ factory: function FullscreenOverlayContainer_Factory() { return new FullscreenOverlayContainer(Object(_angular_core__WEBPACK_IMPORTED_MODULE_1__["ɵɵinject"])(_angular_common__WEBPACK_IMPORTED_MODULE_4__["DOCUMENT"]), Object(_angular_core__WEBPACK_IMPORTED_MODULE_1__["ɵɵinject"])(_angular_cdk_platform__WEBPACK_IMPORTED_MODULE_2__["Platform"])); }, token: FullscreenOverlayContainer, providedIn: "root" });
+FullscreenOverlayContainer.ctorParameters = () => [
+    { type: undefined, decorators: [{ type: _angular_core__WEBPACK_IMPORTED_MODULE_1__["Inject"], args: [_angular_common__WEBPACK_IMPORTED_MODULE_4__["DOCUMENT"],] }] },
+    { type: _angular_cdk_platform__WEBPACK_IMPORTED_MODULE_2__["Platform"] }
+];
+/*@__PURE__*/ (function () { _angular_core__WEBPACK_IMPORTED_MODULE_1__["ɵsetClassMetadata"](FullscreenOverlayContainer, [{
+        type: _angular_core__WEBPACK_IMPORTED_MODULE_1__["Injectable"],
+        args: [{ providedIn: 'root' }]
+    }], function () { return [{ type: undefined, decorators: [{
+                type: _angular_core__WEBPACK_IMPORTED_MODULE_1__["Inject"],
+                args: [_angular_common__WEBPACK_IMPORTED_MODULE_4__["DOCUMENT"]]
+            }] }, { type: _angular_cdk_platform__WEBPACK_IMPORTED_MODULE_2__["Platform"] }]; }, null); })();
+
+/**
+ * @license
+ * Copyright Google LLC All Rights Reserved.
+ *
+ * Use of this source code is governed by an MIT-style license that can be
+ * found in the LICENSE file at https://angular.io/license
+ */
+
+/**
+ * Generated bundle index. Do not edit.
+ */
+
+
+
+//# sourceMappingURL=overlay.js.map
+
+/***/ }),
+
 /***/ "./node_modules/@angular/cdk/__ivy_ngcc__/fesm2015/platform.js":
 /*!*********************************************************************!*\
   !*** ./node_modules/@angular/cdk/__ivy_ngcc__/fesm2015/platform.js ***!
@@ -9341,6 +12962,2203 @@ function _getShadowRoot(element) {
 
 
 //# sourceMappingURL=platform.js.map
+
+/***/ }),
+
+/***/ "./node_modules/@angular/cdk/__ivy_ngcc__/fesm2015/portal.js":
+/*!*******************************************************************!*\
+  !*** ./node_modules/@angular/cdk/__ivy_ngcc__/fesm2015/portal.js ***!
+  \*******************************************************************/
+/*! exports provided: BasePortalHost, BasePortalOutlet, CdkPortal, CdkPortalOutlet, ComponentPortal, DomPortal, DomPortalHost, DomPortalOutlet, Portal, PortalHostDirective, PortalInjector, PortalModule, TemplatePortal, TemplatePortalDirective */
+/***/ (function(module, __webpack_exports__, __webpack_require__) {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "BasePortalHost", function() { return BasePortalHost; });
+/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "BasePortalOutlet", function() { return BasePortalOutlet; });
+/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "CdkPortal", function() { return CdkPortal; });
+/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "CdkPortalOutlet", function() { return CdkPortalOutlet; });
+/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "ComponentPortal", function() { return ComponentPortal; });
+/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "DomPortal", function() { return DomPortal; });
+/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "DomPortalHost", function() { return DomPortalHost; });
+/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "DomPortalOutlet", function() { return DomPortalOutlet; });
+/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "Portal", function() { return Portal; });
+/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "PortalHostDirective", function() { return PortalHostDirective; });
+/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "PortalInjector", function() { return PortalInjector; });
+/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "PortalModule", function() { return PortalModule; });
+/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "TemplatePortal", function() { return TemplatePortal; });
+/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "TemplatePortalDirective", function() { return TemplatePortalDirective; });
+/* harmony import */ var _angular_core__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! @angular/core */ "./node_modules/@angular/core/__ivy_ngcc__/fesm2015/core.js");
+/* harmony import */ var _angular_common__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! @angular/common */ "./node_modules/@angular/common/__ivy_ngcc__/fesm2015/common.js");
+
+
+
+/**
+ * @license
+ * Copyright Google LLC All Rights Reserved.
+ *
+ * Use of this source code is governed by an MIT-style license that can be
+ * found in the LICENSE file at https://angular.io/license
+ */
+/**
+ * Throws an exception when attempting to attach a null portal to a host.
+ * @docs-private
+ */
+
+function throwNullPortalError() {
+    throw Error('Must provide a portal to attach');
+}
+/**
+ * Throws an exception when attempting to attach a portal to a host that is already attached.
+ * @docs-private
+ */
+function throwPortalAlreadyAttachedError() {
+    throw Error('Host already has a portal attached');
+}
+/**
+ * Throws an exception when attempting to attach a portal to an already-disposed host.
+ * @docs-private
+ */
+function throwPortalOutletAlreadyDisposedError() {
+    throw Error('This PortalOutlet has already been disposed');
+}
+/**
+ * Throws an exception when attempting to attach an unknown portal type.
+ * @docs-private
+ */
+function throwUnknownPortalTypeError() {
+    throw Error('Attempting to attach an unknown Portal type. BasePortalOutlet accepts either ' +
+        'a ComponentPortal or a TemplatePortal.');
+}
+/**
+ * Throws an exception when attempting to attach a portal to a null host.
+ * @docs-private
+ */
+function throwNullPortalOutletError() {
+    throw Error('Attempting to attach a portal to a null PortalOutlet');
+}
+/**
+ * Throws an exception when attempting to detach a portal that is not attached.
+ * @docs-private
+ */
+function throwNoPortalAttachedError() {
+    throw Error('Attempting to detach a portal that is not attached to a host');
+}
+
+/**
+ * @license
+ * Copyright Google LLC All Rights Reserved.
+ *
+ * Use of this source code is governed by an MIT-style license that can be
+ * found in the LICENSE file at https://angular.io/license
+ */
+/**
+ * A `Portal` is something that you want to render somewhere else.
+ * It can be attach to / detached from a `PortalOutlet`.
+ */
+class Portal {
+    /** Attach this portal to a host. */
+    attach(host) {
+        if (host == null) {
+            throwNullPortalOutletError();
+        }
+        if (host.hasAttached()) {
+            throwPortalAlreadyAttachedError();
+        }
+        this._attachedHost = host;
+        return host.attach(this);
+    }
+    /** Detach this portal from its host */
+    detach() {
+        let host = this._attachedHost;
+        if (host == null) {
+            throwNoPortalAttachedError();
+        }
+        else {
+            this._attachedHost = null;
+            host.detach();
+        }
+    }
+    /** Whether this portal is attached to a host. */
+    get isAttached() {
+        return this._attachedHost != null;
+    }
+    /**
+     * Sets the PortalOutlet reference without performing `attach()`. This is used directly by
+     * the PortalOutlet when it is performing an `attach()` or `detach()`.
+     */
+    setAttachedHost(host) {
+        this._attachedHost = host;
+    }
+}
+/**
+ * A `ComponentPortal` is a portal that instantiates some Component upon attachment.
+ */
+class ComponentPortal extends Portal {
+    constructor(component, viewContainerRef, injector, componentFactoryResolver) {
+        super();
+        this.component = component;
+        this.viewContainerRef = viewContainerRef;
+        this.injector = injector;
+        this.componentFactoryResolver = componentFactoryResolver;
+    }
+}
+/**
+ * A `TemplatePortal` is a portal that represents some embedded template (TemplateRef).
+ */
+class TemplatePortal extends Portal {
+    constructor(template, viewContainerRef, context) {
+        super();
+        this.templateRef = template;
+        this.viewContainerRef = viewContainerRef;
+        this.context = context;
+    }
+    get origin() {
+        return this.templateRef.elementRef;
+    }
+    /**
+     * Attach the portal to the provided `PortalOutlet`.
+     * When a context is provided it will override the `context` property of the `TemplatePortal`
+     * instance.
+     */
+    attach(host, context = this.context) {
+        this.context = context;
+        return super.attach(host);
+    }
+    detach() {
+        this.context = undefined;
+        return super.detach();
+    }
+}
+/**
+ * A `DomPortal` is a portal whose DOM element will be taken from its current position
+ * in the DOM and moved into a portal outlet, when it is attached. On detach, the content
+ * will be restored to its original position.
+ */
+class DomPortal extends Portal {
+    constructor(element) {
+        super();
+        this.element = element instanceof _angular_core__WEBPACK_IMPORTED_MODULE_0__["ElementRef"] ? element.nativeElement : element;
+    }
+}
+/**
+ * Partial implementation of PortalOutlet that handles attaching
+ * ComponentPortal and TemplatePortal.
+ */
+class BasePortalOutlet {
+    constructor() {
+        /** Whether this host has already been permanently disposed. */
+        this._isDisposed = false;
+        // @breaking-change 10.0.0 `attachDomPortal` to become a required abstract method.
+        this.attachDomPortal = null;
+    }
+    /** Whether this host has an attached portal. */
+    hasAttached() {
+        return !!this._attachedPortal;
+    }
+    /** Attaches a portal. */
+    attach(portal) {
+        if (!portal) {
+            throwNullPortalError();
+        }
+        if (this.hasAttached()) {
+            throwPortalAlreadyAttachedError();
+        }
+        if (this._isDisposed) {
+            throwPortalOutletAlreadyDisposedError();
+        }
+        if (portal instanceof ComponentPortal) {
+            this._attachedPortal = portal;
+            return this.attachComponentPortal(portal);
+        }
+        else if (portal instanceof TemplatePortal) {
+            this._attachedPortal = portal;
+            return this.attachTemplatePortal(portal);
+            // @breaking-change 10.0.0 remove null check for `this.attachDomPortal`.
+        }
+        else if (this.attachDomPortal && portal instanceof DomPortal) {
+            this._attachedPortal = portal;
+            return this.attachDomPortal(portal);
+        }
+        throwUnknownPortalTypeError();
+    }
+    /** Detaches a previously attached portal. */
+    detach() {
+        if (this._attachedPortal) {
+            this._attachedPortal.setAttachedHost(null);
+            this._attachedPortal = null;
+        }
+        this._invokeDisposeFn();
+    }
+    /** Permanently dispose of this portal host. */
+    dispose() {
+        if (this.hasAttached()) {
+            this.detach();
+        }
+        this._invokeDisposeFn();
+        this._isDisposed = true;
+    }
+    /** @docs-private */
+    setDisposeFn(fn) {
+        this._disposeFn = fn;
+    }
+    _invokeDisposeFn() {
+        if (this._disposeFn) {
+            this._disposeFn();
+            this._disposeFn = null;
+        }
+    }
+}
+/**
+ * @deprecated Use `BasePortalOutlet` instead.
+ * @breaking-change 9.0.0
+ */
+class BasePortalHost extends BasePortalOutlet {
+}
+
+/**
+ * @license
+ * Copyright Google LLC All Rights Reserved.
+ *
+ * Use of this source code is governed by an MIT-style license that can be
+ * found in the LICENSE file at https://angular.io/license
+ */
+/**
+ * A PortalOutlet for attaching portals to an arbitrary DOM element outside of the Angular
+ * application context.
+ */
+class DomPortalOutlet extends BasePortalOutlet {
+    constructor(
+    /** Element into which the content is projected. */
+    outletElement, _componentFactoryResolver, _appRef, _defaultInjector, 
+    /**
+     * @deprecated `_document` Parameter to be made required.
+     * @breaking-change 10.0.0
+     */
+    _document) {
+        super();
+        this.outletElement = outletElement;
+        this._componentFactoryResolver = _componentFactoryResolver;
+        this._appRef = _appRef;
+        this._defaultInjector = _defaultInjector;
+        /**
+         * Attaches a DOM portal by transferring its content into the outlet.
+         * @param portal Portal to be attached.
+         * @deprecated To be turned into a method.
+         * @breaking-change 10.0.0
+         */
+        this.attachDomPortal = (portal) => {
+            // @breaking-change 10.0.0 Remove check and error once the
+            // `_document` constructor parameter is required.
+            if (!this._document) {
+                throw Error('Cannot attach DOM portal without _document constructor parameter');
+            }
+            const element = portal.element;
+            if (!element.parentNode) {
+                throw Error('DOM portal content must be attached to a parent node.');
+            }
+            // Anchor used to save the element's previous position so
+            // that we can restore it when the portal is detached.
+            const anchorNode = this._document.createComment('dom-portal');
+            element.parentNode.insertBefore(anchorNode, element);
+            this.outletElement.appendChild(element);
+            super.setDisposeFn(() => {
+                // We can't use `replaceWith` here because IE doesn't support it.
+                if (anchorNode.parentNode) {
+                    anchorNode.parentNode.replaceChild(element, anchorNode);
+                }
+            });
+        };
+        this._document = _document;
+    }
+    /**
+     * Attach the given ComponentPortal to DOM element using the ComponentFactoryResolver.
+     * @param portal Portal to be attached
+     * @returns Reference to the created component.
+     */
+    attachComponentPortal(portal) {
+        const resolver = portal.componentFactoryResolver || this._componentFactoryResolver;
+        const componentFactory = resolver.resolveComponentFactory(portal.component);
+        let componentRef;
+        // If the portal specifies a ViewContainerRef, we will use that as the attachment point
+        // for the component (in terms of Angular's component tree, not rendering).
+        // When the ViewContainerRef is missing, we use the factory to create the component directly
+        // and then manually attach the view to the application.
+        if (portal.viewContainerRef) {
+            componentRef = portal.viewContainerRef.createComponent(componentFactory, portal.viewContainerRef.length, portal.injector || portal.viewContainerRef.injector);
+            this.setDisposeFn(() => componentRef.destroy());
+        }
+        else {
+            componentRef = componentFactory.create(portal.injector || this._defaultInjector);
+            this._appRef.attachView(componentRef.hostView);
+            this.setDisposeFn(() => {
+                this._appRef.detachView(componentRef.hostView);
+                componentRef.destroy();
+            });
+        }
+        // At this point the component has been instantiated, so we move it to the location in the DOM
+        // where we want it to be rendered.
+        this.outletElement.appendChild(this._getComponentRootNode(componentRef));
+        return componentRef;
+    }
+    /**
+     * Attaches a template portal to the DOM as an embedded view.
+     * @param portal Portal to be attached.
+     * @returns Reference to the created embedded view.
+     */
+    attachTemplatePortal(portal) {
+        let viewContainer = portal.viewContainerRef;
+        let viewRef = viewContainer.createEmbeddedView(portal.templateRef, portal.context);
+        viewRef.detectChanges();
+        // The method `createEmbeddedView` will add the view as a child of the viewContainer.
+        // But for the DomPortalOutlet the view can be added everywhere in the DOM
+        // (e.g Overlay Container) To move the view to the specified host element. We just
+        // re-append the existing root nodes.
+        viewRef.rootNodes.forEach(rootNode => this.outletElement.appendChild(rootNode));
+        this.setDisposeFn((() => {
+            let index = viewContainer.indexOf(viewRef);
+            if (index !== -1) {
+                viewContainer.remove(index);
+            }
+        }));
+        // TODO(jelbourn): Return locals from view.
+        return viewRef;
+    }
+    /**
+     * Clears out a portal from the DOM.
+     */
+    dispose() {
+        super.dispose();
+        if (this.outletElement.parentNode != null) {
+            this.outletElement.parentNode.removeChild(this.outletElement);
+        }
+    }
+    /** Gets the root HTMLElement for an instantiated component. */
+    _getComponentRootNode(componentRef) {
+        return componentRef.hostView.rootNodes[0];
+    }
+}
+/**
+ * @deprecated Use `DomPortalOutlet` instead.
+ * @breaking-change 9.0.0
+ */
+class DomPortalHost extends DomPortalOutlet {
+}
+
+/**
+ * @license
+ * Copyright Google LLC All Rights Reserved.
+ *
+ * Use of this source code is governed by an MIT-style license that can be
+ * found in the LICENSE file at https://angular.io/license
+ */
+/**
+ * Directive version of a `TemplatePortal`. Because the directive *is* a TemplatePortal,
+ * the directive instance itself can be attached to a host, enabling declarative use of portals.
+ */
+class CdkPortal extends TemplatePortal {
+    constructor(templateRef, viewContainerRef) {
+        super(templateRef, viewContainerRef);
+    }
+}
+CdkPortal.ɵfac = function CdkPortal_Factory(t) { return new (t || CdkPortal)(_angular_core__WEBPACK_IMPORTED_MODULE_0__["ɵɵdirectiveInject"](_angular_core__WEBPACK_IMPORTED_MODULE_0__["TemplateRef"]), _angular_core__WEBPACK_IMPORTED_MODULE_0__["ɵɵdirectiveInject"](_angular_core__WEBPACK_IMPORTED_MODULE_0__["ViewContainerRef"])); };
+CdkPortal.ɵdir = _angular_core__WEBPACK_IMPORTED_MODULE_0__["ɵɵdefineDirective"]({ type: CdkPortal, selectors: [["", "cdkPortal", ""]], exportAs: ["cdkPortal"], features: [_angular_core__WEBPACK_IMPORTED_MODULE_0__["ɵɵInheritDefinitionFeature"]] });
+CdkPortal.ctorParameters = () => [
+    { type: _angular_core__WEBPACK_IMPORTED_MODULE_0__["TemplateRef"] },
+    { type: _angular_core__WEBPACK_IMPORTED_MODULE_0__["ViewContainerRef"] }
+];
+/*@__PURE__*/ (function () { _angular_core__WEBPACK_IMPORTED_MODULE_0__["ɵsetClassMetadata"](CdkPortal, [{
+        type: _angular_core__WEBPACK_IMPORTED_MODULE_0__["Directive"],
+        args: [{
+                selector: '[cdkPortal]',
+                exportAs: 'cdkPortal'
+            }]
+    }], function () { return [{ type: _angular_core__WEBPACK_IMPORTED_MODULE_0__["TemplateRef"] }, { type: _angular_core__WEBPACK_IMPORTED_MODULE_0__["ViewContainerRef"] }]; }, null); })();
+/**
+ * @deprecated Use `CdkPortal` instead.
+ * @breaking-change 9.0.0
+ */
+class TemplatePortalDirective extends CdkPortal {
+}
+TemplatePortalDirective.ɵfac = function TemplatePortalDirective_Factory(t) { return ɵTemplatePortalDirective_BaseFactory(t || TemplatePortalDirective); };
+TemplatePortalDirective.ɵdir = _angular_core__WEBPACK_IMPORTED_MODULE_0__["ɵɵdefineDirective"]({ type: TemplatePortalDirective, selectors: [["", "cdk-portal", ""], ["", "portal", ""]], exportAs: ["cdkPortal"], features: [_angular_core__WEBPACK_IMPORTED_MODULE_0__["ɵɵProvidersFeature"]([{
+                provide: CdkPortal,
+                useExisting: TemplatePortalDirective
+            }]), _angular_core__WEBPACK_IMPORTED_MODULE_0__["ɵɵInheritDefinitionFeature"]] });
+const ɵTemplatePortalDirective_BaseFactory = _angular_core__WEBPACK_IMPORTED_MODULE_0__["ɵɵgetInheritedFactory"](TemplatePortalDirective);
+/*@__PURE__*/ (function () { _angular_core__WEBPACK_IMPORTED_MODULE_0__["ɵsetClassMetadata"](TemplatePortalDirective, [{
+        type: _angular_core__WEBPACK_IMPORTED_MODULE_0__["Directive"],
+        args: [{
+                selector: '[cdk-portal], [portal]',
+                exportAs: 'cdkPortal',
+                providers: [{
+                        provide: CdkPortal,
+                        useExisting: TemplatePortalDirective
+                    }]
+            }]
+    }], null, null); })();
+/**
+ * Directive version of a PortalOutlet. Because the directive *is* a PortalOutlet, portals can be
+ * directly attached to it, enabling declarative use.
+ *
+ * Usage:
+ * `<ng-template [cdkPortalOutlet]="greeting"></ng-template>`
+ */
+class CdkPortalOutlet extends BasePortalOutlet {
+    constructor(_componentFactoryResolver, _viewContainerRef, 
+    /**
+     * @deprecated `_document` parameter to be made required.
+     * @breaking-change 9.0.0
+     */
+    _document) {
+        super();
+        this._componentFactoryResolver = _componentFactoryResolver;
+        this._viewContainerRef = _viewContainerRef;
+        /** Whether the portal component is initialized. */
+        this._isInitialized = false;
+        /** Emits when a portal is attached to the outlet. */
+        this.attached = new _angular_core__WEBPACK_IMPORTED_MODULE_0__["EventEmitter"]();
+        /**
+         * Attaches the given DomPortal to this PortalHost by moving all of the portal content into it.
+         * @param portal Portal to be attached.
+         * @deprecated To be turned into a method.
+         * @breaking-change 10.0.0
+         */
+        this.attachDomPortal = (portal) => {
+            // @breaking-change 9.0.0 Remove check and error once the
+            // `_document` constructor parameter is required.
+            if (!this._document) {
+                throw Error('Cannot attach DOM portal without _document constructor parameter');
+            }
+            const element = portal.element;
+            if (!element.parentNode) {
+                throw Error('DOM portal content must be attached to a parent node.');
+            }
+            // Anchor used to save the element's previous position so
+            // that we can restore it when the portal is detached.
+            const anchorNode = this._document.createComment('dom-portal');
+            portal.setAttachedHost(this);
+            element.parentNode.insertBefore(anchorNode, element);
+            this._getRootNode().appendChild(element);
+            super.setDisposeFn(() => {
+                if (anchorNode.parentNode) {
+                    anchorNode.parentNode.replaceChild(element, anchorNode);
+                }
+            });
+        };
+        this._document = _document;
+    }
+    /** Portal associated with the Portal outlet. */
+    get portal() {
+        return this._attachedPortal;
+    }
+    set portal(portal) {
+        // Ignore the cases where the `portal` is set to a falsy value before the lifecycle hooks have
+        // run. This handles the cases where the user might do something like `<div cdkPortalOutlet>`
+        // and attach a portal programmatically in the parent component. When Angular does the first CD
+        // round, it will fire the setter with empty string, causing the user's content to be cleared.
+        if (this.hasAttached() && !portal && !this._isInitialized) {
+            return;
+        }
+        if (this.hasAttached()) {
+            super.detach();
+        }
+        if (portal) {
+            super.attach(portal);
+        }
+        this._attachedPortal = portal;
+    }
+    /** Component or view reference that is attached to the portal. */
+    get attachedRef() {
+        return this._attachedRef;
+    }
+    ngOnInit() {
+        this._isInitialized = true;
+    }
+    ngOnDestroy() {
+        super.dispose();
+        this._attachedPortal = null;
+        this._attachedRef = null;
+    }
+    /**
+     * Attach the given ComponentPortal to this PortalOutlet using the ComponentFactoryResolver.
+     *
+     * @param portal Portal to be attached to the portal outlet.
+     * @returns Reference to the created component.
+     */
+    attachComponentPortal(portal) {
+        portal.setAttachedHost(this);
+        // If the portal specifies an origin, use that as the logical location of the component
+        // in the application tree. Otherwise use the location of this PortalOutlet.
+        const viewContainerRef = portal.viewContainerRef != null ?
+            portal.viewContainerRef :
+            this._viewContainerRef;
+        const resolver = portal.componentFactoryResolver || this._componentFactoryResolver;
+        const componentFactory = resolver.resolveComponentFactory(portal.component);
+        const ref = viewContainerRef.createComponent(componentFactory, viewContainerRef.length, portal.injector || viewContainerRef.injector);
+        // If we're using a view container that's different from the injected one (e.g. when the portal
+        // specifies its own) we need to move the component into the outlet, otherwise it'll be rendered
+        // inside of the alternate view container.
+        if (viewContainerRef !== this._viewContainerRef) {
+            this._getRootNode().appendChild(ref.hostView.rootNodes[0]);
+        }
+        super.setDisposeFn(() => ref.destroy());
+        this._attachedPortal = portal;
+        this._attachedRef = ref;
+        this.attached.emit(ref);
+        return ref;
+    }
+    /**
+     * Attach the given TemplatePortal to this PortalHost as an embedded View.
+     * @param portal Portal to be attached.
+     * @returns Reference to the created embedded view.
+     */
+    attachTemplatePortal(portal) {
+        portal.setAttachedHost(this);
+        const viewRef = this._viewContainerRef.createEmbeddedView(portal.templateRef, portal.context);
+        super.setDisposeFn(() => this._viewContainerRef.clear());
+        this._attachedPortal = portal;
+        this._attachedRef = viewRef;
+        this.attached.emit(viewRef);
+        return viewRef;
+    }
+    /** Gets the root node of the portal outlet. */
+    _getRootNode() {
+        const nativeElement = this._viewContainerRef.element.nativeElement;
+        // The directive could be set on a template which will result in a comment
+        // node being the root. Use the comment's parent node if that is the case.
+        return (nativeElement.nodeType === nativeElement.ELEMENT_NODE ?
+            nativeElement : nativeElement.parentNode);
+    }
+}
+CdkPortalOutlet.ɵfac = function CdkPortalOutlet_Factory(t) { return new (t || CdkPortalOutlet)(_angular_core__WEBPACK_IMPORTED_MODULE_0__["ɵɵdirectiveInject"](_angular_core__WEBPACK_IMPORTED_MODULE_0__["ComponentFactoryResolver"]), _angular_core__WEBPACK_IMPORTED_MODULE_0__["ɵɵdirectiveInject"](_angular_core__WEBPACK_IMPORTED_MODULE_0__["ViewContainerRef"]), _angular_core__WEBPACK_IMPORTED_MODULE_0__["ɵɵdirectiveInject"](_angular_common__WEBPACK_IMPORTED_MODULE_1__["DOCUMENT"])); };
+CdkPortalOutlet.ɵdir = _angular_core__WEBPACK_IMPORTED_MODULE_0__["ɵɵdefineDirective"]({ type: CdkPortalOutlet, selectors: [["", "cdkPortalOutlet", ""]], inputs: { portal: ["cdkPortalOutlet", "portal"] }, outputs: { attached: "attached" }, exportAs: ["cdkPortalOutlet"], features: [_angular_core__WEBPACK_IMPORTED_MODULE_0__["ɵɵInheritDefinitionFeature"]] });
+CdkPortalOutlet.ctorParameters = () => [
+    { type: _angular_core__WEBPACK_IMPORTED_MODULE_0__["ComponentFactoryResolver"] },
+    { type: _angular_core__WEBPACK_IMPORTED_MODULE_0__["ViewContainerRef"] },
+    { type: undefined, decorators: [{ type: _angular_core__WEBPACK_IMPORTED_MODULE_0__["Inject"], args: [_angular_common__WEBPACK_IMPORTED_MODULE_1__["DOCUMENT"],] }] }
+];
+CdkPortalOutlet.propDecorators = {
+    attached: [{ type: _angular_core__WEBPACK_IMPORTED_MODULE_0__["Output"] }]
+};
+/*@__PURE__*/ (function () { _angular_core__WEBPACK_IMPORTED_MODULE_0__["ɵsetClassMetadata"](CdkPortalOutlet, [{
+        type: _angular_core__WEBPACK_IMPORTED_MODULE_0__["Directive"],
+        args: [{
+                selector: '[cdkPortalOutlet]',
+                exportAs: 'cdkPortalOutlet',
+                inputs: ['portal: cdkPortalOutlet']
+            }]
+    }], function () { return [{ type: _angular_core__WEBPACK_IMPORTED_MODULE_0__["ComponentFactoryResolver"] }, { type: _angular_core__WEBPACK_IMPORTED_MODULE_0__["ViewContainerRef"] }, { type: undefined, decorators: [{
+                type: _angular_core__WEBPACK_IMPORTED_MODULE_0__["Inject"],
+                args: [_angular_common__WEBPACK_IMPORTED_MODULE_1__["DOCUMENT"]]
+            }] }]; }, { attached: [{
+            type: _angular_core__WEBPACK_IMPORTED_MODULE_0__["Output"]
+        }] }); })();
+/**
+ * @deprecated Use `CdkPortalOutlet` instead.
+ * @breaking-change 9.0.0
+ */
+class PortalHostDirective extends CdkPortalOutlet {
+}
+PortalHostDirective.ɵfac = function PortalHostDirective_Factory(t) { return ɵPortalHostDirective_BaseFactory(t || PortalHostDirective); };
+PortalHostDirective.ɵdir = _angular_core__WEBPACK_IMPORTED_MODULE_0__["ɵɵdefineDirective"]({ type: PortalHostDirective, selectors: [["", "cdkPortalHost", ""], ["", "portalHost", ""]], inputs: { portal: ["cdkPortalHost", "portal"] }, exportAs: ["cdkPortalHost"], features: [_angular_core__WEBPACK_IMPORTED_MODULE_0__["ɵɵProvidersFeature"]([{
+                provide: CdkPortalOutlet,
+                useExisting: PortalHostDirective
+            }]), _angular_core__WEBPACK_IMPORTED_MODULE_0__["ɵɵInheritDefinitionFeature"]] });
+const ɵPortalHostDirective_BaseFactory = _angular_core__WEBPACK_IMPORTED_MODULE_0__["ɵɵgetInheritedFactory"](PortalHostDirective);
+/*@__PURE__*/ (function () { _angular_core__WEBPACK_IMPORTED_MODULE_0__["ɵsetClassMetadata"](PortalHostDirective, [{
+        type: _angular_core__WEBPACK_IMPORTED_MODULE_0__["Directive"],
+        args: [{
+                selector: '[cdkPortalHost], [portalHost]',
+                exportAs: 'cdkPortalHost',
+                inputs: ['portal: cdkPortalHost'],
+                providers: [{
+                        provide: CdkPortalOutlet,
+                        useExisting: PortalHostDirective
+                    }]
+            }]
+    }], null, null); })();
+class PortalModule {
+}
+PortalModule.ɵmod = _angular_core__WEBPACK_IMPORTED_MODULE_0__["ɵɵdefineNgModule"]({ type: PortalModule });
+PortalModule.ɵinj = _angular_core__WEBPACK_IMPORTED_MODULE_0__["ɵɵdefineInjector"]({ factory: function PortalModule_Factory(t) { return new (t || PortalModule)(); } });
+(function () { (typeof ngJitMode === "undefined" || ngJitMode) && _angular_core__WEBPACK_IMPORTED_MODULE_0__["ɵɵsetNgModuleScope"](PortalModule, { declarations: [CdkPortal, CdkPortalOutlet, TemplatePortalDirective, PortalHostDirective], exports: [CdkPortal, CdkPortalOutlet, TemplatePortalDirective, PortalHostDirective] }); })();
+/*@__PURE__*/ (function () { _angular_core__WEBPACK_IMPORTED_MODULE_0__["ɵsetClassMetadata"](PortalModule, [{
+        type: _angular_core__WEBPACK_IMPORTED_MODULE_0__["NgModule"],
+        args: [{
+                exports: [CdkPortal, CdkPortalOutlet, TemplatePortalDirective, PortalHostDirective],
+                declarations: [CdkPortal, CdkPortalOutlet, TemplatePortalDirective, PortalHostDirective]
+            }]
+    }], null, null); })();
+
+/**
+ * @license
+ * Copyright Google LLC All Rights Reserved.
+ *
+ * Use of this source code is governed by an MIT-style license that can be
+ * found in the LICENSE file at https://angular.io/license
+ */
+/**
+ * Custom injector to be used when providing custom
+ * injection tokens to components inside a portal.
+ * @docs-private
+ */
+class PortalInjector {
+    constructor(_parentInjector, _customTokens) {
+        this._parentInjector = _parentInjector;
+        this._customTokens = _customTokens;
+    }
+    get(token, notFoundValue) {
+        const value = this._customTokens.get(token);
+        if (typeof value !== 'undefined') {
+            return value;
+        }
+        return this._parentInjector.get(token, notFoundValue);
+    }
+}
+
+/**
+ * @license
+ * Copyright Google LLC All Rights Reserved.
+ *
+ * Use of this source code is governed by an MIT-style license that can be
+ * found in the LICENSE file at https://angular.io/license
+ */
+
+/**
+ * Generated bundle index. Do not edit.
+ */
+
+
+
+//# sourceMappingURL=portal.js.map
+
+/***/ }),
+
+/***/ "./node_modules/@angular/cdk/__ivy_ngcc__/fesm2015/scrolling.js":
+/*!**********************************************************************!*\
+  !*** ./node_modules/@angular/cdk/__ivy_ngcc__/fesm2015/scrolling.js ***!
+  \**********************************************************************/
+/*! exports provided: CdkFixedSizeVirtualScroll, CdkScrollable, CdkScrollableModule, CdkVirtualForOf, CdkVirtualScrollViewport, DEFAULT_RESIZE_TIME, DEFAULT_SCROLL_TIME, FixedSizeVirtualScrollStrategy, ScrollDispatcher, ScrollingModule, VIRTUAL_SCROLL_STRATEGY, ViewportRuler, _fixedSizeVirtualScrollStrategyFactory */
+/***/ (function(module, __webpack_exports__, __webpack_require__) {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "CdkFixedSizeVirtualScroll", function() { return CdkFixedSizeVirtualScroll; });
+/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "CdkScrollable", function() { return CdkScrollable; });
+/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "CdkScrollableModule", function() { return CdkScrollableModule; });
+/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "CdkVirtualForOf", function() { return CdkVirtualForOf; });
+/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "CdkVirtualScrollViewport", function() { return CdkVirtualScrollViewport; });
+/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "DEFAULT_RESIZE_TIME", function() { return DEFAULT_RESIZE_TIME; });
+/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "DEFAULT_SCROLL_TIME", function() { return DEFAULT_SCROLL_TIME; });
+/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "FixedSizeVirtualScrollStrategy", function() { return FixedSizeVirtualScrollStrategy; });
+/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "ScrollDispatcher", function() { return ScrollDispatcher; });
+/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "ScrollingModule", function() { return ScrollingModule; });
+/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "VIRTUAL_SCROLL_STRATEGY", function() { return VIRTUAL_SCROLL_STRATEGY; });
+/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "ViewportRuler", function() { return ViewportRuler; });
+/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "_fixedSizeVirtualScrollStrategyFactory", function() { return _fixedSizeVirtualScrollStrategyFactory; });
+/* harmony import */ var _angular_cdk_coercion__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! @angular/cdk/coercion */ "./node_modules/@angular/cdk/fesm2015/coercion.js");
+/* harmony import */ var _angular_core__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! @angular/core */ "./node_modules/@angular/core/__ivy_ngcc__/fesm2015/core.js");
+/* harmony import */ var rxjs__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! rxjs */ "./node_modules/rxjs/_esm2015/index.js");
+/* harmony import */ var rxjs_operators__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! rxjs/operators */ "./node_modules/rxjs/_esm2015/operators/index.js");
+/* harmony import */ var _angular_cdk_platform__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(/*! @angular/cdk/platform */ "./node_modules/@angular/cdk/__ivy_ngcc__/fesm2015/platform.js");
+/* harmony import */ var _angular_common__WEBPACK_IMPORTED_MODULE_5__ = __webpack_require__(/*! @angular/common */ "./node_modules/@angular/common/__ivy_ngcc__/fesm2015/common.js");
+/* harmony import */ var _angular_cdk_bidi__WEBPACK_IMPORTED_MODULE_6__ = __webpack_require__(/*! @angular/cdk/bidi */ "./node_modules/@angular/cdk/__ivy_ngcc__/fesm2015/bidi.js");
+/* harmony import */ var _angular_cdk_collections__WEBPACK_IMPORTED_MODULE_7__ = __webpack_require__(/*! @angular/cdk/collections */ "./node_modules/@angular/cdk/__ivy_ngcc__/fesm2015/collections.js");
+
+
+
+
+
+
+
+
+
+/**
+ * @license
+ * Copyright Google LLC All Rights Reserved.
+ *
+ * Use of this source code is governed by an MIT-style license that can be
+ * found in the LICENSE file at https://angular.io/license
+ */
+/** The injection token used to specify the virtual scrolling strategy. */
+
+
+
+
+const _c0 = ["contentWrapper"];
+const _c1 = ["*"];
+const VIRTUAL_SCROLL_STRATEGY = new _angular_core__WEBPACK_IMPORTED_MODULE_1__["InjectionToken"]('VIRTUAL_SCROLL_STRATEGY');
+
+/**
+ * @license
+ * Copyright Google LLC All Rights Reserved.
+ *
+ * Use of this source code is governed by an MIT-style license that can be
+ * found in the LICENSE file at https://angular.io/license
+ */
+/** Virtual scrolling strategy for lists with items of known fixed size. */
+class FixedSizeVirtualScrollStrategy {
+    /**
+     * @param itemSize The size of the items in the virtually scrolling list.
+     * @param minBufferPx The minimum amount of buffer (in pixels) before needing to render more
+     * @param maxBufferPx The amount of buffer (in pixels) to render when rendering more.
+     */
+    constructor(itemSize, minBufferPx, maxBufferPx) {
+        this._scrolledIndexChange = new rxjs__WEBPACK_IMPORTED_MODULE_2__["Subject"]();
+        /** @docs-private Implemented as part of VirtualScrollStrategy. */
+        this.scrolledIndexChange = this._scrolledIndexChange.pipe(Object(rxjs_operators__WEBPACK_IMPORTED_MODULE_3__["distinctUntilChanged"])());
+        /** The attached viewport. */
+        this._viewport = null;
+        this._itemSize = itemSize;
+        this._minBufferPx = minBufferPx;
+        this._maxBufferPx = maxBufferPx;
+    }
+    /**
+     * Attaches this scroll strategy to a viewport.
+     * @param viewport The viewport to attach this strategy to.
+     */
+    attach(viewport) {
+        this._viewport = viewport;
+        this._updateTotalContentSize();
+        this._updateRenderedRange();
+    }
+    /** Detaches this scroll strategy from the currently attached viewport. */
+    detach() {
+        this._scrolledIndexChange.complete();
+        this._viewport = null;
+    }
+    /**
+     * Update the item size and buffer size.
+     * @param itemSize The size of the items in the virtually scrolling list.
+     * @param minBufferPx The minimum amount of buffer (in pixels) before needing to render more
+     * @param maxBufferPx The amount of buffer (in pixels) to render when rendering more.
+     */
+    updateItemAndBufferSize(itemSize, minBufferPx, maxBufferPx) {
+        if (maxBufferPx < minBufferPx) {
+            throw Error('CDK virtual scroll: maxBufferPx must be greater than or equal to minBufferPx');
+        }
+        this._itemSize = itemSize;
+        this._minBufferPx = minBufferPx;
+        this._maxBufferPx = maxBufferPx;
+        this._updateTotalContentSize();
+        this._updateRenderedRange();
+    }
+    /** @docs-private Implemented as part of VirtualScrollStrategy. */
+    onContentScrolled() {
+        this._updateRenderedRange();
+    }
+    /** @docs-private Implemented as part of VirtualScrollStrategy. */
+    onDataLengthChanged() {
+        this._updateTotalContentSize();
+        this._updateRenderedRange();
+    }
+    /** @docs-private Implemented as part of VirtualScrollStrategy. */
+    onContentRendered() { }
+    /** @docs-private Implemented as part of VirtualScrollStrategy. */
+    onRenderedOffsetChanged() { }
+    /**
+     * Scroll to the offset for the given index.
+     * @param index The index of the element to scroll to.
+     * @param behavior The ScrollBehavior to use when scrolling.
+     */
+    scrollToIndex(index, behavior) {
+        if (this._viewport) {
+            this._viewport.scrollToOffset(index * this._itemSize, behavior);
+        }
+    }
+    /** Update the viewport's total content size. */
+    _updateTotalContentSize() {
+        if (!this._viewport) {
+            return;
+        }
+        this._viewport.setTotalContentSize(this._viewport.getDataLength() * this._itemSize);
+    }
+    /** Update the viewport's rendered range. */
+    _updateRenderedRange() {
+        if (!this._viewport) {
+            return;
+        }
+        const renderedRange = this._viewport.getRenderedRange();
+        const newRange = { start: renderedRange.start, end: renderedRange.end };
+        const viewportSize = this._viewport.getViewportSize();
+        const dataLength = this._viewport.getDataLength();
+        let scrollOffset = this._viewport.measureScrollOffset();
+        let firstVisibleIndex = scrollOffset / this._itemSize;
+        // If user scrolls to the bottom of the list and data changes to a smaller list
+        if (newRange.end > dataLength) {
+            // We have to recalculate the first visible index based on new data length and viewport size.
+            const maxVisibleItems = Math.ceil(viewportSize / this._itemSize);
+            const newVisibleIndex = Math.max(0, Math.min(firstVisibleIndex, dataLength - maxVisibleItems));
+            // If first visible index changed we must update scroll offset to handle start/end buffers
+            // Current range must also be adjusted to cover the new position (bottom of new list).
+            if (firstVisibleIndex != newVisibleIndex) {
+                firstVisibleIndex = newVisibleIndex;
+                scrollOffset = newVisibleIndex * this._itemSize;
+                newRange.start = Math.floor(firstVisibleIndex);
+            }
+            newRange.end = Math.max(0, Math.min(dataLength, newRange.start + maxVisibleItems));
+        }
+        const startBuffer = scrollOffset - newRange.start * this._itemSize;
+        if (startBuffer < this._minBufferPx && newRange.start != 0) {
+            const expandStart = Math.ceil((this._maxBufferPx - startBuffer) / this._itemSize);
+            newRange.start = Math.max(0, newRange.start - expandStart);
+            newRange.end = Math.min(dataLength, Math.ceil(firstVisibleIndex + (viewportSize + this._minBufferPx) / this._itemSize));
+        }
+        else {
+            const endBuffer = newRange.end * this._itemSize - (scrollOffset + viewportSize);
+            if (endBuffer < this._minBufferPx && newRange.end != dataLength) {
+                const expandEnd = Math.ceil((this._maxBufferPx - endBuffer) / this._itemSize);
+                if (expandEnd > 0) {
+                    newRange.end = Math.min(dataLength, newRange.end + expandEnd);
+                    newRange.start = Math.max(0, Math.floor(firstVisibleIndex - this._minBufferPx / this._itemSize));
+                }
+            }
+        }
+        this._viewport.setRenderedRange(newRange);
+        this._viewport.setRenderedContentOffset(this._itemSize * newRange.start);
+        this._scrolledIndexChange.next(Math.floor(firstVisibleIndex));
+    }
+}
+/**
+ * Provider factory for `FixedSizeVirtualScrollStrategy` that simply extracts the already created
+ * `FixedSizeVirtualScrollStrategy` from the given directive.
+ * @param fixedSizeDir The instance of `CdkFixedSizeVirtualScroll` to extract the
+ *     `FixedSizeVirtualScrollStrategy` from.
+ */
+function _fixedSizeVirtualScrollStrategyFactory(fixedSizeDir) {
+    return fixedSizeDir._scrollStrategy;
+}
+/** A virtual scroll strategy that supports fixed-size items. */
+class CdkFixedSizeVirtualScroll {
+    constructor() {
+        this._itemSize = 20;
+        this._minBufferPx = 100;
+        this._maxBufferPx = 200;
+        /** The scroll strategy used by this directive. */
+        this._scrollStrategy = new FixedSizeVirtualScrollStrategy(this.itemSize, this.minBufferPx, this.maxBufferPx);
+    }
+    /** The size of the items in the list (in pixels). */
+    get itemSize() { return this._itemSize; }
+    set itemSize(value) { this._itemSize = Object(_angular_cdk_coercion__WEBPACK_IMPORTED_MODULE_0__["coerceNumberProperty"])(value); }
+    /**
+     * The minimum amount of buffer rendered beyond the viewport (in pixels).
+     * If the amount of buffer dips below this number, more items will be rendered. Defaults to 100px.
+     */
+    get minBufferPx() { return this._minBufferPx; }
+    set minBufferPx(value) { this._minBufferPx = Object(_angular_cdk_coercion__WEBPACK_IMPORTED_MODULE_0__["coerceNumberProperty"])(value); }
+    /**
+     * The number of pixels worth of buffer to render for when rendering new items. Defaults to 200px.
+     */
+    get maxBufferPx() { return this._maxBufferPx; }
+    set maxBufferPx(value) { this._maxBufferPx = Object(_angular_cdk_coercion__WEBPACK_IMPORTED_MODULE_0__["coerceNumberProperty"])(value); }
+    ngOnChanges() {
+        this._scrollStrategy.updateItemAndBufferSize(this.itemSize, this.minBufferPx, this.maxBufferPx);
+    }
+}
+CdkFixedSizeVirtualScroll.ɵfac = function CdkFixedSizeVirtualScroll_Factory(t) { return new (t || CdkFixedSizeVirtualScroll)(); };
+CdkFixedSizeVirtualScroll.ɵdir = _angular_core__WEBPACK_IMPORTED_MODULE_1__["ɵɵdefineDirective"]({ type: CdkFixedSizeVirtualScroll, selectors: [["cdk-virtual-scroll-viewport", "itemSize", ""]], inputs: { itemSize: "itemSize", minBufferPx: "minBufferPx", maxBufferPx: "maxBufferPx" }, features: [_angular_core__WEBPACK_IMPORTED_MODULE_1__["ɵɵProvidersFeature"]([{
+                provide: VIRTUAL_SCROLL_STRATEGY,
+                useFactory: _fixedSizeVirtualScrollStrategyFactory,
+                deps: [Object(_angular_core__WEBPACK_IMPORTED_MODULE_1__["forwardRef"])(() => CdkFixedSizeVirtualScroll)]
+            }]), _angular_core__WEBPACK_IMPORTED_MODULE_1__["ɵɵNgOnChangesFeature"]] });
+CdkFixedSizeVirtualScroll.propDecorators = {
+    itemSize: [{ type: _angular_core__WEBPACK_IMPORTED_MODULE_1__["Input"] }],
+    minBufferPx: [{ type: _angular_core__WEBPACK_IMPORTED_MODULE_1__["Input"] }],
+    maxBufferPx: [{ type: _angular_core__WEBPACK_IMPORTED_MODULE_1__["Input"] }]
+};
+/*@__PURE__*/ (function () { _angular_core__WEBPACK_IMPORTED_MODULE_1__["ɵsetClassMetadata"](CdkFixedSizeVirtualScroll, [{
+        type: _angular_core__WEBPACK_IMPORTED_MODULE_1__["Directive"],
+        args: [{
+                selector: 'cdk-virtual-scroll-viewport[itemSize]',
+                providers: [{
+                        provide: VIRTUAL_SCROLL_STRATEGY,
+                        useFactory: _fixedSizeVirtualScrollStrategyFactory,
+                        deps: [Object(_angular_core__WEBPACK_IMPORTED_MODULE_1__["forwardRef"])(() => CdkFixedSizeVirtualScroll)]
+                    }]
+            }]
+    }], function () { return []; }, { itemSize: [{
+            type: _angular_core__WEBPACK_IMPORTED_MODULE_1__["Input"]
+        }], minBufferPx: [{
+            type: _angular_core__WEBPACK_IMPORTED_MODULE_1__["Input"]
+        }], maxBufferPx: [{
+            type: _angular_core__WEBPACK_IMPORTED_MODULE_1__["Input"]
+        }] }); })();
+
+/**
+ * @license
+ * Copyright Google LLC All Rights Reserved.
+ *
+ * Use of this source code is governed by an MIT-style license that can be
+ * found in the LICENSE file at https://angular.io/license
+ */
+/** Time in ms to throttle the scrolling events by default. */
+const DEFAULT_SCROLL_TIME = 20;
+/**
+ * Service contained all registered Scrollable references and emits an event when any one of the
+ * Scrollable references emit a scrolled event.
+ */
+class ScrollDispatcher {
+    constructor(_ngZone, _platform, 
+    /** @breaking-change 11.0.0 make document required */
+    document) {
+        this._ngZone = _ngZone;
+        this._platform = _platform;
+        /** Subject for notifying that a registered scrollable reference element has been scrolled. */
+        this._scrolled = new rxjs__WEBPACK_IMPORTED_MODULE_2__["Subject"]();
+        /** Keeps track of the global `scroll` and `resize` subscriptions. */
+        this._globalSubscription = null;
+        /** Keeps track of the amount of subscriptions to `scrolled`. Used for cleaning up afterwards. */
+        this._scrolledCount = 0;
+        /**
+         * Map of all the scrollable references that are registered with the service and their
+         * scroll event subscriptions.
+         */
+        this.scrollContainers = new Map();
+        this._document = document;
+    }
+    /**
+     * Registers a scrollable instance with the service and listens for its scrolled events. When the
+     * scrollable is scrolled, the service emits the event to its scrolled observable.
+     * @param scrollable Scrollable instance to be registered.
+     */
+    register(scrollable) {
+        if (!this.scrollContainers.has(scrollable)) {
+            this.scrollContainers.set(scrollable, scrollable.elementScrolled()
+                .subscribe(() => this._scrolled.next(scrollable)));
+        }
+    }
+    /**
+     * Deregisters a Scrollable reference and unsubscribes from its scroll event observable.
+     * @param scrollable Scrollable instance to be deregistered.
+     */
+    deregister(scrollable) {
+        const scrollableReference = this.scrollContainers.get(scrollable);
+        if (scrollableReference) {
+            scrollableReference.unsubscribe();
+            this.scrollContainers.delete(scrollable);
+        }
+    }
+    /**
+     * Returns an observable that emits an event whenever any of the registered Scrollable
+     * references (or window, document, or body) fire a scrolled event. Can provide a time in ms
+     * to override the default "throttle" time.
+     *
+     * **Note:** in order to avoid hitting change detection for every scroll event,
+     * all of the events emitted from this stream will be run outside the Angular zone.
+     * If you need to update any data bindings as a result of a scroll event, you have
+     * to run the callback using `NgZone.run`.
+     */
+    scrolled(auditTimeInMs = DEFAULT_SCROLL_TIME) {
+        if (!this._platform.isBrowser) {
+            return Object(rxjs__WEBPACK_IMPORTED_MODULE_2__["of"])();
+        }
+        return new rxjs__WEBPACK_IMPORTED_MODULE_2__["Observable"]((observer) => {
+            if (!this._globalSubscription) {
+                this._addGlobalListener();
+            }
+            // In the case of a 0ms delay, use an observable without auditTime
+            // since it does add a perceptible delay in processing overhead.
+            const subscription = auditTimeInMs > 0 ?
+                this._scrolled.pipe(Object(rxjs_operators__WEBPACK_IMPORTED_MODULE_3__["auditTime"])(auditTimeInMs)).subscribe(observer) :
+                this._scrolled.subscribe(observer);
+            this._scrolledCount++;
+            return () => {
+                subscription.unsubscribe();
+                this._scrolledCount--;
+                if (!this._scrolledCount) {
+                    this._removeGlobalListener();
+                }
+            };
+        });
+    }
+    ngOnDestroy() {
+        this._removeGlobalListener();
+        this.scrollContainers.forEach((_, container) => this.deregister(container));
+        this._scrolled.complete();
+    }
+    /**
+     * Returns an observable that emits whenever any of the
+     * scrollable ancestors of an element are scrolled.
+     * @param elementRef Element whose ancestors to listen for.
+     * @param auditTimeInMs Time to throttle the scroll events.
+     */
+    ancestorScrolled(elementRef, auditTimeInMs) {
+        const ancestors = this.getAncestorScrollContainers(elementRef);
+        return this.scrolled(auditTimeInMs).pipe(Object(rxjs_operators__WEBPACK_IMPORTED_MODULE_3__["filter"])(target => {
+            return !target || ancestors.indexOf(target) > -1;
+        }));
+    }
+    /** Returns all registered Scrollables that contain the provided element. */
+    getAncestorScrollContainers(elementRef) {
+        const scrollingContainers = [];
+        this.scrollContainers.forEach((_subscription, scrollable) => {
+            if (this._scrollableContainsElement(scrollable, elementRef)) {
+                scrollingContainers.push(scrollable);
+            }
+        });
+        return scrollingContainers;
+    }
+    /** Access injected document if available or fallback to global document reference */
+    _getDocument() {
+        return this._document || document;
+    }
+    /** Use defaultView of injected document if available or fallback to global window reference */
+    _getWindow() {
+        const doc = this._getDocument();
+        return doc.defaultView || window;
+    }
+    /** Returns true if the element is contained within the provided Scrollable. */
+    _scrollableContainsElement(scrollable, elementRef) {
+        let element = elementRef.nativeElement;
+        let scrollableElement = scrollable.getElementRef().nativeElement;
+        // Traverse through the element parents until we reach null, checking if any of the elements
+        // are the scrollable's element.
+        do {
+            if (element == scrollableElement) {
+                return true;
+            }
+        } while (element = element.parentElement);
+        return false;
+    }
+    /** Sets up the global scroll listeners. */
+    _addGlobalListener() {
+        this._globalSubscription = this._ngZone.runOutsideAngular(() => {
+            const window = this._getWindow();
+            return Object(rxjs__WEBPACK_IMPORTED_MODULE_2__["fromEvent"])(window.document, 'scroll').subscribe(() => this._scrolled.next());
+        });
+    }
+    /** Cleans up the global scroll listener. */
+    _removeGlobalListener() {
+        if (this._globalSubscription) {
+            this._globalSubscription.unsubscribe();
+            this._globalSubscription = null;
+        }
+    }
+}
+ScrollDispatcher.ɵfac = function ScrollDispatcher_Factory(t) { return new (t || ScrollDispatcher)(_angular_core__WEBPACK_IMPORTED_MODULE_1__["ɵɵinject"](_angular_core__WEBPACK_IMPORTED_MODULE_1__["NgZone"]), _angular_core__WEBPACK_IMPORTED_MODULE_1__["ɵɵinject"](_angular_cdk_platform__WEBPACK_IMPORTED_MODULE_4__["Platform"]), _angular_core__WEBPACK_IMPORTED_MODULE_1__["ɵɵinject"](_angular_common__WEBPACK_IMPORTED_MODULE_5__["DOCUMENT"], 8)); };
+ScrollDispatcher.ɵprov = Object(_angular_core__WEBPACK_IMPORTED_MODULE_1__["ɵɵdefineInjectable"])({ factory: function ScrollDispatcher_Factory() { return new ScrollDispatcher(Object(_angular_core__WEBPACK_IMPORTED_MODULE_1__["ɵɵinject"])(_angular_core__WEBPACK_IMPORTED_MODULE_1__["NgZone"]), Object(_angular_core__WEBPACK_IMPORTED_MODULE_1__["ɵɵinject"])(_angular_cdk_platform__WEBPACK_IMPORTED_MODULE_4__["Platform"]), Object(_angular_core__WEBPACK_IMPORTED_MODULE_1__["ɵɵinject"])(_angular_common__WEBPACK_IMPORTED_MODULE_5__["DOCUMENT"], 8)); }, token: ScrollDispatcher, providedIn: "root" });
+ScrollDispatcher.ctorParameters = () => [
+    { type: _angular_core__WEBPACK_IMPORTED_MODULE_1__["NgZone"] },
+    { type: _angular_cdk_platform__WEBPACK_IMPORTED_MODULE_4__["Platform"] },
+    { type: undefined, decorators: [{ type: _angular_core__WEBPACK_IMPORTED_MODULE_1__["Optional"] }, { type: _angular_core__WEBPACK_IMPORTED_MODULE_1__["Inject"], args: [_angular_common__WEBPACK_IMPORTED_MODULE_5__["DOCUMENT"],] }] }
+];
+/*@__PURE__*/ (function () { _angular_core__WEBPACK_IMPORTED_MODULE_1__["ɵsetClassMetadata"](ScrollDispatcher, [{
+        type: _angular_core__WEBPACK_IMPORTED_MODULE_1__["Injectable"],
+        args: [{ providedIn: 'root' }]
+    }], function () { return [{ type: _angular_core__WEBPACK_IMPORTED_MODULE_1__["NgZone"] }, { type: _angular_cdk_platform__WEBPACK_IMPORTED_MODULE_4__["Platform"] }, { type: undefined, decorators: [{
+                type: _angular_core__WEBPACK_IMPORTED_MODULE_1__["Optional"]
+            }, {
+                type: _angular_core__WEBPACK_IMPORTED_MODULE_1__["Inject"],
+                args: [_angular_common__WEBPACK_IMPORTED_MODULE_5__["DOCUMENT"]]
+            }] }]; }, null); })();
+
+/**
+ * @license
+ * Copyright Google LLC All Rights Reserved.
+ *
+ * Use of this source code is governed by an MIT-style license that can be
+ * found in the LICENSE file at https://angular.io/license
+ */
+/**
+ * Sends an event when the directive's element is scrolled. Registers itself with the
+ * ScrollDispatcher service to include itself as part of its collection of scrolling events that it
+ * can be listened to through the service.
+ */
+class CdkScrollable {
+    constructor(elementRef, scrollDispatcher, ngZone, dir) {
+        this.elementRef = elementRef;
+        this.scrollDispatcher = scrollDispatcher;
+        this.ngZone = ngZone;
+        this.dir = dir;
+        this._destroyed = new rxjs__WEBPACK_IMPORTED_MODULE_2__["Subject"]();
+        this._elementScrolled = new rxjs__WEBPACK_IMPORTED_MODULE_2__["Observable"]((observer) => this.ngZone.runOutsideAngular(() => Object(rxjs__WEBPACK_IMPORTED_MODULE_2__["fromEvent"])(this.elementRef.nativeElement, 'scroll').pipe(Object(rxjs_operators__WEBPACK_IMPORTED_MODULE_3__["takeUntil"])(this._destroyed))
+            .subscribe(observer)));
+    }
+    ngOnInit() {
+        this.scrollDispatcher.register(this);
+    }
+    ngOnDestroy() {
+        this.scrollDispatcher.deregister(this);
+        this._destroyed.next();
+        this._destroyed.complete();
+    }
+    /** Returns observable that emits when a scroll event is fired on the host element. */
+    elementScrolled() {
+        return this._elementScrolled;
+    }
+    /** Gets the ElementRef for the viewport. */
+    getElementRef() {
+        return this.elementRef;
+    }
+    /**
+     * Scrolls to the specified offsets. This is a normalized version of the browser's native scrollTo
+     * method, since browsers are not consistent about what scrollLeft means in RTL. For this method
+     * left and right always refer to the left and right side of the scrolling container irrespective
+     * of the layout direction. start and end refer to left and right in an LTR context and vice-versa
+     * in an RTL context.
+     * @param options specified the offsets to scroll to.
+     */
+    scrollTo(options) {
+        const el = this.elementRef.nativeElement;
+        const isRtl = this.dir && this.dir.value == 'rtl';
+        // Rewrite start & end offsets as right or left offsets.
+        if (options.left == null) {
+            options.left = isRtl ? options.end : options.start;
+        }
+        if (options.right == null) {
+            options.right = isRtl ? options.start : options.end;
+        }
+        // Rewrite the bottom offset as a top offset.
+        if (options.bottom != null) {
+            options.top =
+                el.scrollHeight - el.clientHeight - options.bottom;
+        }
+        // Rewrite the right offset as a left offset.
+        if (isRtl && Object(_angular_cdk_platform__WEBPACK_IMPORTED_MODULE_4__["getRtlScrollAxisType"])() != 0 /* NORMAL */) {
+            if (options.left != null) {
+                options.right =
+                    el.scrollWidth - el.clientWidth - options.left;
+            }
+            if (Object(_angular_cdk_platform__WEBPACK_IMPORTED_MODULE_4__["getRtlScrollAxisType"])() == 2 /* INVERTED */) {
+                options.left = options.right;
+            }
+            else if (Object(_angular_cdk_platform__WEBPACK_IMPORTED_MODULE_4__["getRtlScrollAxisType"])() == 1 /* NEGATED */) {
+                options.left = options.right ? -options.right : options.right;
+            }
+        }
+        else {
+            if (options.right != null) {
+                options.left =
+                    el.scrollWidth - el.clientWidth - options.right;
+            }
+        }
+        this._applyScrollToOptions(options);
+    }
+    _applyScrollToOptions(options) {
+        const el = this.elementRef.nativeElement;
+        if (Object(_angular_cdk_platform__WEBPACK_IMPORTED_MODULE_4__["supportsScrollBehavior"])()) {
+            el.scrollTo(options);
+        }
+        else {
+            if (options.top != null) {
+                el.scrollTop = options.top;
+            }
+            if (options.left != null) {
+                el.scrollLeft = options.left;
+            }
+        }
+    }
+    /**
+     * Measures the scroll offset relative to the specified edge of the viewport. This method can be
+     * used instead of directly checking scrollLeft or scrollTop, since browsers are not consistent
+     * about what scrollLeft means in RTL. The values returned by this method are normalized such that
+     * left and right always refer to the left and right side of the scrolling container irrespective
+     * of the layout direction. start and end refer to left and right in an LTR context and vice-versa
+     * in an RTL context.
+     * @param from The edge to measure from.
+     */
+    measureScrollOffset(from) {
+        const LEFT = 'left';
+        const RIGHT = 'right';
+        const el = this.elementRef.nativeElement;
+        if (from == 'top') {
+            return el.scrollTop;
+        }
+        if (from == 'bottom') {
+            return el.scrollHeight - el.clientHeight - el.scrollTop;
+        }
+        // Rewrite start & end as left or right offsets.
+        const isRtl = this.dir && this.dir.value == 'rtl';
+        if (from == 'start') {
+            from = isRtl ? RIGHT : LEFT;
+        }
+        else if (from == 'end') {
+            from = isRtl ? LEFT : RIGHT;
+        }
+        if (isRtl && Object(_angular_cdk_platform__WEBPACK_IMPORTED_MODULE_4__["getRtlScrollAxisType"])() == 2 /* INVERTED */) {
+            // For INVERTED, scrollLeft is (scrollWidth - clientWidth) when scrolled all the way left and
+            // 0 when scrolled all the way right.
+            if (from == LEFT) {
+                return el.scrollWidth - el.clientWidth - el.scrollLeft;
+            }
+            else {
+                return el.scrollLeft;
+            }
+        }
+        else if (isRtl && Object(_angular_cdk_platform__WEBPACK_IMPORTED_MODULE_4__["getRtlScrollAxisType"])() == 1 /* NEGATED */) {
+            // For NEGATED, scrollLeft is -(scrollWidth - clientWidth) when scrolled all the way left and
+            // 0 when scrolled all the way right.
+            if (from == LEFT) {
+                return el.scrollLeft + el.scrollWidth - el.clientWidth;
+            }
+            else {
+                return -el.scrollLeft;
+            }
+        }
+        else {
+            // For NORMAL, as well as non-RTL contexts, scrollLeft is 0 when scrolled all the way left and
+            // (scrollWidth - clientWidth) when scrolled all the way right.
+            if (from == LEFT) {
+                return el.scrollLeft;
+            }
+            else {
+                return el.scrollWidth - el.clientWidth - el.scrollLeft;
+            }
+        }
+    }
+}
+CdkScrollable.ɵfac = function CdkScrollable_Factory(t) { return new (t || CdkScrollable)(_angular_core__WEBPACK_IMPORTED_MODULE_1__["ɵɵdirectiveInject"](_angular_core__WEBPACK_IMPORTED_MODULE_1__["ElementRef"]), _angular_core__WEBPACK_IMPORTED_MODULE_1__["ɵɵdirectiveInject"](ScrollDispatcher), _angular_core__WEBPACK_IMPORTED_MODULE_1__["ɵɵdirectiveInject"](_angular_core__WEBPACK_IMPORTED_MODULE_1__["NgZone"]), _angular_core__WEBPACK_IMPORTED_MODULE_1__["ɵɵdirectiveInject"](_angular_cdk_bidi__WEBPACK_IMPORTED_MODULE_6__["Directionality"], 8)); };
+CdkScrollable.ɵdir = _angular_core__WEBPACK_IMPORTED_MODULE_1__["ɵɵdefineDirective"]({ type: CdkScrollable, selectors: [["", "cdk-scrollable", ""], ["", "cdkScrollable", ""]] });
+CdkScrollable.ctorParameters = () => [
+    { type: _angular_core__WEBPACK_IMPORTED_MODULE_1__["ElementRef"] },
+    { type: ScrollDispatcher },
+    { type: _angular_core__WEBPACK_IMPORTED_MODULE_1__["NgZone"] },
+    { type: _angular_cdk_bidi__WEBPACK_IMPORTED_MODULE_6__["Directionality"], decorators: [{ type: _angular_core__WEBPACK_IMPORTED_MODULE_1__["Optional"] }] }
+];
+/*@__PURE__*/ (function () { _angular_core__WEBPACK_IMPORTED_MODULE_1__["ɵsetClassMetadata"](CdkScrollable, [{
+        type: _angular_core__WEBPACK_IMPORTED_MODULE_1__["Directive"],
+        args: [{
+                selector: '[cdk-scrollable], [cdkScrollable]'
+            }]
+    }], function () { return [{ type: _angular_core__WEBPACK_IMPORTED_MODULE_1__["ElementRef"] }, { type: ScrollDispatcher }, { type: _angular_core__WEBPACK_IMPORTED_MODULE_1__["NgZone"] }, { type: _angular_cdk_bidi__WEBPACK_IMPORTED_MODULE_6__["Directionality"], decorators: [{
+                type: _angular_core__WEBPACK_IMPORTED_MODULE_1__["Optional"]
+            }] }]; }, null); })();
+
+/**
+ * @license
+ * Copyright Google LLC All Rights Reserved.
+ *
+ * Use of this source code is governed by an MIT-style license that can be
+ * found in the LICENSE file at https://angular.io/license
+ */
+/** Time in ms to throttle the resize events by default. */
+const DEFAULT_RESIZE_TIME = 20;
+/**
+ * Simple utility for getting the bounds of the browser viewport.
+ * @docs-private
+ */
+class ViewportRuler {
+    constructor(_platform, ngZone, 
+    /** @breaking-change 11.0.0 make document required */
+    document) {
+        this._platform = _platform;
+        /** Stream of viewport change events. */
+        this._change = new rxjs__WEBPACK_IMPORTED_MODULE_2__["Subject"]();
+        /** Event listener that will be used to handle the viewport change events. */
+        this._changeListener = (event) => {
+            this._change.next(event);
+        };
+        this._document = document;
+        ngZone.runOutsideAngular(() => {
+            if (_platform.isBrowser) {
+                const window = this._getWindow();
+                // Note that bind the events ourselves, rather than going through something like RxJS's
+                // `fromEvent` so that we can ensure that they're bound outside of the NgZone.
+                window.addEventListener('resize', this._changeListener);
+                window.addEventListener('orientationchange', this._changeListener);
+            }
+            // We don't need to keep track of the subscription,
+            // because we complete the `change` stream on destroy.
+            this.change().subscribe(() => this._updateViewportSize());
+        });
+    }
+    ngOnDestroy() {
+        if (this._platform.isBrowser) {
+            const window = this._getWindow();
+            window.removeEventListener('resize', this._changeListener);
+            window.removeEventListener('orientationchange', this._changeListener);
+        }
+        this._change.complete();
+    }
+    /** Returns the viewport's width and height. */
+    getViewportSize() {
+        if (!this._viewportSize) {
+            this._updateViewportSize();
+        }
+        const output = { width: this._viewportSize.width, height: this._viewportSize.height };
+        // If we're not on a browser, don't cache the size since it'll be mocked out anyway.
+        if (!this._platform.isBrowser) {
+            this._viewportSize = null;
+        }
+        return output;
+    }
+    /** Gets a ClientRect for the viewport's bounds. */
+    getViewportRect() {
+        // Use the document element's bounding rect rather than the window scroll properties
+        // (e.g. pageYOffset, scrollY) due to in issue in Chrome and IE where window scroll
+        // properties and client coordinates (boundingClientRect, clientX/Y, etc.) are in different
+        // conceptual viewports. Under most circumstances these viewports are equivalent, but they
+        // can disagree when the page is pinch-zoomed (on devices that support touch).
+        // See https://bugs.chromium.org/p/chromium/issues/detail?id=489206#c4
+        // We use the documentElement instead of the body because, by default (without a css reset)
+        // browsers typically give the document body an 8px margin, which is not included in
+        // getBoundingClientRect().
+        const scrollPosition = this.getViewportScrollPosition();
+        const { width, height } = this.getViewportSize();
+        return {
+            top: scrollPosition.top,
+            left: scrollPosition.left,
+            bottom: scrollPosition.top + height,
+            right: scrollPosition.left + width,
+            height,
+            width,
+        };
+    }
+    /** Gets the (top, left) scroll position of the viewport. */
+    getViewportScrollPosition() {
+        // While we can get a reference to the fake document
+        // during SSR, it doesn't have getBoundingClientRect.
+        if (!this._platform.isBrowser) {
+            return { top: 0, left: 0 };
+        }
+        // The top-left-corner of the viewport is determined by the scroll position of the document
+        // body, normally just (scrollLeft, scrollTop). However, Chrome and Firefox disagree about
+        // whether `document.body` or `document.documentElement` is the scrolled element, so reading
+        // `scrollTop` and `scrollLeft` is inconsistent. However, using the bounding rect of
+        // `document.documentElement` works consistently, where the `top` and `left` values will
+        // equal negative the scroll position.
+        const document = this._getDocument();
+        const window = this._getWindow();
+        const documentElement = document.documentElement;
+        const documentRect = documentElement.getBoundingClientRect();
+        const top = -documentRect.top || document.body.scrollTop || window.scrollY ||
+            documentElement.scrollTop || 0;
+        const left = -documentRect.left || document.body.scrollLeft || window.scrollX ||
+            documentElement.scrollLeft || 0;
+        return { top, left };
+    }
+    /**
+     * Returns a stream that emits whenever the size of the viewport changes.
+     * @param throttleTime Time in milliseconds to throttle the stream.
+     */
+    change(throttleTime = DEFAULT_RESIZE_TIME) {
+        return throttleTime > 0 ? this._change.pipe(Object(rxjs_operators__WEBPACK_IMPORTED_MODULE_3__["auditTime"])(throttleTime)) : this._change;
+    }
+    /** Access injected document if available or fallback to global document reference */
+    _getDocument() {
+        return this._document || document;
+    }
+    /** Use defaultView of injected document if available or fallback to global window reference */
+    _getWindow() {
+        const doc = this._getDocument();
+        return doc.defaultView || window;
+    }
+    /** Updates the cached viewport size. */
+    _updateViewportSize() {
+        const window = this._getWindow();
+        this._viewportSize = this._platform.isBrowser ?
+            { width: window.innerWidth, height: window.innerHeight } :
+            { width: 0, height: 0 };
+    }
+}
+ViewportRuler.ɵfac = function ViewportRuler_Factory(t) { return new (t || ViewportRuler)(_angular_core__WEBPACK_IMPORTED_MODULE_1__["ɵɵinject"](_angular_cdk_platform__WEBPACK_IMPORTED_MODULE_4__["Platform"]), _angular_core__WEBPACK_IMPORTED_MODULE_1__["ɵɵinject"](_angular_core__WEBPACK_IMPORTED_MODULE_1__["NgZone"]), _angular_core__WEBPACK_IMPORTED_MODULE_1__["ɵɵinject"](_angular_common__WEBPACK_IMPORTED_MODULE_5__["DOCUMENT"], 8)); };
+ViewportRuler.ɵprov = Object(_angular_core__WEBPACK_IMPORTED_MODULE_1__["ɵɵdefineInjectable"])({ factory: function ViewportRuler_Factory() { return new ViewportRuler(Object(_angular_core__WEBPACK_IMPORTED_MODULE_1__["ɵɵinject"])(_angular_cdk_platform__WEBPACK_IMPORTED_MODULE_4__["Platform"]), Object(_angular_core__WEBPACK_IMPORTED_MODULE_1__["ɵɵinject"])(_angular_core__WEBPACK_IMPORTED_MODULE_1__["NgZone"]), Object(_angular_core__WEBPACK_IMPORTED_MODULE_1__["ɵɵinject"])(_angular_common__WEBPACK_IMPORTED_MODULE_5__["DOCUMENT"], 8)); }, token: ViewportRuler, providedIn: "root" });
+ViewportRuler.ctorParameters = () => [
+    { type: _angular_cdk_platform__WEBPACK_IMPORTED_MODULE_4__["Platform"] },
+    { type: _angular_core__WEBPACK_IMPORTED_MODULE_1__["NgZone"] },
+    { type: undefined, decorators: [{ type: _angular_core__WEBPACK_IMPORTED_MODULE_1__["Optional"] }, { type: _angular_core__WEBPACK_IMPORTED_MODULE_1__["Inject"], args: [_angular_common__WEBPACK_IMPORTED_MODULE_5__["DOCUMENT"],] }] }
+];
+/*@__PURE__*/ (function () { _angular_core__WEBPACK_IMPORTED_MODULE_1__["ɵsetClassMetadata"](ViewportRuler, [{
+        type: _angular_core__WEBPACK_IMPORTED_MODULE_1__["Injectable"],
+        args: [{ providedIn: 'root' }]
+    }], function () { return [{ type: _angular_cdk_platform__WEBPACK_IMPORTED_MODULE_4__["Platform"] }, { type: _angular_core__WEBPACK_IMPORTED_MODULE_1__["NgZone"] }, { type: undefined, decorators: [{
+                type: _angular_core__WEBPACK_IMPORTED_MODULE_1__["Optional"]
+            }, {
+                type: _angular_core__WEBPACK_IMPORTED_MODULE_1__["Inject"],
+                args: [_angular_common__WEBPACK_IMPORTED_MODULE_5__["DOCUMENT"]]
+            }] }]; }, null); })();
+
+/**
+ * @license
+ * Copyright Google LLC All Rights Reserved.
+ *
+ * Use of this source code is governed by an MIT-style license that can be
+ * found in the LICENSE file at https://angular.io/license
+ */
+/** Checks if the given ranges are equal. */
+function rangesEqual(r1, r2) {
+    return r1.start == r2.start && r1.end == r2.end;
+}
+/**
+ * Scheduler to be used for scroll events. Needs to fall back to
+ * something that doesn't rely on requestAnimationFrame on environments
+ * that don't support it (e.g. server-side rendering).
+ */
+const SCROLL_SCHEDULER = typeof requestAnimationFrame !== 'undefined' ? rxjs__WEBPACK_IMPORTED_MODULE_2__["animationFrameScheduler"] : rxjs__WEBPACK_IMPORTED_MODULE_2__["asapScheduler"];
+/** A viewport that virtualizes its scrolling with the help of `CdkVirtualForOf`. */
+class CdkVirtualScrollViewport extends CdkScrollable {
+    constructor(elementRef, _changeDetectorRef, ngZone, _scrollStrategy, dir, scrollDispatcher, 
+    /**
+     * @deprecated `viewportRuler` parameter to become required.
+     * @breaking-change 11.0.0
+     */
+    viewportRuler) {
+        super(elementRef, scrollDispatcher, ngZone, dir);
+        this.elementRef = elementRef;
+        this._changeDetectorRef = _changeDetectorRef;
+        this._scrollStrategy = _scrollStrategy;
+        /** Emits when the viewport is detached from a CdkVirtualForOf. */
+        this._detachedSubject = new rxjs__WEBPACK_IMPORTED_MODULE_2__["Subject"]();
+        /** Emits when the rendered range changes. */
+        this._renderedRangeSubject = new rxjs__WEBPACK_IMPORTED_MODULE_2__["Subject"]();
+        this._orientation = 'vertical';
+        // Note: we don't use the typical EventEmitter here because we need to subscribe to the scroll
+        // strategy lazily (i.e. only if the user is actually listening to the events). We do this because
+        // depending on how the strategy calculates the scrolled index, it may come at a cost to
+        // performance.
+        /** Emits when the index of the first element visible in the viewport changes. */
+        this.scrolledIndexChange = new rxjs__WEBPACK_IMPORTED_MODULE_2__["Observable"]((observer) => this._scrollStrategy.scrolledIndexChange.subscribe(index => Promise.resolve().then(() => this.ngZone.run(() => observer.next(index)))));
+        /** A stream that emits whenever the rendered range changes. */
+        this.renderedRangeStream = this._renderedRangeSubject.asObservable();
+        /**
+         * The total size of all content (in pixels), including content that is not currently rendered.
+         */
+        this._totalContentSize = 0;
+        /** A string representing the `style.width` property value to be used for the spacer element. */
+        this._totalContentWidth = '';
+        /** A string representing the `style.height` property value to be used for the spacer element. */
+        this._totalContentHeight = '';
+        /** The currently rendered range of indices. */
+        this._renderedRange = { start: 0, end: 0 };
+        /** The length of the data bound to this viewport (in number of items). */
+        this._dataLength = 0;
+        /** The size of the viewport (in pixels). */
+        this._viewportSize = 0;
+        /** The last rendered content offset that was set. */
+        this._renderedContentOffset = 0;
+        /**
+         * Whether the last rendered content offset was to the end of the content (and therefore needs to
+         * be rewritten as an offset to the start of the content).
+         */
+        this._renderedContentOffsetNeedsRewrite = false;
+        /** Whether there is a pending change detection cycle. */
+        this._isChangeDetectionPending = false;
+        /** A list of functions to run after the next change detection cycle. */
+        this._runAfterChangeDetection = [];
+        /** Subscription to changes in the viewport size. */
+        this._viewportChanges = rxjs__WEBPACK_IMPORTED_MODULE_2__["Subscription"].EMPTY;
+        if (!_scrollStrategy) {
+            throw Error('Error: cdk-virtual-scroll-viewport requires the "itemSize" property to be set.');
+        }
+        // @breaking-change 11.0.0 Remove null check for `viewportRuler`.
+        if (viewportRuler) {
+            this._viewportChanges = viewportRuler.change().subscribe(() => {
+                this.checkViewportSize();
+            });
+        }
+    }
+    /** The direction the viewport scrolls. */
+    get orientation() {
+        return this._orientation;
+    }
+    set orientation(orientation) {
+        if (this._orientation !== orientation) {
+            this._orientation = orientation;
+            this._calculateSpacerSize();
+        }
+    }
+    ngOnInit() {
+        super.ngOnInit();
+        // It's still too early to measure the viewport at this point. Deferring with a promise allows
+        // the Viewport to be rendered with the correct size before we measure. We run this outside the
+        // zone to avoid causing more change detection cycles. We handle the change detection loop
+        // ourselves instead.
+        this.ngZone.runOutsideAngular(() => Promise.resolve().then(() => {
+            this._measureViewportSize();
+            this._scrollStrategy.attach(this);
+            this.elementScrolled()
+                .pipe(
+            // Start off with a fake scroll event so we properly detect our initial position.
+            Object(rxjs_operators__WEBPACK_IMPORTED_MODULE_3__["startWith"])(null), 
+            // Collect multiple events into one until the next animation frame. This way if
+            // there are multiple scroll events in the same frame we only need to recheck
+            // our layout once.
+            Object(rxjs_operators__WEBPACK_IMPORTED_MODULE_3__["auditTime"])(0, SCROLL_SCHEDULER))
+                .subscribe(() => this._scrollStrategy.onContentScrolled());
+            this._markChangeDetectionNeeded();
+        }));
+    }
+    ngOnDestroy() {
+        this.detach();
+        this._scrollStrategy.detach();
+        // Complete all subjects
+        this._renderedRangeSubject.complete();
+        this._detachedSubject.complete();
+        this._viewportChanges.unsubscribe();
+        super.ngOnDestroy();
+    }
+    /** Attaches a `CdkVirtualScrollRepeater` to this viewport. */
+    attach(forOf) {
+        if (this._forOf) {
+            throw Error('CdkVirtualScrollViewport is already attached.');
+        }
+        // Subscribe to the data stream of the CdkVirtualForOf to keep track of when the data length
+        // changes. Run outside the zone to avoid triggering change detection, since we're managing the
+        // change detection loop ourselves.
+        this.ngZone.runOutsideAngular(() => {
+            this._forOf = forOf;
+            this._forOf.dataStream.pipe(Object(rxjs_operators__WEBPACK_IMPORTED_MODULE_3__["takeUntil"])(this._detachedSubject)).subscribe(data => {
+                const newLength = data.length;
+                if (newLength !== this._dataLength) {
+                    this._dataLength = newLength;
+                    this._scrollStrategy.onDataLengthChanged();
+                }
+                this._doChangeDetection();
+            });
+        });
+    }
+    /** Detaches the current `CdkVirtualForOf`. */
+    detach() {
+        this._forOf = null;
+        this._detachedSubject.next();
+    }
+    /** Gets the length of the data bound to this viewport (in number of items). */
+    getDataLength() {
+        return this._dataLength;
+    }
+    /** Gets the size of the viewport (in pixels). */
+    getViewportSize() {
+        return this._viewportSize;
+    }
+    // TODO(mmalerba): This is technically out of sync with what's really rendered until a render
+    // cycle happens. I'm being careful to only call it after the render cycle is complete and before
+    // setting it to something else, but its error prone and should probably be split into
+    // `pendingRange` and `renderedRange`, the latter reflecting whats actually in the DOM.
+    /** Get the current rendered range of items. */
+    getRenderedRange() {
+        return this._renderedRange;
+    }
+    /**
+     * Sets the total size of all content (in pixels), including content that is not currently
+     * rendered.
+     */
+    setTotalContentSize(size) {
+        if (this._totalContentSize !== size) {
+            this._totalContentSize = size;
+            this._calculateSpacerSize();
+            this._markChangeDetectionNeeded();
+        }
+    }
+    /** Sets the currently rendered range of indices. */
+    setRenderedRange(range) {
+        if (!rangesEqual(this._renderedRange, range)) {
+            this._renderedRangeSubject.next(this._renderedRange = range);
+            this._markChangeDetectionNeeded(() => this._scrollStrategy.onContentRendered());
+        }
+    }
+    /**
+     * Gets the offset from the start of the viewport to the start of the rendered data (in pixels).
+     */
+    getOffsetToRenderedContentStart() {
+        return this._renderedContentOffsetNeedsRewrite ? null : this._renderedContentOffset;
+    }
+    /**
+     * Sets the offset from the start of the viewport to either the start or end of the rendered data
+     * (in pixels).
+     */
+    setRenderedContentOffset(offset, to = 'to-start') {
+        // For a horizontal viewport in a right-to-left language we need to translate along the x-axis
+        // in the negative direction.
+        const isRtl = this.dir && this.dir.value == 'rtl';
+        const isHorizontal = this.orientation == 'horizontal';
+        const axis = isHorizontal ? 'X' : 'Y';
+        const axisDirection = isHorizontal && isRtl ? -1 : 1;
+        let transform = `translate${axis}(${Number(axisDirection * offset)}px)`;
+        this._renderedContentOffset = offset;
+        if (to === 'to-end') {
+            transform += ` translate${axis}(-100%)`;
+            // The viewport should rewrite this as a `to-start` offset on the next render cycle. Otherwise
+            // elements will appear to expand in the wrong direction (e.g. `mat-expansion-panel` would
+            // expand upward).
+            this._renderedContentOffsetNeedsRewrite = true;
+        }
+        if (this._renderedContentTransform != transform) {
+            // We know this value is safe because we parse `offset` with `Number()` before passing it
+            // into the string.
+            this._renderedContentTransform = transform;
+            this._markChangeDetectionNeeded(() => {
+                if (this._renderedContentOffsetNeedsRewrite) {
+                    this._renderedContentOffset -= this.measureRenderedContentSize();
+                    this._renderedContentOffsetNeedsRewrite = false;
+                    this.setRenderedContentOffset(this._renderedContentOffset);
+                }
+                else {
+                    this._scrollStrategy.onRenderedOffsetChanged();
+                }
+            });
+        }
+    }
+    /**
+     * Scrolls to the given offset from the start of the viewport. Please note that this is not always
+     * the same as setting `scrollTop` or `scrollLeft`. In a horizontal viewport with right-to-left
+     * direction, this would be the equivalent of setting a fictional `scrollRight` property.
+     * @param offset The offset to scroll to.
+     * @param behavior The ScrollBehavior to use when scrolling. Default is behavior is `auto`.
+     */
+    scrollToOffset(offset, behavior = 'auto') {
+        const options = { behavior };
+        if (this.orientation === 'horizontal') {
+            options.start = offset;
+        }
+        else {
+            options.top = offset;
+        }
+        this.scrollTo(options);
+    }
+    /**
+     * Scrolls to the offset for the given index.
+     * @param index The index of the element to scroll to.
+     * @param behavior The ScrollBehavior to use when scrolling. Default is behavior is `auto`.
+     */
+    scrollToIndex(index, behavior = 'auto') {
+        this._scrollStrategy.scrollToIndex(index, behavior);
+    }
+    /**
+     * Gets the current scroll offset from the start of the viewport (in pixels).
+     * @param from The edge to measure the offset from. Defaults to 'top' in vertical mode and 'start'
+     *     in horizontal mode.
+     */
+    measureScrollOffset(from) {
+        return from ?
+            super.measureScrollOffset(from) :
+            super.measureScrollOffset(this.orientation === 'horizontal' ? 'start' : 'top');
+    }
+    /** Measure the combined size of all of the rendered items. */
+    measureRenderedContentSize() {
+        const contentEl = this._contentWrapper.nativeElement;
+        return this.orientation === 'horizontal' ? contentEl.offsetWidth : contentEl.offsetHeight;
+    }
+    /**
+     * Measure the total combined size of the given range. Throws if the range includes items that are
+     * not rendered.
+     */
+    measureRangeSize(range) {
+        if (!this._forOf) {
+            return 0;
+        }
+        return this._forOf.measureRangeSize(range, this.orientation);
+    }
+    /** Update the viewport dimensions and re-render. */
+    checkViewportSize() {
+        // TODO: Cleanup later when add logic for handling content resize
+        this._measureViewportSize();
+        this._scrollStrategy.onDataLengthChanged();
+    }
+    /** Measure the viewport size. */
+    _measureViewportSize() {
+        const viewportEl = this.elementRef.nativeElement;
+        this._viewportSize = this.orientation === 'horizontal' ?
+            viewportEl.clientWidth : viewportEl.clientHeight;
+    }
+    /** Queue up change detection to run. */
+    _markChangeDetectionNeeded(runAfter) {
+        if (runAfter) {
+            this._runAfterChangeDetection.push(runAfter);
+        }
+        // Use a Promise to batch together calls to `_doChangeDetection`. This way if we set a bunch of
+        // properties sequentially we only have to run `_doChangeDetection` once at the end.
+        if (!this._isChangeDetectionPending) {
+            this._isChangeDetectionPending = true;
+            this.ngZone.runOutsideAngular(() => Promise.resolve().then(() => {
+                this._doChangeDetection();
+            }));
+        }
+    }
+    /** Run change detection. */
+    _doChangeDetection() {
+        this._isChangeDetectionPending = false;
+        // Apply the content transform. The transform can't be set via an Angular binding because
+        // bypassSecurityTrustStyle is banned in Google. However the value is safe, it's composed of
+        // string literals, a variable that can only be 'X' or 'Y', and user input that is run through
+        // the `Number` function first to coerce it to a numeric value.
+        this._contentWrapper.nativeElement.style.transform = this._renderedContentTransform;
+        // Apply changes to Angular bindings. Note: We must call `markForCheck` to run change detection
+        // from the root, since the repeated items are content projected in. Calling `detectChanges`
+        // instead does not properly check the projected content.
+        this.ngZone.run(() => this._changeDetectorRef.markForCheck());
+        const runAfterChangeDetection = this._runAfterChangeDetection;
+        this._runAfterChangeDetection = [];
+        for (const fn of runAfterChangeDetection) {
+            fn();
+        }
+    }
+    /** Calculates the `style.width` and `style.height` for the spacer element. */
+    _calculateSpacerSize() {
+        this._totalContentHeight =
+            this.orientation === 'horizontal' ? '' : `${this._totalContentSize}px`;
+        this._totalContentWidth =
+            this.orientation === 'horizontal' ? `${this._totalContentSize}px` : '';
+    }
+}
+CdkVirtualScrollViewport.ɵfac = function CdkVirtualScrollViewport_Factory(t) { return new (t || CdkVirtualScrollViewport)(_angular_core__WEBPACK_IMPORTED_MODULE_1__["ɵɵdirectiveInject"](_angular_core__WEBPACK_IMPORTED_MODULE_1__["ElementRef"]), _angular_core__WEBPACK_IMPORTED_MODULE_1__["ɵɵdirectiveInject"](_angular_core__WEBPACK_IMPORTED_MODULE_1__["ChangeDetectorRef"]), _angular_core__WEBPACK_IMPORTED_MODULE_1__["ɵɵdirectiveInject"](_angular_core__WEBPACK_IMPORTED_MODULE_1__["NgZone"]), _angular_core__WEBPACK_IMPORTED_MODULE_1__["ɵɵdirectiveInject"](VIRTUAL_SCROLL_STRATEGY, 8), _angular_core__WEBPACK_IMPORTED_MODULE_1__["ɵɵdirectiveInject"](_angular_cdk_bidi__WEBPACK_IMPORTED_MODULE_6__["Directionality"], 8), _angular_core__WEBPACK_IMPORTED_MODULE_1__["ɵɵdirectiveInject"](ScrollDispatcher), _angular_core__WEBPACK_IMPORTED_MODULE_1__["ɵɵdirectiveInject"](ViewportRuler, 8)); };
+CdkVirtualScrollViewport.ɵcmp = _angular_core__WEBPACK_IMPORTED_MODULE_1__["ɵɵdefineComponent"]({ type: CdkVirtualScrollViewport, selectors: [["cdk-virtual-scroll-viewport"]], viewQuery: function CdkVirtualScrollViewport_Query(rf, ctx) { if (rf & 1) {
+        _angular_core__WEBPACK_IMPORTED_MODULE_1__["ɵɵstaticViewQuery"](_c0, true);
+    } if (rf & 2) {
+        var _t;
+        _angular_core__WEBPACK_IMPORTED_MODULE_1__["ɵɵqueryRefresh"](_t = _angular_core__WEBPACK_IMPORTED_MODULE_1__["ɵɵloadQuery"]()) && (ctx._contentWrapper = _t.first);
+    } }, hostAttrs: [1, "cdk-virtual-scroll-viewport"], hostVars: 4, hostBindings: function CdkVirtualScrollViewport_HostBindings(rf, ctx) { if (rf & 2) {
+        _angular_core__WEBPACK_IMPORTED_MODULE_1__["ɵɵclassProp"]("cdk-virtual-scroll-orientation-horizontal", ctx.orientation === "horizontal")("cdk-virtual-scroll-orientation-vertical", ctx.orientation !== "horizontal");
+    } }, inputs: { orientation: "orientation" }, outputs: { scrolledIndexChange: "scrolledIndexChange" }, features: [_angular_core__WEBPACK_IMPORTED_MODULE_1__["ɵɵProvidersFeature"]([{
+                provide: CdkScrollable,
+                useExisting: CdkVirtualScrollViewport
+            }]), _angular_core__WEBPACK_IMPORTED_MODULE_1__["ɵɵInheritDefinitionFeature"]], ngContentSelectors: _c1, decls: 4, vars: 4, consts: [[1, "cdk-virtual-scroll-content-wrapper"], ["contentWrapper", ""], [1, "cdk-virtual-scroll-spacer"]], template: function CdkVirtualScrollViewport_Template(rf, ctx) { if (rf & 1) {
+        _angular_core__WEBPACK_IMPORTED_MODULE_1__["ɵɵprojectionDef"]();
+        _angular_core__WEBPACK_IMPORTED_MODULE_1__["ɵɵelementStart"](0, "div", 0, 1);
+        _angular_core__WEBPACK_IMPORTED_MODULE_1__["ɵɵprojection"](2);
+        _angular_core__WEBPACK_IMPORTED_MODULE_1__["ɵɵelementEnd"]();
+        _angular_core__WEBPACK_IMPORTED_MODULE_1__["ɵɵelement"](3, "div", 2);
+    } if (rf & 2) {
+        _angular_core__WEBPACK_IMPORTED_MODULE_1__["ɵɵadvance"](3);
+        _angular_core__WEBPACK_IMPORTED_MODULE_1__["ɵɵstyleProp"]("width", ctx._totalContentWidth)("height", ctx._totalContentHeight);
+    } }, styles: ["cdk-virtual-scroll-viewport{display:block;position:relative;overflow:auto;contain:strict;transform:translateZ(0);will-change:scroll-position;-webkit-overflow-scrolling:touch}.cdk-virtual-scroll-content-wrapper{position:absolute;top:0;left:0;contain:content}[dir=rtl] .cdk-virtual-scroll-content-wrapper{right:0;left:auto}.cdk-virtual-scroll-orientation-horizontal .cdk-virtual-scroll-content-wrapper{min-height:100%}.cdk-virtual-scroll-orientation-horizontal .cdk-virtual-scroll-content-wrapper>dl:not([cdkVirtualFor]),.cdk-virtual-scroll-orientation-horizontal .cdk-virtual-scroll-content-wrapper>ol:not([cdkVirtualFor]),.cdk-virtual-scroll-orientation-horizontal .cdk-virtual-scroll-content-wrapper>table:not([cdkVirtualFor]),.cdk-virtual-scroll-orientation-horizontal .cdk-virtual-scroll-content-wrapper>ul:not([cdkVirtualFor]){padding-left:0;padding-right:0;margin-left:0;margin-right:0;border-left-width:0;border-right-width:0;outline:none}.cdk-virtual-scroll-orientation-vertical .cdk-virtual-scroll-content-wrapper{min-width:100%}.cdk-virtual-scroll-orientation-vertical .cdk-virtual-scroll-content-wrapper>dl:not([cdkVirtualFor]),.cdk-virtual-scroll-orientation-vertical .cdk-virtual-scroll-content-wrapper>ol:not([cdkVirtualFor]),.cdk-virtual-scroll-orientation-vertical .cdk-virtual-scroll-content-wrapper>table:not([cdkVirtualFor]),.cdk-virtual-scroll-orientation-vertical .cdk-virtual-scroll-content-wrapper>ul:not([cdkVirtualFor]){padding-top:0;padding-bottom:0;margin-top:0;margin-bottom:0;border-top-width:0;border-bottom-width:0;outline:none}.cdk-virtual-scroll-spacer{position:absolute;top:0;left:0;height:1px;width:1px;transform-origin:0 0}[dir=rtl] .cdk-virtual-scroll-spacer{right:0;left:auto;transform-origin:100% 0}\n"], encapsulation: 2, changeDetection: 0 });
+CdkVirtualScrollViewport.ctorParameters = () => [
+    { type: _angular_core__WEBPACK_IMPORTED_MODULE_1__["ElementRef"] },
+    { type: _angular_core__WEBPACK_IMPORTED_MODULE_1__["ChangeDetectorRef"] },
+    { type: _angular_core__WEBPACK_IMPORTED_MODULE_1__["NgZone"] },
+    { type: undefined, decorators: [{ type: _angular_core__WEBPACK_IMPORTED_MODULE_1__["Optional"] }, { type: _angular_core__WEBPACK_IMPORTED_MODULE_1__["Inject"], args: [VIRTUAL_SCROLL_STRATEGY,] }] },
+    { type: _angular_cdk_bidi__WEBPACK_IMPORTED_MODULE_6__["Directionality"], decorators: [{ type: _angular_core__WEBPACK_IMPORTED_MODULE_1__["Optional"] }] },
+    { type: ScrollDispatcher },
+    { type: ViewportRuler, decorators: [{ type: _angular_core__WEBPACK_IMPORTED_MODULE_1__["Optional"] }] }
+];
+CdkVirtualScrollViewport.propDecorators = {
+    orientation: [{ type: _angular_core__WEBPACK_IMPORTED_MODULE_1__["Input"] }],
+    scrolledIndexChange: [{ type: _angular_core__WEBPACK_IMPORTED_MODULE_1__["Output"] }],
+    _contentWrapper: [{ type: _angular_core__WEBPACK_IMPORTED_MODULE_1__["ViewChild"], args: ['contentWrapper', { static: true },] }]
+};
+/*@__PURE__*/ (function () { _angular_core__WEBPACK_IMPORTED_MODULE_1__["ɵsetClassMetadata"](CdkVirtualScrollViewport, [{
+        type: _angular_core__WEBPACK_IMPORTED_MODULE_1__["Component"],
+        args: [{
+                selector: 'cdk-virtual-scroll-viewport',
+                template: "<!--\n  Wrap the rendered content in an element that will be used to offset it based on the scroll\n  position.\n-->\n<div #contentWrapper class=\"cdk-virtual-scroll-content-wrapper\">\n  <ng-content></ng-content>\n</div>\n<!--\n  Spacer used to force the scrolling container to the correct size for the *total* number of items\n  so that the scrollbar captures the size of the entire data set.\n-->\n<div class=\"cdk-virtual-scroll-spacer\"\n     [style.width]=\"_totalContentWidth\" [style.height]=\"_totalContentHeight\"></div>\n",
+                host: {
+                    'class': 'cdk-virtual-scroll-viewport',
+                    '[class.cdk-virtual-scroll-orientation-horizontal]': 'orientation === "horizontal"',
+                    '[class.cdk-virtual-scroll-orientation-vertical]': 'orientation !== "horizontal"'
+                },
+                encapsulation: _angular_core__WEBPACK_IMPORTED_MODULE_1__["ViewEncapsulation"].None,
+                changeDetection: _angular_core__WEBPACK_IMPORTED_MODULE_1__["ChangeDetectionStrategy"].OnPush,
+                providers: [{
+                        provide: CdkScrollable,
+                        useExisting: CdkVirtualScrollViewport
+                    }],
+                styles: ["cdk-virtual-scroll-viewport{display:block;position:relative;overflow:auto;contain:strict;transform:translateZ(0);will-change:scroll-position;-webkit-overflow-scrolling:touch}.cdk-virtual-scroll-content-wrapper{position:absolute;top:0;left:0;contain:content}[dir=rtl] .cdk-virtual-scroll-content-wrapper{right:0;left:auto}.cdk-virtual-scroll-orientation-horizontal .cdk-virtual-scroll-content-wrapper{min-height:100%}.cdk-virtual-scroll-orientation-horizontal .cdk-virtual-scroll-content-wrapper>dl:not([cdkVirtualFor]),.cdk-virtual-scroll-orientation-horizontal .cdk-virtual-scroll-content-wrapper>ol:not([cdkVirtualFor]),.cdk-virtual-scroll-orientation-horizontal .cdk-virtual-scroll-content-wrapper>table:not([cdkVirtualFor]),.cdk-virtual-scroll-orientation-horizontal .cdk-virtual-scroll-content-wrapper>ul:not([cdkVirtualFor]){padding-left:0;padding-right:0;margin-left:0;margin-right:0;border-left-width:0;border-right-width:0;outline:none}.cdk-virtual-scroll-orientation-vertical .cdk-virtual-scroll-content-wrapper{min-width:100%}.cdk-virtual-scroll-orientation-vertical .cdk-virtual-scroll-content-wrapper>dl:not([cdkVirtualFor]),.cdk-virtual-scroll-orientation-vertical .cdk-virtual-scroll-content-wrapper>ol:not([cdkVirtualFor]),.cdk-virtual-scroll-orientation-vertical .cdk-virtual-scroll-content-wrapper>table:not([cdkVirtualFor]),.cdk-virtual-scroll-orientation-vertical .cdk-virtual-scroll-content-wrapper>ul:not([cdkVirtualFor]){padding-top:0;padding-bottom:0;margin-top:0;margin-bottom:0;border-top-width:0;border-bottom-width:0;outline:none}.cdk-virtual-scroll-spacer{position:absolute;top:0;left:0;height:1px;width:1px;transform-origin:0 0}[dir=rtl] .cdk-virtual-scroll-spacer{right:0;left:auto;transform-origin:100% 0}\n"]
+            }]
+    }], function () { return [{ type: _angular_core__WEBPACK_IMPORTED_MODULE_1__["ElementRef"] }, { type: _angular_core__WEBPACK_IMPORTED_MODULE_1__["ChangeDetectorRef"] }, { type: _angular_core__WEBPACK_IMPORTED_MODULE_1__["NgZone"] }, { type: undefined, decorators: [{
+                type: _angular_core__WEBPACK_IMPORTED_MODULE_1__["Optional"]
+            }, {
+                type: _angular_core__WEBPACK_IMPORTED_MODULE_1__["Inject"],
+                args: [VIRTUAL_SCROLL_STRATEGY]
+            }] }, { type: _angular_cdk_bidi__WEBPACK_IMPORTED_MODULE_6__["Directionality"], decorators: [{
+                type: _angular_core__WEBPACK_IMPORTED_MODULE_1__["Optional"]
+            }] }, { type: ScrollDispatcher }, { type: ViewportRuler, decorators: [{
+                type: _angular_core__WEBPACK_IMPORTED_MODULE_1__["Optional"]
+            }] }]; }, { scrolledIndexChange: [{
+            type: _angular_core__WEBPACK_IMPORTED_MODULE_1__["Output"]
+        }], orientation: [{
+            type: _angular_core__WEBPACK_IMPORTED_MODULE_1__["Input"]
+        }], _contentWrapper: [{
+            type: _angular_core__WEBPACK_IMPORTED_MODULE_1__["ViewChild"],
+            args: ['contentWrapper', { static: true }]
+        }] }); })();
+
+/**
+ * @license
+ * Copyright Google LLC All Rights Reserved.
+ *
+ * Use of this source code is governed by an MIT-style license that can be
+ * found in the LICENSE file at https://angular.io/license
+ */
+/** Helper to extract size from a DOM Node. */
+function getSize(orientation, node) {
+    const el = node;
+    if (!el.getBoundingClientRect) {
+        return 0;
+    }
+    const rect = el.getBoundingClientRect();
+    return orientation == 'horizontal' ? rect.width : rect.height;
+}
+/**
+ * A directive similar to `ngForOf` to be used for rendering data inside a virtual scrolling
+ * container.
+ */
+class CdkVirtualForOf {
+    constructor(
+    /** The view container to add items to. */
+    _viewContainerRef, 
+    /** The template to use when stamping out new items. */
+    _template, 
+    /** The set of available differs. */
+    _differs, 
+    /** The virtual scrolling viewport that these items are being rendered in. */
+    _viewport, ngZone) {
+        this._viewContainerRef = _viewContainerRef;
+        this._template = _template;
+        this._differs = _differs;
+        this._viewport = _viewport;
+        /** Emits when the rendered view of the data changes. */
+        this.viewChange = new rxjs__WEBPACK_IMPORTED_MODULE_2__["Subject"]();
+        /** Subject that emits when a new DataSource instance is given. */
+        this._dataSourceChanges = new rxjs__WEBPACK_IMPORTED_MODULE_2__["Subject"]();
+        /**
+         * The size of the cache used to store templates that are not being used for re-use later.
+         * Setting the cache size to `0` will disable caching. Defaults to 20 templates.
+         */
+        this.cdkVirtualForTemplateCacheSize = 20;
+        /** Emits whenever the data in the current DataSource changes. */
+        this.dataStream = this._dataSourceChanges
+            .pipe(
+        // Start off with null `DataSource`.
+        Object(rxjs_operators__WEBPACK_IMPORTED_MODULE_3__["startWith"])(null), 
+        // Bundle up the previous and current data sources so we can work with both.
+        Object(rxjs_operators__WEBPACK_IMPORTED_MODULE_3__["pairwise"])(), 
+        // Use `_changeDataSource` to disconnect from the previous data source and connect to the
+        // new one, passing back a stream of data changes which we run through `switchMap` to give
+        // us a data stream that emits the latest data from whatever the current `DataSource` is.
+        Object(rxjs_operators__WEBPACK_IMPORTED_MODULE_3__["switchMap"])(([prev, cur]) => this._changeDataSource(prev, cur)), 
+        // Replay the last emitted data when someone subscribes.
+        Object(rxjs_operators__WEBPACK_IMPORTED_MODULE_3__["shareReplay"])(1));
+        /** The differ used to calculate changes to the data. */
+        this._differ = null;
+        /**
+         * The template cache used to hold on ot template instancess that have been stamped out, but don't
+         * currently need to be rendered. These instances will be reused in the future rather than
+         * stamping out brand new ones.
+         */
+        this._templateCache = [];
+        /** Whether the rendered data should be updated during the next ngDoCheck cycle. */
+        this._needsUpdate = false;
+        this._destroyed = new rxjs__WEBPACK_IMPORTED_MODULE_2__["Subject"]();
+        this.dataStream.subscribe(data => {
+            this._data = data;
+            this._onRenderedDataChange();
+        });
+        this._viewport.renderedRangeStream.pipe(Object(rxjs_operators__WEBPACK_IMPORTED_MODULE_3__["takeUntil"])(this._destroyed)).subscribe(range => {
+            this._renderedRange = range;
+            ngZone.run(() => this.viewChange.next(this._renderedRange));
+            this._onRenderedDataChange();
+        });
+        this._viewport.attach(this);
+    }
+    /** The DataSource to display. */
+    get cdkVirtualForOf() {
+        return this._cdkVirtualForOf;
+    }
+    set cdkVirtualForOf(value) {
+        this._cdkVirtualForOf = value;
+        if (Object(_angular_cdk_collections__WEBPACK_IMPORTED_MODULE_7__["isDataSource"])(value)) {
+            this._dataSourceChanges.next(value);
+        }
+        else {
+            // Slice the value if its an NgIterable to ensure we're working with an array.
+            this._dataSourceChanges.next(new _angular_cdk_collections__WEBPACK_IMPORTED_MODULE_7__["ArrayDataSource"](Object(rxjs__WEBPACK_IMPORTED_MODULE_2__["isObservable"])(value) ? value : Array.prototype.slice.call(value || [])));
+        }
+    }
+    /**
+     * The `TrackByFunction` to use for tracking changes. The `TrackByFunction` takes the index and
+     * the item and produces a value to be used as the item's identity when tracking changes.
+     */
+    get cdkVirtualForTrackBy() {
+        return this._cdkVirtualForTrackBy;
+    }
+    set cdkVirtualForTrackBy(fn) {
+        this._needsUpdate = true;
+        this._cdkVirtualForTrackBy = fn ?
+            (index, item) => fn(index + (this._renderedRange ? this._renderedRange.start : 0), item) :
+            undefined;
+    }
+    /** The template used to stamp out new elements. */
+    set cdkVirtualForTemplate(value) {
+        if (value) {
+            this._needsUpdate = true;
+            this._template = value;
+        }
+    }
+    /**
+     * Measures the combined size (width for horizontal orientation, height for vertical) of all items
+     * in the specified range. Throws an error if the range includes items that are not currently
+     * rendered.
+     */
+    measureRangeSize(range, orientation) {
+        if (range.start >= range.end) {
+            return 0;
+        }
+        if (range.start < this._renderedRange.start || range.end > this._renderedRange.end) {
+            throw Error(`Error: attempted to measure an item that isn't rendered.`);
+        }
+        // The index into the list of rendered views for the first item in the range.
+        const renderedStartIndex = range.start - this._renderedRange.start;
+        // The length of the range we're measuring.
+        const rangeLen = range.end - range.start;
+        // Loop over all root nodes for all items in the range and sum up their size.
+        let totalSize = 0;
+        let i = rangeLen;
+        while (i--) {
+            const view = this._viewContainerRef.get(i + renderedStartIndex);
+            let j = view ? view.rootNodes.length : 0;
+            while (j--) {
+                totalSize += getSize(orientation, view.rootNodes[j]);
+            }
+        }
+        return totalSize;
+    }
+    ngDoCheck() {
+        if (this._differ && this._needsUpdate) {
+            // TODO(mmalerba): We should differentiate needs update due to scrolling and a new portion of
+            // this list being rendered (can use simpler algorithm) vs needs update due to data actually
+            // changing (need to do this diff).
+            const changes = this._differ.diff(this._renderedItems);
+            if (!changes) {
+                this._updateContext();
+            }
+            else {
+                this._applyChanges(changes);
+            }
+            this._needsUpdate = false;
+        }
+    }
+    ngOnDestroy() {
+        this._viewport.detach();
+        this._dataSourceChanges.next(undefined);
+        this._dataSourceChanges.complete();
+        this.viewChange.complete();
+        this._destroyed.next();
+        this._destroyed.complete();
+        for (let view of this._templateCache) {
+            view.destroy();
+        }
+    }
+    /** React to scroll state changes in the viewport. */
+    _onRenderedDataChange() {
+        if (!this._renderedRange) {
+            return;
+        }
+        this._renderedItems = this._data.slice(this._renderedRange.start, this._renderedRange.end);
+        if (!this._differ) {
+            this._differ = this._differs.find(this._renderedItems).create(this.cdkVirtualForTrackBy);
+        }
+        this._needsUpdate = true;
+    }
+    /** Swap out one `DataSource` for another. */
+    _changeDataSource(oldDs, newDs) {
+        if (oldDs) {
+            oldDs.disconnect(this);
+        }
+        this._needsUpdate = true;
+        return newDs ? newDs.connect(this) : Object(rxjs__WEBPACK_IMPORTED_MODULE_2__["of"])();
+    }
+    /** Update the `CdkVirtualForOfContext` for all views. */
+    _updateContext() {
+        const count = this._data.length;
+        let i = this._viewContainerRef.length;
+        while (i--) {
+            let view = this._viewContainerRef.get(i);
+            view.context.index = this._renderedRange.start + i;
+            view.context.count = count;
+            this._updateComputedContextProperties(view.context);
+            view.detectChanges();
+        }
+    }
+    /** Apply changes to the DOM. */
+    _applyChanges(changes) {
+        // Rearrange the views to put them in the right location.
+        changes.forEachOperation((record, adjustedPreviousIndex, currentIndex) => {
+            if (record.previousIndex == null) { // Item added.
+                const view = this._insertViewForNewItem(currentIndex);
+                view.context.$implicit = record.item;
+            }
+            else if (currentIndex == null) { // Item removed.
+                this._cacheView(this._detachView(adjustedPreviousIndex));
+            }
+            else { // Item moved.
+                const view = this._viewContainerRef.get(adjustedPreviousIndex);
+                this._viewContainerRef.move(view, currentIndex);
+                view.context.$implicit = record.item;
+            }
+        });
+        // Update $implicit for any items that had an identity change.
+        changes.forEachIdentityChange((record) => {
+            const view = this._viewContainerRef.get(record.currentIndex);
+            view.context.$implicit = record.item;
+        });
+        // Update the context variables on all items.
+        const count = this._data.length;
+        let i = this._viewContainerRef.length;
+        while (i--) {
+            const view = this._viewContainerRef.get(i);
+            view.context.index = this._renderedRange.start + i;
+            view.context.count = count;
+            this._updateComputedContextProperties(view.context);
+        }
+    }
+    /** Cache the given detached view. */
+    _cacheView(view) {
+        if (this._templateCache.length < this.cdkVirtualForTemplateCacheSize) {
+            this._templateCache.push(view);
+        }
+        else {
+            const index = this._viewContainerRef.indexOf(view);
+            // It's very unlikely that the index will ever be -1, but just in case,
+            // destroy the view on its own, otherwise destroy it through the
+            // container to ensure that all the references are removed.
+            if (index === -1) {
+                view.destroy();
+            }
+            else {
+                this._viewContainerRef.remove(index);
+            }
+        }
+    }
+    /** Inserts a view for a new item, either from the cache or by creating a new one. */
+    _insertViewForNewItem(index) {
+        return this._insertViewFromCache(index) || this._createEmbeddedViewAt(index);
+    }
+    /** Update the computed properties on the `CdkVirtualForOfContext`. */
+    _updateComputedContextProperties(context) {
+        context.first = context.index === 0;
+        context.last = context.index === context.count - 1;
+        context.even = context.index % 2 === 0;
+        context.odd = !context.even;
+    }
+    /** Creates a new embedded view and moves it to the given index */
+    _createEmbeddedViewAt(index) {
+        // Note that it's important that we insert the item directly at the proper index,
+        // rather than inserting it and the moving it in place, because if there's a directive
+        // on the same node that injects the `ViewContainerRef`, Angular will insert another
+        // comment node which can throw off the move when it's being repeated for all items.
+        return this._viewContainerRef.createEmbeddedView(this._template, {
+            $implicit: null,
+            // It's guaranteed that the iterable is not "undefined" or "null" because we only
+            // generate views for elements if the "cdkVirtualForOf" iterable has elements.
+            cdkVirtualForOf: this._cdkVirtualForOf,
+            index: -1,
+            count: -1,
+            first: false,
+            last: false,
+            odd: false,
+            even: false
+        }, index);
+    }
+    /** Inserts a recycled view from the cache at the given index. */
+    _insertViewFromCache(index) {
+        const cachedView = this._templateCache.pop();
+        if (cachedView) {
+            this._viewContainerRef.insert(cachedView, index);
+        }
+        return cachedView || null;
+    }
+    /** Detaches the embedded view at the given index. */
+    _detachView(index) {
+        return this._viewContainerRef.detach(index);
+    }
+}
+CdkVirtualForOf.ɵfac = function CdkVirtualForOf_Factory(t) { return new (t || CdkVirtualForOf)(_angular_core__WEBPACK_IMPORTED_MODULE_1__["ɵɵdirectiveInject"](_angular_core__WEBPACK_IMPORTED_MODULE_1__["ViewContainerRef"]), _angular_core__WEBPACK_IMPORTED_MODULE_1__["ɵɵdirectiveInject"](_angular_core__WEBPACK_IMPORTED_MODULE_1__["TemplateRef"]), _angular_core__WEBPACK_IMPORTED_MODULE_1__["ɵɵdirectiveInject"](_angular_core__WEBPACK_IMPORTED_MODULE_1__["IterableDiffers"]), _angular_core__WEBPACK_IMPORTED_MODULE_1__["ɵɵdirectiveInject"](CdkVirtualScrollViewport, 4), _angular_core__WEBPACK_IMPORTED_MODULE_1__["ɵɵdirectiveInject"](_angular_core__WEBPACK_IMPORTED_MODULE_1__["NgZone"])); };
+CdkVirtualForOf.ɵdir = _angular_core__WEBPACK_IMPORTED_MODULE_1__["ɵɵdefineDirective"]({ type: CdkVirtualForOf, selectors: [["", "cdkVirtualFor", "", "cdkVirtualForOf", ""]], inputs: { cdkVirtualForTemplateCacheSize: "cdkVirtualForTemplateCacheSize", cdkVirtualForOf: "cdkVirtualForOf", cdkVirtualForTrackBy: "cdkVirtualForTrackBy", cdkVirtualForTemplate: "cdkVirtualForTemplate" } });
+CdkVirtualForOf.ctorParameters = () => [
+    { type: _angular_core__WEBPACK_IMPORTED_MODULE_1__["ViewContainerRef"] },
+    { type: _angular_core__WEBPACK_IMPORTED_MODULE_1__["TemplateRef"] },
+    { type: _angular_core__WEBPACK_IMPORTED_MODULE_1__["IterableDiffers"] },
+    { type: CdkVirtualScrollViewport, decorators: [{ type: _angular_core__WEBPACK_IMPORTED_MODULE_1__["SkipSelf"] }] },
+    { type: _angular_core__WEBPACK_IMPORTED_MODULE_1__["NgZone"] }
+];
+CdkVirtualForOf.propDecorators = {
+    cdkVirtualForOf: [{ type: _angular_core__WEBPACK_IMPORTED_MODULE_1__["Input"] }],
+    cdkVirtualForTrackBy: [{ type: _angular_core__WEBPACK_IMPORTED_MODULE_1__["Input"] }],
+    cdkVirtualForTemplate: [{ type: _angular_core__WEBPACK_IMPORTED_MODULE_1__["Input"] }],
+    cdkVirtualForTemplateCacheSize: [{ type: _angular_core__WEBPACK_IMPORTED_MODULE_1__["Input"] }]
+};
+/*@__PURE__*/ (function () { _angular_core__WEBPACK_IMPORTED_MODULE_1__["ɵsetClassMetadata"](CdkVirtualForOf, [{
+        type: _angular_core__WEBPACK_IMPORTED_MODULE_1__["Directive"],
+        args: [{
+                selector: '[cdkVirtualFor][cdkVirtualForOf]'
+            }]
+    }], function () { return [{ type: _angular_core__WEBPACK_IMPORTED_MODULE_1__["ViewContainerRef"] }, { type: _angular_core__WEBPACK_IMPORTED_MODULE_1__["TemplateRef"] }, { type: _angular_core__WEBPACK_IMPORTED_MODULE_1__["IterableDiffers"] }, { type: CdkVirtualScrollViewport, decorators: [{
+                type: _angular_core__WEBPACK_IMPORTED_MODULE_1__["SkipSelf"]
+            }] }, { type: _angular_core__WEBPACK_IMPORTED_MODULE_1__["NgZone"] }]; }, { cdkVirtualForTemplateCacheSize: [{
+            type: _angular_core__WEBPACK_IMPORTED_MODULE_1__["Input"]
+        }], cdkVirtualForOf: [{
+            type: _angular_core__WEBPACK_IMPORTED_MODULE_1__["Input"]
+        }], cdkVirtualForTrackBy: [{
+            type: _angular_core__WEBPACK_IMPORTED_MODULE_1__["Input"]
+        }], cdkVirtualForTemplate: [{
+            type: _angular_core__WEBPACK_IMPORTED_MODULE_1__["Input"]
+        }] }); })();
+
+/**
+ * @license
+ * Copyright Google LLC All Rights Reserved.
+ *
+ * Use of this source code is governed by an MIT-style license that can be
+ * found in the LICENSE file at https://angular.io/license
+ */
+class CdkScrollableModule {
+}
+CdkScrollableModule.ɵmod = _angular_core__WEBPACK_IMPORTED_MODULE_1__["ɵɵdefineNgModule"]({ type: CdkScrollableModule });
+CdkScrollableModule.ɵinj = _angular_core__WEBPACK_IMPORTED_MODULE_1__["ɵɵdefineInjector"]({ factory: function CdkScrollableModule_Factory(t) { return new (t || CdkScrollableModule)(); } });
+(function () { (typeof ngJitMode === "undefined" || ngJitMode) && _angular_core__WEBPACK_IMPORTED_MODULE_1__["ɵɵsetNgModuleScope"](CdkScrollableModule, { declarations: [CdkScrollable], exports: [CdkScrollable] }); })();
+/*@__PURE__*/ (function () { _angular_core__WEBPACK_IMPORTED_MODULE_1__["ɵsetClassMetadata"](CdkScrollableModule, [{
+        type: _angular_core__WEBPACK_IMPORTED_MODULE_1__["NgModule"],
+        args: [{
+                exports: [CdkScrollable],
+                declarations: [CdkScrollable]
+            }]
+    }], null, null); })();
+class ScrollingModule {
+}
+ScrollingModule.ɵmod = _angular_core__WEBPACK_IMPORTED_MODULE_1__["ɵɵdefineNgModule"]({ type: ScrollingModule });
+ScrollingModule.ɵinj = _angular_core__WEBPACK_IMPORTED_MODULE_1__["ɵɵdefineInjector"]({ factory: function ScrollingModule_Factory(t) { return new (t || ScrollingModule)(); }, imports: [[
+            _angular_cdk_bidi__WEBPACK_IMPORTED_MODULE_6__["BidiModule"],
+            _angular_cdk_platform__WEBPACK_IMPORTED_MODULE_4__["PlatformModule"],
+            CdkScrollableModule
+        ], _angular_cdk_bidi__WEBPACK_IMPORTED_MODULE_6__["BidiModule"], CdkScrollableModule] });
+(function () { (typeof ngJitMode === "undefined" || ngJitMode) && _angular_core__WEBPACK_IMPORTED_MODULE_1__["ɵɵsetNgModuleScope"](ScrollingModule, { declarations: function () { return [CdkFixedSizeVirtualScroll, CdkVirtualForOf, CdkVirtualScrollViewport]; }, imports: function () { return [_angular_cdk_bidi__WEBPACK_IMPORTED_MODULE_6__["BidiModule"],
+        _angular_cdk_platform__WEBPACK_IMPORTED_MODULE_4__["PlatformModule"], CdkScrollableModule]; }, exports: function () { return [_angular_cdk_bidi__WEBPACK_IMPORTED_MODULE_6__["BidiModule"], CdkScrollableModule, CdkFixedSizeVirtualScroll, CdkVirtualForOf, CdkVirtualScrollViewport]; } }); })();
+/*@__PURE__*/ (function () { _angular_core__WEBPACK_IMPORTED_MODULE_1__["ɵsetClassMetadata"](ScrollingModule, [{
+        type: _angular_core__WEBPACK_IMPORTED_MODULE_1__["NgModule"],
+        args: [{
+                imports: [
+                    _angular_cdk_bidi__WEBPACK_IMPORTED_MODULE_6__["BidiModule"],
+                    _angular_cdk_platform__WEBPACK_IMPORTED_MODULE_4__["PlatformModule"],
+                    CdkScrollableModule
+                ],
+                exports: [
+                    _angular_cdk_bidi__WEBPACK_IMPORTED_MODULE_6__["BidiModule"],
+                    CdkScrollableModule,
+                    CdkFixedSizeVirtualScroll,
+                    CdkVirtualForOf,
+                    CdkVirtualScrollViewport,
+                ],
+                declarations: [
+                    CdkFixedSizeVirtualScroll,
+                    CdkVirtualForOf,
+                    CdkVirtualScrollViewport,
+                ]
+            }]
+    }], null, null); })();
+
+/**
+ * @license
+ * Copyright Google LLC All Rights Reserved.
+ *
+ * Use of this source code is governed by an MIT-style license that can be
+ * found in the LICENSE file at https://angular.io/license
+ */
+
+/**
+ * @license
+ * Copyright Google LLC All Rights Reserved.
+ *
+ * Use of this source code is governed by an MIT-style license that can be
+ * found in the LICENSE file at https://angular.io/license
+ */
+
+/**
+ * Generated bundle index. Do not edit.
+ */
+
+
+
+//# sourceMappingURL=scrolling.js.map
 
 /***/ }),
 
@@ -49196,6 +55014,659 @@ if (ngDevMode) {
 
 /***/ }),
 
+/***/ "./node_modules/@angular/fire/__ivy_ngcc__/es2015/angularfire2.js":
+/*!************************************************************************!*\
+  !*** ./node_modules/@angular/fire/__ivy_ngcc__/es2015/angularfire2.js ***!
+  \************************************************************************/
+/*! exports provided: RealtimeDatabaseURL, DATABASE_URL, ɵZoneScheduler, ɵBlockUntilFirstOperator, ɵAngularFireSchedulers, ɵkeepUnstableUntilFirstFactory, runOutsideAngular, runInZone, FirebaseZoneScheduler, ɵlazySDKProxy */
+/***/ (function(module, __webpack_exports__, __webpack_require__) {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "RealtimeDatabaseURL", function() { return RealtimeDatabaseURL; });
+/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "DATABASE_URL", function() { return DATABASE_URL; });
+/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "ɵZoneScheduler", function() { return ɵZoneScheduler; });
+/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "ɵBlockUntilFirstOperator", function() { return ɵBlockUntilFirstOperator; });
+/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "ɵAngularFireSchedulers", function() { return ɵAngularFireSchedulers; });
+/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "ɵkeepUnstableUntilFirstFactory", function() { return ɵkeepUnstableUntilFirstFactory; });
+/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "runOutsideAngular", function() { return runOutsideAngular; });
+/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "runInZone", function() { return runInZone; });
+/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "FirebaseZoneScheduler", function() { return FirebaseZoneScheduler; });
+/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "ɵlazySDKProxy", function() { return ɵlazySDKProxy; });
+/* harmony import */ var _angular_core__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! @angular/core */ "./node_modules/@angular/core/__ivy_ngcc__/fesm2015/core.js");
+/* harmony import */ var _angular_common__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! @angular/common */ "./node_modules/@angular/common/__ivy_ngcc__/fesm2015/common.js");
+/* harmony import */ var rxjs__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! rxjs */ "./node_modules/rxjs/_esm2015/index.js");
+/* harmony import */ var rxjs_operators__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! rxjs/operators */ "./node_modules/rxjs/_esm2015/operators/index.js");
+
+
+
+
+const RealtimeDatabaseURL = new _angular_core__WEBPACK_IMPORTED_MODULE_0__["InjectionToken"]('angularfire2.realtimeDatabaseURL');
+const DATABASE_URL = RealtimeDatabaseURL;
+function noop() { }
+class ɵZoneScheduler {
+    constructor(zone, delegate = rxjs__WEBPACK_IMPORTED_MODULE_2__["queueScheduler"]) {
+        this.zone = zone;
+        this.delegate = delegate;
+    }
+    now() {
+        return this.delegate.now();
+    }
+    schedule(work, delay, state) {
+        const targetZone = this.zone;
+        const workInZone = function (state) {
+            targetZone.runGuarded(() => {
+                work.apply(this, [state]);
+            });
+        };
+        return this.delegate.schedule(workInZone, delay, state);
+    }
+}
+class ɵBlockUntilFirstOperator {
+    constructor(zone) {
+        this.zone = zone;
+        this.task = null;
+    }
+    call(subscriber, source) {
+        const unscheduleTask = this.unscheduleTask.bind(this);
+        this.task = this.zone.run(() => Zone.current.scheduleMacroTask('firebaseZoneBlock', noop, {}, noop, noop));
+        return source.pipe(Object(rxjs_operators__WEBPACK_IMPORTED_MODULE_3__["tap"])(unscheduleTask, unscheduleTask, unscheduleTask)).subscribe(subscriber).add(unscheduleTask);
+    }
+    unscheduleTask() {
+        if (this.task != null && this.task.state === 'scheduled') {
+            this.task.invoke();
+            this.task = null;
+        }
+    }
+}
+class ɵAngularFireSchedulers {
+    constructor(ngZone) {
+        this.ngZone = ngZone;
+        this.outsideAngular = ngZone.runOutsideAngular(() => new ɵZoneScheduler(Zone.current));
+        this.insideAngular = ngZone.run(() => new ɵZoneScheduler(Zone.current, rxjs__WEBPACK_IMPORTED_MODULE_2__["asyncScheduler"]));
+    }
+}
+function ɵkeepUnstableUntilFirstFactory(schedulers, platformId) {
+    return function keepUnstableUntilFirst(obs$) {
+        if (Object(_angular_common__WEBPACK_IMPORTED_MODULE_1__["isPlatformServer"])(platformId)) {
+            obs$ = obs$.lift(new ɵBlockUntilFirstOperator(schedulers.ngZone));
+        }
+        return obs$.pipe(Object(rxjs_operators__WEBPACK_IMPORTED_MODULE_3__["subscribeOn"])(schedulers.outsideAngular), Object(rxjs_operators__WEBPACK_IMPORTED_MODULE_3__["observeOn"])(schedulers.insideAngular));
+    };
+}
+const runOutsideAngular = (zone) => (obs$) => {
+    return new rxjs__WEBPACK_IMPORTED_MODULE_2__["Observable"](subscriber => {
+        return zone.runOutsideAngular(() => {
+            runInZone(zone)(obs$).subscribe(subscriber);
+        });
+    });
+};
+const runInZone = (zone) => (obs$) => {
+    return new rxjs__WEBPACK_IMPORTED_MODULE_2__["Observable"](subscriber => {
+        return obs$.subscribe(value => zone.run(() => subscriber.next(value)), error => zone.run(() => subscriber.error(error)), () => zone.run(() => subscriber.complete()));
+    });
+};
+class FirebaseZoneScheduler {
+    constructor(zone, platformId) {
+        this.zone = zone;
+        this.platformId = platformId;
+    }
+    schedule(...args) {
+        return this.zone.runGuarded(function () { return rxjs__WEBPACK_IMPORTED_MODULE_2__["queueScheduler"].schedule.apply(rxjs__WEBPACK_IMPORTED_MODULE_2__["queueScheduler"], args); });
+    }
+    keepUnstableUntilFirst(obs$) {
+        if (Object(_angular_common__WEBPACK_IMPORTED_MODULE_1__["isPlatformServer"])(this.platformId)) {
+            return new rxjs__WEBPACK_IMPORTED_MODULE_2__["Observable"](subscriber => {
+                const noop = () => { };
+                const task = Zone.current.scheduleMacroTask('firebaseZoneBlock', noop, {}, noop, noop);
+                obs$.subscribe(next => {
+                    if (task.state === 'scheduled') {
+                        task.invoke();
+                    }
+                    ;
+                    subscriber.next(next);
+                }, error => {
+                    if (task.state === 'scheduled') {
+                        task.invoke();
+                    }
+                    subscriber.error(error);
+                }, () => {
+                    if (task.state === 'scheduled') {
+                        task.invoke();
+                    }
+                    subscriber.complete();
+                });
+            });
+        }
+        else {
+            return obs$;
+        }
+    }
+    runOutsideAngular(obs$) {
+        return new rxjs__WEBPACK_IMPORTED_MODULE_2__["Observable"](subscriber => {
+            return this.zone.runOutsideAngular(() => {
+                return obs$.subscribe(value => this.zone.run(() => subscriber.next(value)), error => this.zone.run(() => subscriber.error(error)), () => this.zone.run(() => subscriber.complete()));
+            });
+        });
+    }
+}
+const noopFunctions = ['ngOnDestroy'];
+const ɵlazySDKProxy = (klass, observable, zone) => {
+    return new Proxy(klass, {
+        get: (_, name) => zone.runOutsideAngular(() => {
+            if (klass[name]) {
+                return klass[name];
+            }
+            if (noopFunctions.includes(name)) {
+                return () => { };
+            }
+            let promise = observable.toPromise().then(mod => {
+                const ret = mod && mod[name];
+                if (typeof ret == 'function') {
+                    return ret.bind(mod);
+                }
+                else if (ret && ret.then) {
+                    return ret.then((res) => zone.run(() => res));
+                }
+                else {
+                    return zone.run(() => ret);
+                }
+            });
+            return new Proxy(() => undefined, {
+                get: (_, name) => promise[name],
+                apply: (self, _, args) => promise.then(it => it && it(...args))
+            });
+        })
+    });
+};
+//# sourceMappingURL=angularfire2.js.map
+
+/***/ }),
+
+/***/ "./node_modules/@angular/fire/__ivy_ngcc__/es2015/firebase.app.module.js":
+/*!*******************************************************************************!*\
+  !*** ./node_modules/@angular/fire/__ivy_ngcc__/es2015/firebase.app.module.js ***!
+  \*******************************************************************************/
+/*! exports provided: FirebaseOptionsToken, FirebaseNameOrConfigToken, FIREBASE_OPTIONS, FIREBASE_APP_NAME, FirebaseApp, VERSION, _firebaseAppFactory, AngularFireModule */
+/***/ (function(module, __webpack_exports__, __webpack_require__) {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "FirebaseOptionsToken", function() { return FirebaseOptionsToken; });
+/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "FirebaseNameOrConfigToken", function() { return FirebaseNameOrConfigToken; });
+/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "FIREBASE_OPTIONS", function() { return FIREBASE_OPTIONS; });
+/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "FIREBASE_APP_NAME", function() { return FIREBASE_APP_NAME; });
+/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "FirebaseApp", function() { return FirebaseApp; });
+/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "VERSION", function() { return VERSION; });
+/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "_firebaseAppFactory", function() { return _firebaseAppFactory; });
+/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "AngularFireModule", function() { return AngularFireModule; });
+/* harmony import */ var _angular_core__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! @angular/core */ "./node_modules/@angular/core/__ivy_ngcc__/fesm2015/core.js");
+/* harmony import */ var firebase_app__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! firebase/app */ "./node_modules/firebase/app/dist/index.cjs.js");
+/* harmony import */ var firebase_app__WEBPACK_IMPORTED_MODULE_1___default = /*#__PURE__*/__webpack_require__.n(firebase_app__WEBPACK_IMPORTED_MODULE_1__);
+
+var __decorate = (undefined && undefined.__decorate) || function (decorators, target, key, desc) {
+    var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
+    if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
+    else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
+    return c > 3 && r && Object.defineProperty(target, key, r), r;
+};
+var __metadata = (undefined && undefined.__metadata) || function (k, v) {
+    if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
+};
+var __param = (undefined && undefined.__param) || function (paramIndex, decorator) {
+    return function (target, key) { decorator(target, key, paramIndex); }
+};
+var AngularFireModule_1;
+
+
+const FirebaseOptionsToken = new _angular_core__WEBPACK_IMPORTED_MODULE_0__["InjectionToken"]('angularfire2.app.options');
+const FirebaseNameOrConfigToken = new _angular_core__WEBPACK_IMPORTED_MODULE_0__["InjectionToken"]('angularfire2.app.nameOrConfig');
+const FIREBASE_OPTIONS = FirebaseOptionsToken;
+const FIREBASE_APP_NAME = FirebaseNameOrConfigToken;
+class FirebaseApp {
+}
+const VERSION = new _angular_core__WEBPACK_IMPORTED_MODULE_0__["Version"]('5.4.2');
+function _firebaseAppFactory(options, zone, nameOrConfig) {
+    const name = typeof nameOrConfig === 'string' && nameOrConfig || '[DEFAULT]';
+    const config = typeof nameOrConfig === 'object' && nameOrConfig || {};
+    config.name = config.name || name;
+    const existingApp = firebase_app__WEBPACK_IMPORTED_MODULE_1___default.a.apps.filter(app => app && app.name === config.name)[0];
+    return (existingApp || zone.runOutsideAngular(() => firebase_app__WEBPACK_IMPORTED_MODULE_1___default.a.initializeApp(options, config)));
+}
+const FirebaseAppProvider = {
+    provide: FirebaseApp,
+    useFactory: _firebaseAppFactory,
+    deps: [
+        FIREBASE_OPTIONS,
+        _angular_core__WEBPACK_IMPORTED_MODULE_0__["NgZone"],
+        [new _angular_core__WEBPACK_IMPORTED_MODULE_0__["Optional"](), FIREBASE_APP_NAME]
+    ]
+};
+let AngularFireModule = AngularFireModule_1 = class AngularFireModule {
+    constructor(platformId) {
+        if (firebase_app__WEBPACK_IMPORTED_MODULE_1___default.a.registerVersion) {
+            firebase_app__WEBPACK_IMPORTED_MODULE_1___default.a.registerVersion('angularfire', VERSION.full, platformId.toString());
+            firebase_app__WEBPACK_IMPORTED_MODULE_1___default.a.registerVersion('angular', _angular_core__WEBPACK_IMPORTED_MODULE_0__["VERSION"].full);
+        }
+    }
+    static initializeApp(options, nameOrConfig) {
+        return {
+            ngModule: AngularFireModule_1,
+            providers: [
+                { provide: FIREBASE_OPTIONS, useValue: options },
+                { provide: FIREBASE_APP_NAME, useValue: nameOrConfig }
+            ]
+        };
+    }
+};
+AngularFireModule.ɵmod = _angular_core__WEBPACK_IMPORTED_MODULE_0__["ɵɵdefineNgModule"]({ type: AngularFireModule });
+AngularFireModule.ɵinj = _angular_core__WEBPACK_IMPORTED_MODULE_0__["ɵɵdefineInjector"]({ factory: function AngularFireModule_Factory(t) { return new (t || AngularFireModule)(_angular_core__WEBPACK_IMPORTED_MODULE_0__["ɵɵinject"](_angular_core__WEBPACK_IMPORTED_MODULE_0__["PLATFORM_ID"])); }, providers: [FirebaseAppProvider] });
+AngularFireModule = AngularFireModule_1 = __decorate([ __param(0, Object(_angular_core__WEBPACK_IMPORTED_MODULE_0__["Inject"])(_angular_core__WEBPACK_IMPORTED_MODULE_0__["PLATFORM_ID"])),
+    __metadata("design:paramtypes", [Object])
+], AngularFireModule);
+/*@__PURE__*/ (function () { _angular_core__WEBPACK_IMPORTED_MODULE_0__["ɵsetClassMetadata"](AngularFireModule, [{
+        type: _angular_core__WEBPACK_IMPORTED_MODULE_0__["NgModule"],
+        args: [{
+                providers: [FirebaseAppProvider]
+            }]
+    }], function () { return [{ type: Object, decorators: [{
+                type: _angular_core__WEBPACK_IMPORTED_MODULE_0__["Inject"],
+                args: [_angular_core__WEBPACK_IMPORTED_MODULE_0__["PLATFORM_ID"]]
+            }] }]; }, null); })();
+
+
+//# sourceMappingURL=firebase.app.module.js.map
+
+/***/ }),
+
+/***/ "./node_modules/@angular/fire/__ivy_ngcc__/es2015/index.js":
+/*!*****************************************************************!*\
+  !*** ./node_modules/@angular/fire/__ivy_ngcc__/es2015/index.js ***!
+  \*****************************************************************/
+/*! exports provided: RealtimeDatabaseURL, DATABASE_URL, ɵZoneScheduler, ɵBlockUntilFirstOperator, ɵAngularFireSchedulers, ɵkeepUnstableUntilFirstFactory, runOutsideAngular, runInZone, FirebaseZoneScheduler, ɵlazySDKProxy, FirebaseOptionsToken, FirebaseNameOrConfigToken, FIREBASE_OPTIONS, FIREBASE_APP_NAME, FirebaseApp, VERSION, _firebaseAppFactory, AngularFireModule */
+/***/ (function(module, __webpack_exports__, __webpack_require__) {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony import */ var _public_api__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ./public_api */ "./node_modules/@angular/fire/__ivy_ngcc__/es2015/public_api.js");
+/* harmony reexport (safe) */ __webpack_require__.d(__webpack_exports__, "RealtimeDatabaseURL", function() { return _public_api__WEBPACK_IMPORTED_MODULE_0__["RealtimeDatabaseURL"]; });
+
+/* harmony reexport (safe) */ __webpack_require__.d(__webpack_exports__, "DATABASE_URL", function() { return _public_api__WEBPACK_IMPORTED_MODULE_0__["DATABASE_URL"]; });
+
+/* harmony reexport (safe) */ __webpack_require__.d(__webpack_exports__, "ɵZoneScheduler", function() { return _public_api__WEBPACK_IMPORTED_MODULE_0__["ɵZoneScheduler"]; });
+
+/* harmony reexport (safe) */ __webpack_require__.d(__webpack_exports__, "ɵBlockUntilFirstOperator", function() { return _public_api__WEBPACK_IMPORTED_MODULE_0__["ɵBlockUntilFirstOperator"]; });
+
+/* harmony reexport (safe) */ __webpack_require__.d(__webpack_exports__, "ɵAngularFireSchedulers", function() { return _public_api__WEBPACK_IMPORTED_MODULE_0__["ɵAngularFireSchedulers"]; });
+
+/* harmony reexport (safe) */ __webpack_require__.d(__webpack_exports__, "ɵkeepUnstableUntilFirstFactory", function() { return _public_api__WEBPACK_IMPORTED_MODULE_0__["ɵkeepUnstableUntilFirstFactory"]; });
+
+/* harmony reexport (safe) */ __webpack_require__.d(__webpack_exports__, "runOutsideAngular", function() { return _public_api__WEBPACK_IMPORTED_MODULE_0__["runOutsideAngular"]; });
+
+/* harmony reexport (safe) */ __webpack_require__.d(__webpack_exports__, "runInZone", function() { return _public_api__WEBPACK_IMPORTED_MODULE_0__["runInZone"]; });
+
+/* harmony reexport (safe) */ __webpack_require__.d(__webpack_exports__, "FirebaseZoneScheduler", function() { return _public_api__WEBPACK_IMPORTED_MODULE_0__["FirebaseZoneScheduler"]; });
+
+/* harmony reexport (safe) */ __webpack_require__.d(__webpack_exports__, "ɵlazySDKProxy", function() { return _public_api__WEBPACK_IMPORTED_MODULE_0__["ɵlazySDKProxy"]; });
+
+/* harmony reexport (safe) */ __webpack_require__.d(__webpack_exports__, "FirebaseOptionsToken", function() { return _public_api__WEBPACK_IMPORTED_MODULE_0__["FirebaseOptionsToken"]; });
+
+/* harmony reexport (safe) */ __webpack_require__.d(__webpack_exports__, "FirebaseNameOrConfigToken", function() { return _public_api__WEBPACK_IMPORTED_MODULE_0__["FirebaseNameOrConfigToken"]; });
+
+/* harmony reexport (safe) */ __webpack_require__.d(__webpack_exports__, "FIREBASE_OPTIONS", function() { return _public_api__WEBPACK_IMPORTED_MODULE_0__["FIREBASE_OPTIONS"]; });
+
+/* harmony reexport (safe) */ __webpack_require__.d(__webpack_exports__, "FIREBASE_APP_NAME", function() { return _public_api__WEBPACK_IMPORTED_MODULE_0__["FIREBASE_APP_NAME"]; });
+
+/* harmony reexport (safe) */ __webpack_require__.d(__webpack_exports__, "FirebaseApp", function() { return _public_api__WEBPACK_IMPORTED_MODULE_0__["FirebaseApp"]; });
+
+/* harmony reexport (safe) */ __webpack_require__.d(__webpack_exports__, "VERSION", function() { return _public_api__WEBPACK_IMPORTED_MODULE_0__["VERSION"]; });
+
+/* harmony reexport (safe) */ __webpack_require__.d(__webpack_exports__, "_firebaseAppFactory", function() { return _public_api__WEBPACK_IMPORTED_MODULE_0__["_firebaseAppFactory"]; });
+
+/* harmony reexport (safe) */ __webpack_require__.d(__webpack_exports__, "AngularFireModule", function() { return _public_api__WEBPACK_IMPORTED_MODULE_0__["AngularFireModule"]; });
+
+
+
+//# sourceMappingURL=index.js.map
+
+/***/ }),
+
+/***/ "./node_modules/@angular/fire/__ivy_ngcc__/es2015/public_api.js":
+/*!**********************************************************************!*\
+  !*** ./node_modules/@angular/fire/__ivy_ngcc__/es2015/public_api.js ***!
+  \**********************************************************************/
+/*! exports provided: RealtimeDatabaseURL, DATABASE_URL, ɵZoneScheduler, ɵBlockUntilFirstOperator, ɵAngularFireSchedulers, ɵkeepUnstableUntilFirstFactory, runOutsideAngular, runInZone, FirebaseZoneScheduler, ɵlazySDKProxy, FirebaseOptionsToken, FirebaseNameOrConfigToken, FIREBASE_OPTIONS, FIREBASE_APP_NAME, FirebaseApp, VERSION, _firebaseAppFactory, AngularFireModule */
+/***/ (function(module, __webpack_exports__, __webpack_require__) {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony import */ var _angularfire2__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ./angularfire2 */ "./node_modules/@angular/fire/__ivy_ngcc__/es2015/angularfire2.js");
+/* harmony reexport (safe) */ __webpack_require__.d(__webpack_exports__, "RealtimeDatabaseURL", function() { return _angularfire2__WEBPACK_IMPORTED_MODULE_0__["RealtimeDatabaseURL"]; });
+
+/* harmony reexport (safe) */ __webpack_require__.d(__webpack_exports__, "DATABASE_URL", function() { return _angularfire2__WEBPACK_IMPORTED_MODULE_0__["DATABASE_URL"]; });
+
+/* harmony reexport (safe) */ __webpack_require__.d(__webpack_exports__, "ɵZoneScheduler", function() { return _angularfire2__WEBPACK_IMPORTED_MODULE_0__["ɵZoneScheduler"]; });
+
+/* harmony reexport (safe) */ __webpack_require__.d(__webpack_exports__, "ɵBlockUntilFirstOperator", function() { return _angularfire2__WEBPACK_IMPORTED_MODULE_0__["ɵBlockUntilFirstOperator"]; });
+
+/* harmony reexport (safe) */ __webpack_require__.d(__webpack_exports__, "ɵAngularFireSchedulers", function() { return _angularfire2__WEBPACK_IMPORTED_MODULE_0__["ɵAngularFireSchedulers"]; });
+
+/* harmony reexport (safe) */ __webpack_require__.d(__webpack_exports__, "ɵkeepUnstableUntilFirstFactory", function() { return _angularfire2__WEBPACK_IMPORTED_MODULE_0__["ɵkeepUnstableUntilFirstFactory"]; });
+
+/* harmony reexport (safe) */ __webpack_require__.d(__webpack_exports__, "runOutsideAngular", function() { return _angularfire2__WEBPACK_IMPORTED_MODULE_0__["runOutsideAngular"]; });
+
+/* harmony reexport (safe) */ __webpack_require__.d(__webpack_exports__, "runInZone", function() { return _angularfire2__WEBPACK_IMPORTED_MODULE_0__["runInZone"]; });
+
+/* harmony reexport (safe) */ __webpack_require__.d(__webpack_exports__, "FirebaseZoneScheduler", function() { return _angularfire2__WEBPACK_IMPORTED_MODULE_0__["FirebaseZoneScheduler"]; });
+
+/* harmony reexport (safe) */ __webpack_require__.d(__webpack_exports__, "ɵlazySDKProxy", function() { return _angularfire2__WEBPACK_IMPORTED_MODULE_0__["ɵlazySDKProxy"]; });
+
+/* harmony import */ var _firebase_app_module__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ./firebase.app.module */ "./node_modules/@angular/fire/__ivy_ngcc__/es2015/firebase.app.module.js");
+/* harmony reexport (safe) */ __webpack_require__.d(__webpack_exports__, "FirebaseOptionsToken", function() { return _firebase_app_module__WEBPACK_IMPORTED_MODULE_1__["FirebaseOptionsToken"]; });
+
+/* harmony reexport (safe) */ __webpack_require__.d(__webpack_exports__, "FirebaseNameOrConfigToken", function() { return _firebase_app_module__WEBPACK_IMPORTED_MODULE_1__["FirebaseNameOrConfigToken"]; });
+
+/* harmony reexport (safe) */ __webpack_require__.d(__webpack_exports__, "FIREBASE_OPTIONS", function() { return _firebase_app_module__WEBPACK_IMPORTED_MODULE_1__["FIREBASE_OPTIONS"]; });
+
+/* harmony reexport (safe) */ __webpack_require__.d(__webpack_exports__, "FIREBASE_APP_NAME", function() { return _firebase_app_module__WEBPACK_IMPORTED_MODULE_1__["FIREBASE_APP_NAME"]; });
+
+/* harmony reexport (safe) */ __webpack_require__.d(__webpack_exports__, "FirebaseApp", function() { return _firebase_app_module__WEBPACK_IMPORTED_MODULE_1__["FirebaseApp"]; });
+
+/* harmony reexport (safe) */ __webpack_require__.d(__webpack_exports__, "VERSION", function() { return _firebase_app_module__WEBPACK_IMPORTED_MODULE_1__["VERSION"]; });
+
+/* harmony reexport (safe) */ __webpack_require__.d(__webpack_exports__, "_firebaseAppFactory", function() { return _firebase_app_module__WEBPACK_IMPORTED_MODULE_1__["_firebaseAppFactory"]; });
+
+/* harmony reexport (safe) */ __webpack_require__.d(__webpack_exports__, "AngularFireModule", function() { return _firebase_app_module__WEBPACK_IMPORTED_MODULE_1__["AngularFireModule"]; });
+
+
+
+//# sourceMappingURL=public_api.js.map
+
+/***/ }),
+
+/***/ "./node_modules/@angular/fire/__ivy_ngcc__/storage/es2015/index.js":
+/*!*************************************************************************!*\
+  !*** ./node_modules/@angular/fire/__ivy_ngcc__/storage/es2015/index.js ***!
+  \*************************************************************************/
+/*! exports provided: createStorageRef, StorageBucket, BUCKET, AngularFireStorage, createUploadTask, fromTask, AngularFireStorageModule */
+/***/ (function(module, __webpack_exports__, __webpack_require__) {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony import */ var _public_api__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ./public_api */ "./node_modules/@angular/fire/__ivy_ngcc__/storage/es2015/public_api.js");
+/* harmony reexport (safe) */ __webpack_require__.d(__webpack_exports__, "createStorageRef", function() { return _public_api__WEBPACK_IMPORTED_MODULE_0__["createStorageRef"]; });
+
+/* harmony reexport (safe) */ __webpack_require__.d(__webpack_exports__, "StorageBucket", function() { return _public_api__WEBPACK_IMPORTED_MODULE_0__["StorageBucket"]; });
+
+/* harmony reexport (safe) */ __webpack_require__.d(__webpack_exports__, "BUCKET", function() { return _public_api__WEBPACK_IMPORTED_MODULE_0__["BUCKET"]; });
+
+/* harmony reexport (safe) */ __webpack_require__.d(__webpack_exports__, "AngularFireStorage", function() { return _public_api__WEBPACK_IMPORTED_MODULE_0__["AngularFireStorage"]; });
+
+/* harmony reexport (safe) */ __webpack_require__.d(__webpack_exports__, "createUploadTask", function() { return _public_api__WEBPACK_IMPORTED_MODULE_0__["createUploadTask"]; });
+
+/* harmony reexport (safe) */ __webpack_require__.d(__webpack_exports__, "fromTask", function() { return _public_api__WEBPACK_IMPORTED_MODULE_0__["fromTask"]; });
+
+/* harmony reexport (safe) */ __webpack_require__.d(__webpack_exports__, "AngularFireStorageModule", function() { return _public_api__WEBPACK_IMPORTED_MODULE_0__["AngularFireStorageModule"]; });
+
+
+
+//# sourceMappingURL=index.js.map
+
+/***/ }),
+
+/***/ "./node_modules/@angular/fire/__ivy_ngcc__/storage/es2015/observable/fromTask.js":
+/*!***************************************************************************************!*\
+  !*** ./node_modules/@angular/fire/__ivy_ngcc__/storage/es2015/observable/fromTask.js ***!
+  \***************************************************************************************/
+/*! exports provided: fromTask */
+/***/ (function(module, __webpack_exports__, __webpack_require__) {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "fromTask", function() { return fromTask; });
+/* harmony import */ var rxjs__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! rxjs */ "./node_modules/rxjs/_esm2015/index.js");
+
+function fromTask(task) {
+    return new rxjs__WEBPACK_IMPORTED_MODULE_0__["Observable"](subscriber => {
+        const progress = (snap) => subscriber.next(snap);
+        const error = e => subscriber.error(e);
+        const complete = () => subscriber.complete();
+        task.on('state_changed', progress, error, complete);
+        return () => task.cancel();
+    });
+}
+//# sourceMappingURL=fromTask.js.map
+
+/***/ }),
+
+/***/ "./node_modules/@angular/fire/__ivy_ngcc__/storage/es2015/public_api.js":
+/*!******************************************************************************!*\
+  !*** ./node_modules/@angular/fire/__ivy_ngcc__/storage/es2015/public_api.js ***!
+  \******************************************************************************/
+/*! exports provided: createStorageRef, StorageBucket, BUCKET, AngularFireStorage, createUploadTask, fromTask, AngularFireStorageModule */
+/***/ (function(module, __webpack_exports__, __webpack_require__) {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony import */ var _ref__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ./ref */ "./node_modules/@angular/fire/__ivy_ngcc__/storage/es2015/ref.js");
+/* harmony reexport (safe) */ __webpack_require__.d(__webpack_exports__, "createStorageRef", function() { return _ref__WEBPACK_IMPORTED_MODULE_0__["createStorageRef"]; });
+
+/* harmony import */ var _storage__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ./storage */ "./node_modules/@angular/fire/__ivy_ngcc__/storage/es2015/storage.js");
+/* harmony reexport (safe) */ __webpack_require__.d(__webpack_exports__, "StorageBucket", function() { return _storage__WEBPACK_IMPORTED_MODULE_1__["StorageBucket"]; });
+
+/* harmony reexport (safe) */ __webpack_require__.d(__webpack_exports__, "BUCKET", function() { return _storage__WEBPACK_IMPORTED_MODULE_1__["BUCKET"]; });
+
+/* harmony reexport (safe) */ __webpack_require__.d(__webpack_exports__, "AngularFireStorage", function() { return _storage__WEBPACK_IMPORTED_MODULE_1__["AngularFireStorage"]; });
+
+/* harmony import */ var _task__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! ./task */ "./node_modules/@angular/fire/__ivy_ngcc__/storage/es2015/task.js");
+/* harmony reexport (safe) */ __webpack_require__.d(__webpack_exports__, "createUploadTask", function() { return _task__WEBPACK_IMPORTED_MODULE_2__["createUploadTask"]; });
+
+/* harmony import */ var _observable_fromTask__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! ./observable/fromTask */ "./node_modules/@angular/fire/__ivy_ngcc__/storage/es2015/observable/fromTask.js");
+/* harmony reexport (safe) */ __webpack_require__.d(__webpack_exports__, "fromTask", function() { return _observable_fromTask__WEBPACK_IMPORTED_MODULE_3__["fromTask"]; });
+
+/* harmony import */ var _storage_module__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(/*! ./storage.module */ "./node_modules/@angular/fire/__ivy_ngcc__/storage/es2015/storage.module.js");
+/* harmony reexport (safe) */ __webpack_require__.d(__webpack_exports__, "AngularFireStorageModule", function() { return _storage_module__WEBPACK_IMPORTED_MODULE_4__["AngularFireStorageModule"]; });
+
+
+
+
+
+
+//# sourceMappingURL=public_api.js.map
+
+/***/ }),
+
+/***/ "./node_modules/@angular/fire/__ivy_ngcc__/storage/es2015/ref.js":
+/*!***********************************************************************!*\
+  !*** ./node_modules/@angular/fire/__ivy_ngcc__/storage/es2015/ref.js ***!
+  \***********************************************************************/
+/*! exports provided: createStorageRef */
+/***/ (function(module, __webpack_exports__, __webpack_require__) {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "createStorageRef", function() { return createStorageRef; });
+/* harmony import */ var _task__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ./task */ "./node_modules/@angular/fire/__ivy_ngcc__/storage/es2015/task.js");
+/* harmony import */ var rxjs__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! rxjs */ "./node_modules/rxjs/_esm2015/index.js");
+
+
+function createStorageRef(ref, schedulers, keepUnstableUntilFirst) {
+    return {
+        getDownloadURL: () => Object(rxjs__WEBPACK_IMPORTED_MODULE_1__["from"])(ref.getDownloadURL(), schedulers.outsideAngular).pipe(keepUnstableUntilFirst),
+        getMetadata: () => Object(rxjs__WEBPACK_IMPORTED_MODULE_1__["from"])(ref.getMetadata()).pipe(keepUnstableUntilFirst),
+        delete: () => Object(rxjs__WEBPACK_IMPORTED_MODULE_1__["from"])(ref.delete()),
+        child: (path) => createStorageRef(ref.child(path), schedulers, keepUnstableUntilFirst),
+        updateMetatdata: (meta) => Object(rxjs__WEBPACK_IMPORTED_MODULE_1__["from"])(ref.updateMetadata(meta)),
+        updateMetadata: (meta) => Object(rxjs__WEBPACK_IMPORTED_MODULE_1__["from"])(ref.updateMetadata(meta)),
+        put: (data, metadata) => {
+            const task = ref.put(data, metadata);
+            return Object(_task__WEBPACK_IMPORTED_MODULE_0__["createUploadTask"])(task);
+        },
+        putString: (data, format, metadata) => {
+            const task = ref.putString(data, format, metadata);
+            return Object(_task__WEBPACK_IMPORTED_MODULE_0__["createUploadTask"])(task);
+        }
+    };
+}
+//# sourceMappingURL=ref.js.map
+
+/***/ }),
+
+/***/ "./node_modules/@angular/fire/__ivy_ngcc__/storage/es2015/storage.js":
+/*!***************************************************************************!*\
+  !*** ./node_modules/@angular/fire/__ivy_ngcc__/storage/es2015/storage.js ***!
+  \***************************************************************************/
+/*! exports provided: StorageBucket, BUCKET, AngularFireStorage */
+/***/ (function(module, __webpack_exports__, __webpack_require__) {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "StorageBucket", function() { return StorageBucket; });
+/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "BUCKET", function() { return BUCKET; });
+/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "AngularFireStorage", function() { return AngularFireStorage; });
+/* harmony import */ var _angular_core__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! @angular/core */ "./node_modules/@angular/core/__ivy_ngcc__/fesm2015/core.js");
+/* harmony import */ var _ref__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ./ref */ "./node_modules/@angular/fire/__ivy_ngcc__/storage/es2015/ref.js");
+/* harmony import */ var _angular_fire__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! @angular/fire */ "./node_modules/@angular/fire/__ivy_ngcc__/es2015/index.js");
+
+var __decorate = (undefined && undefined.__decorate) || function (decorators, target, key, desc) {
+    var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
+    if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
+    else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
+    return c > 3 && r && Object.defineProperty(target, key, r), r;
+};
+var __metadata = (undefined && undefined.__metadata) || function (k, v) {
+    if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
+};
+var __param = (undefined && undefined.__param) || function (paramIndex, decorator) {
+    return function (target, key) { decorator(target, key, paramIndex); }
+};
+
+
+
+const StorageBucket = new _angular_core__WEBPACK_IMPORTED_MODULE_0__["InjectionToken"]('angularfire2.storageBucket');
+const BUCKET = StorageBucket;
+let AngularFireStorage = class AngularFireStorage {
+    constructor(options, nameOrConfig, storageBucket, platformId, zone) {
+        this.schedulers = new _angular_fire__WEBPACK_IMPORTED_MODULE_2__["ɵAngularFireSchedulers"](zone);
+        this.keepUnstableUntilFirst = Object(_angular_fire__WEBPACK_IMPORTED_MODULE_2__["ɵkeepUnstableUntilFirstFactory"])(this.schedulers, platformId);
+        this.storage = zone.runOutsideAngular(() => {
+            const app = Object(_angular_fire__WEBPACK_IMPORTED_MODULE_2__["_firebaseAppFactory"])(options, zone, nameOrConfig);
+            return app.storage(storageBucket || undefined);
+        });
+    }
+    ref(path) {
+        return Object(_ref__WEBPACK_IMPORTED_MODULE_1__["createStorageRef"])(this.storage.ref(path), this.schedulers, this.keepUnstableUntilFirst);
+    }
+    upload(path, data, metadata) {
+        const storageRef = this.storage.ref(path);
+        const ref = Object(_ref__WEBPACK_IMPORTED_MODULE_1__["createStorageRef"])(storageRef, this.schedulers, this.keepUnstableUntilFirst);
+        return ref.put(data, metadata);
+    }
+};
+AngularFireStorage.ɵfac = function AngularFireStorage_Factory(t) { return new (t || AngularFireStorage)(_angular_core__WEBPACK_IMPORTED_MODULE_0__["ɵɵinject"](_angular_fire__WEBPACK_IMPORTED_MODULE_2__["FIREBASE_OPTIONS"]), _angular_core__WEBPACK_IMPORTED_MODULE_0__["ɵɵinject"](_angular_fire__WEBPACK_IMPORTED_MODULE_2__["FIREBASE_APP_NAME"], 8), _angular_core__WEBPACK_IMPORTED_MODULE_0__["ɵɵinject"](BUCKET, 8), _angular_core__WEBPACK_IMPORTED_MODULE_0__["ɵɵinject"](_angular_core__WEBPACK_IMPORTED_MODULE_0__["PLATFORM_ID"]), _angular_core__WEBPACK_IMPORTED_MODULE_0__["ɵɵinject"](_angular_core__WEBPACK_IMPORTED_MODULE_0__["NgZone"])); };
+AngularFireStorage.ɵprov = _angular_core__WEBPACK_IMPORTED_MODULE_0__["ɵɵdefineInjectable"]({ token: AngularFireStorage, factory: function (t) { return AngularFireStorage.ɵfac(t); } });
+AngularFireStorage = __decorate([ __param(0, Object(_angular_core__WEBPACK_IMPORTED_MODULE_0__["Inject"])(_angular_fire__WEBPACK_IMPORTED_MODULE_2__["FIREBASE_OPTIONS"])),
+    __param(1, Object(_angular_core__WEBPACK_IMPORTED_MODULE_0__["Optional"])()), __param(1, Object(_angular_core__WEBPACK_IMPORTED_MODULE_0__["Inject"])(_angular_fire__WEBPACK_IMPORTED_MODULE_2__["FIREBASE_APP_NAME"])),
+    __param(2, Object(_angular_core__WEBPACK_IMPORTED_MODULE_0__["Optional"])()), __param(2, Object(_angular_core__WEBPACK_IMPORTED_MODULE_0__["Inject"])(BUCKET)),
+    __param(3, Object(_angular_core__WEBPACK_IMPORTED_MODULE_0__["Inject"])(_angular_core__WEBPACK_IMPORTED_MODULE_0__["PLATFORM_ID"])),
+    __metadata("design:paramtypes", [Object, Object, Object, Object,
+        _angular_core__WEBPACK_IMPORTED_MODULE_0__["NgZone"]])
+], AngularFireStorage);
+/*@__PURE__*/ (function () { _angular_core__WEBPACK_IMPORTED_MODULE_0__["ɵsetClassMetadata"](AngularFireStorage, [{
+        type: _angular_core__WEBPACK_IMPORTED_MODULE_0__["Injectable"]
+    }], function () { return [{ type: Object, decorators: [{
+                type: _angular_core__WEBPACK_IMPORTED_MODULE_0__["Inject"],
+                args: [_angular_fire__WEBPACK_IMPORTED_MODULE_2__["FIREBASE_OPTIONS"]]
+            }] }, { type: Object, decorators: [{
+                type: _angular_core__WEBPACK_IMPORTED_MODULE_0__["Optional"]
+            }, {
+                type: _angular_core__WEBPACK_IMPORTED_MODULE_0__["Inject"],
+                args: [_angular_fire__WEBPACK_IMPORTED_MODULE_2__["FIREBASE_APP_NAME"]]
+            }] }, { type: Object, decorators: [{
+                type: _angular_core__WEBPACK_IMPORTED_MODULE_0__["Optional"]
+            }, {
+                type: _angular_core__WEBPACK_IMPORTED_MODULE_0__["Inject"],
+                args: [BUCKET]
+            }] }, { type: Object, decorators: [{
+                type: _angular_core__WEBPACK_IMPORTED_MODULE_0__["Inject"],
+                args: [_angular_core__WEBPACK_IMPORTED_MODULE_0__["PLATFORM_ID"]]
+            }] }, { type: _angular_core__WEBPACK_IMPORTED_MODULE_0__["NgZone"] }]; }, null); })();
+
+
+//# sourceMappingURL=storage.js.map
+
+/***/ }),
+
+/***/ "./node_modules/@angular/fire/__ivy_ngcc__/storage/es2015/storage.module.js":
+/*!**********************************************************************************!*\
+  !*** ./node_modules/@angular/fire/__ivy_ngcc__/storage/es2015/storage.module.js ***!
+  \**********************************************************************************/
+/*! exports provided: AngularFireStorageModule */
+/***/ (function(module, __webpack_exports__, __webpack_require__) {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "AngularFireStorageModule", function() { return AngularFireStorageModule; });
+/* harmony import */ var _angular_core__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! @angular/core */ "./node_modules/@angular/core/__ivy_ngcc__/fesm2015/core.js");
+/* harmony import */ var _storage__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ./storage */ "./node_modules/@angular/fire/__ivy_ngcc__/storage/es2015/storage.js");
+/* harmony import */ var firebase_storage__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! firebase/storage */ "./node_modules/firebase/storage/dist/index.esm.js");
+
+var __decorate = (undefined && undefined.__decorate) || function (decorators, target, key, desc) {
+    var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
+    if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
+    else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
+    return c > 3 && r && Object.defineProperty(target, key, r), r;
+};
+
+
+
+let AngularFireStorageModule = class AngularFireStorageModule {
+};
+AngularFireStorageModule.ɵmod = _angular_core__WEBPACK_IMPORTED_MODULE_0__["ɵɵdefineNgModule"]({ type: AngularFireStorageModule });
+AngularFireStorageModule.ɵinj = _angular_core__WEBPACK_IMPORTED_MODULE_0__["ɵɵdefineInjector"]({ factory: function AngularFireStorageModule_Factory(t) { return new (t || AngularFireStorageModule)(); }, providers: [_storage__WEBPACK_IMPORTED_MODULE_1__["AngularFireStorage"]] });
+/*@__PURE__*/ (function () { _angular_core__WEBPACK_IMPORTED_MODULE_0__["ɵsetClassMetadata"](AngularFireStorageModule, [{
+        type: _angular_core__WEBPACK_IMPORTED_MODULE_0__["NgModule"],
+        args: [{
+                providers: [_storage__WEBPACK_IMPORTED_MODULE_1__["AngularFireStorage"]]
+            }]
+    }], null, null); })();
+
+
+//# sourceMappingURL=storage.module.js.map
+
+/***/ }),
+
+/***/ "./node_modules/@angular/fire/__ivy_ngcc__/storage/es2015/task.js":
+/*!************************************************************************!*\
+  !*** ./node_modules/@angular/fire/__ivy_ngcc__/storage/es2015/task.js ***!
+  \************************************************************************/
+/*! exports provided: createUploadTask */
+/***/ (function(module, __webpack_exports__, __webpack_require__) {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "createUploadTask", function() { return createUploadTask; });
+/* harmony import */ var _observable_fromTask__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ./observable/fromTask */ "./node_modules/@angular/fire/__ivy_ngcc__/storage/es2015/observable/fromTask.js");
+/* harmony import */ var rxjs_operators__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! rxjs/operators */ "./node_modules/rxjs/_esm2015/operators/index.js");
+
+
+function createUploadTask(task) {
+    const inner$ = Object(_observable_fromTask__WEBPACK_IMPORTED_MODULE_0__["fromTask"])(task);
+    return {
+        task: task,
+        then: task.then.bind(task),
+        catch: task.catch.bind(task),
+        pause: task.pause.bind(task),
+        cancel: task.cancel.bind(task),
+        resume: task.resume.bind(task),
+        snapshotChanges: () => inner$,
+        percentageChanges: () => inner$.pipe(Object(rxjs_operators__WEBPACK_IMPORTED_MODULE_1__["map"])(s => s.bytesTransferred / s.totalBytes * 100))
+    };
+}
+//# sourceMappingURL=task.js.map
+
+/***/ }),
+
 /***/ "./node_modules/@angular/material/__ivy_ngcc__/fesm2015/button.js":
 /*!************************************************************************!*\
   !*** ./node_modules/@angular/material/__ivy_ngcc__/fesm2015/button.js ***!
@@ -53643,6 +60114,1529 @@ MatIconModule.ɵinj = _angular_core__WEBPACK_IMPORTED_MODULE_0__["ɵɵdefineInje
 
 
 //# sourceMappingURL=icon.js.map
+
+/***/ }),
+
+/***/ "./node_modules/@angular/material/__ivy_ngcc__/fesm2015/menu.js":
+/*!**********************************************************************!*\
+  !*** ./node_modules/@angular/material/__ivy_ngcc__/fesm2015/menu.js ***!
+  \**********************************************************************/
+/*! exports provided: MAT_MENU_CONTENT, MAT_MENU_DEFAULT_OPTIONS, MAT_MENU_PANEL, MAT_MENU_SCROLL_STRATEGY, MatMenu, MatMenuContent, MatMenuItem, MatMenuModule, MatMenuTrigger, _MatMenu, _MatMenuBase, _MatMenuDirectivesModule, fadeInItems, matMenuAnimations, transformMenu, ɵangular_material_src_material_menu_menu_a, ɵangular_material_src_material_menu_menu_b, ɵangular_material_src_material_menu_menu_c */
+/***/ (function(module, __webpack_exports__, __webpack_require__) {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "MAT_MENU_CONTENT", function() { return MAT_MENU_CONTENT; });
+/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "MAT_MENU_DEFAULT_OPTIONS", function() { return MAT_MENU_DEFAULT_OPTIONS; });
+/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "MAT_MENU_PANEL", function() { return MAT_MENU_PANEL; });
+/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "MAT_MENU_SCROLL_STRATEGY", function() { return MAT_MENU_SCROLL_STRATEGY; });
+/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "MatMenu", function() { return MatMenu; });
+/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "MatMenuContent", function() { return MatMenuContent; });
+/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "MatMenuItem", function() { return MatMenuItem; });
+/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "MatMenuModule", function() { return MatMenuModule; });
+/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "MatMenuTrigger", function() { return MatMenuTrigger; });
+/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "_MatMenu", function() { return _MatMenu; });
+/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "_MatMenuBase", function() { return _MatMenuBase; });
+/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "_MatMenuDirectivesModule", function() { return _MatMenuDirectivesModule; });
+/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "fadeInItems", function() { return fadeInItems; });
+/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "matMenuAnimations", function() { return matMenuAnimations; });
+/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "transformMenu", function() { return transformMenu; });
+/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "ɵangular_material_src_material_menu_menu_a", function() { return MAT_MENU_DEFAULT_OPTIONS_FACTORY; });
+/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "ɵangular_material_src_material_menu_menu_b", function() { return MAT_MENU_SCROLL_STRATEGY_FACTORY; });
+/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "ɵangular_material_src_material_menu_menu_c", function() { return MAT_MENU_SCROLL_STRATEGY_FACTORY_PROVIDER; });
+/* harmony import */ var _angular_cdk_a11y__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! @angular/cdk/a11y */ "./node_modules/@angular/cdk/__ivy_ngcc__/fesm2015/a11y.js");
+/* harmony import */ var _angular_cdk_coercion__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! @angular/cdk/coercion */ "./node_modules/@angular/cdk/fesm2015/coercion.js");
+/* harmony import */ var _angular_cdk_keycodes__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! @angular/cdk/keycodes */ "./node_modules/@angular/cdk/__ivy_ngcc__/fesm2015/keycodes.js");
+/* harmony import */ var _angular_core__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! @angular/core */ "./node_modules/@angular/core/__ivy_ngcc__/fesm2015/core.js");
+/* harmony import */ var rxjs__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(/*! rxjs */ "./node_modules/rxjs/_esm2015/index.js");
+/* harmony import */ var rxjs_operators__WEBPACK_IMPORTED_MODULE_5__ = __webpack_require__(/*! rxjs/operators */ "./node_modules/rxjs/_esm2015/operators/index.js");
+/* harmony import */ var _angular_animations__WEBPACK_IMPORTED_MODULE_6__ = __webpack_require__(/*! @angular/animations */ "./node_modules/@angular/animations/__ivy_ngcc__/fesm2015/animations.js");
+/* harmony import */ var _angular_cdk_portal__WEBPACK_IMPORTED_MODULE_7__ = __webpack_require__(/*! @angular/cdk/portal */ "./node_modules/@angular/cdk/__ivy_ngcc__/fesm2015/portal.js");
+/* harmony import */ var _angular_common__WEBPACK_IMPORTED_MODULE_8__ = __webpack_require__(/*! @angular/common */ "./node_modules/@angular/common/__ivy_ngcc__/fesm2015/common.js");
+/* harmony import */ var _angular_material_core__WEBPACK_IMPORTED_MODULE_9__ = __webpack_require__(/*! @angular/material/core */ "./node_modules/@angular/material/__ivy_ngcc__/fesm2015/core.js");
+/* harmony import */ var _angular_cdk_bidi__WEBPACK_IMPORTED_MODULE_10__ = __webpack_require__(/*! @angular/cdk/bidi */ "./node_modules/@angular/cdk/__ivy_ngcc__/fesm2015/bidi.js");
+/* harmony import */ var _angular_cdk_overlay__WEBPACK_IMPORTED_MODULE_11__ = __webpack_require__(/*! @angular/cdk/overlay */ "./node_modules/@angular/cdk/__ivy_ngcc__/fesm2015/overlay.js");
+/* harmony import */ var _angular_cdk_platform__WEBPACK_IMPORTED_MODULE_12__ = __webpack_require__(/*! @angular/cdk/platform */ "./node_modules/@angular/cdk/__ivy_ngcc__/fesm2015/platform.js");
+/* harmony import */ var _angular_cdk_scrolling__WEBPACK_IMPORTED_MODULE_13__ = __webpack_require__(/*! @angular/cdk/scrolling */ "./node_modules/@angular/cdk/__ivy_ngcc__/fesm2015/scrolling.js");
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+/**
+ * @license
+ * Copyright Google LLC All Rights Reserved.
+ *
+ * Use of this source code is governed by an MIT-style license that can be
+ * found in the LICENSE file at https://angular.io/license
+ */
+/**
+ * Animations used by the mat-menu component.
+ * Animation duration and timing values are based on:
+ * https://material.io/guidelines/components/menus.html#menus-usage
+ * @docs-private
+ */
+
+
+
+
+
+
+
+const _c0 = ["mat-menu-item", ""];
+const _c1 = ["*"];
+function _MatMenu_ng_template_0_Template(rf, ctx) { if (rf & 1) {
+    const _r2 = _angular_core__WEBPACK_IMPORTED_MODULE_3__["ɵɵgetCurrentView"]();
+    _angular_core__WEBPACK_IMPORTED_MODULE_3__["ɵɵelementStart"](0, "div", 0);
+    _angular_core__WEBPACK_IMPORTED_MODULE_3__["ɵɵlistener"]("keydown", function _MatMenu_ng_template_0_Template_div_keydown_0_listener($event) { _angular_core__WEBPACK_IMPORTED_MODULE_3__["ɵɵrestoreView"](_r2); const ctx_r1 = _angular_core__WEBPACK_IMPORTED_MODULE_3__["ɵɵnextContext"](); return ctx_r1._handleKeydown($event); })("click", function _MatMenu_ng_template_0_Template_div_click_0_listener() { _angular_core__WEBPACK_IMPORTED_MODULE_3__["ɵɵrestoreView"](_r2); const ctx_r3 = _angular_core__WEBPACK_IMPORTED_MODULE_3__["ɵɵnextContext"](); return ctx_r3.closed.emit("click"); })("@transformMenu.start", function _MatMenu_ng_template_0_Template_div_animation_transformMenu_start_0_listener($event) { _angular_core__WEBPACK_IMPORTED_MODULE_3__["ɵɵrestoreView"](_r2); const ctx_r4 = _angular_core__WEBPACK_IMPORTED_MODULE_3__["ɵɵnextContext"](); return ctx_r4._onAnimationStart($event); })("@transformMenu.done", function _MatMenu_ng_template_0_Template_div_animation_transformMenu_done_0_listener($event) { _angular_core__WEBPACK_IMPORTED_MODULE_3__["ɵɵrestoreView"](_r2); const ctx_r5 = _angular_core__WEBPACK_IMPORTED_MODULE_3__["ɵɵnextContext"](); return ctx_r5._onAnimationDone($event); });
+    _angular_core__WEBPACK_IMPORTED_MODULE_3__["ɵɵelementStart"](1, "div", 1);
+    _angular_core__WEBPACK_IMPORTED_MODULE_3__["ɵɵprojection"](2);
+    _angular_core__WEBPACK_IMPORTED_MODULE_3__["ɵɵelementEnd"]();
+    _angular_core__WEBPACK_IMPORTED_MODULE_3__["ɵɵelementEnd"]();
+} if (rf & 2) {
+    const ctx_r0 = _angular_core__WEBPACK_IMPORTED_MODULE_3__["ɵɵnextContext"]();
+    _angular_core__WEBPACK_IMPORTED_MODULE_3__["ɵɵproperty"]("id", ctx_r0.panelId)("ngClass", ctx_r0._classList)("@transformMenu", ctx_r0._panelAnimationState);
+    _angular_core__WEBPACK_IMPORTED_MODULE_3__["ɵɵattribute"]("aria-label", ctx_r0.ariaLabel || null)("aria-labelledby", ctx_r0.ariaLabelledby || null)("aria-describedby", ctx_r0.ariaDescribedby || null);
+} }
+const matMenuAnimations = {
+    /**
+     * This animation controls the menu panel's entry and exit from the page.
+     *
+     * When the menu panel is added to the DOM, it scales in and fades in its border.
+     *
+     * When the menu panel is removed from the DOM, it simply fades out after a brief
+     * delay to display the ripple.
+     */
+    transformMenu: Object(_angular_animations__WEBPACK_IMPORTED_MODULE_6__["trigger"])('transformMenu', [
+        Object(_angular_animations__WEBPACK_IMPORTED_MODULE_6__["state"])('void', Object(_angular_animations__WEBPACK_IMPORTED_MODULE_6__["style"])({
+            opacity: 0,
+            transform: 'scale(0.8)'
+        })),
+        Object(_angular_animations__WEBPACK_IMPORTED_MODULE_6__["transition"])('void => enter', Object(_angular_animations__WEBPACK_IMPORTED_MODULE_6__["group"])([
+            Object(_angular_animations__WEBPACK_IMPORTED_MODULE_6__["query"])('.mat-menu-content, .mat-mdc-menu-content', Object(_angular_animations__WEBPACK_IMPORTED_MODULE_6__["animate"])('100ms linear', Object(_angular_animations__WEBPACK_IMPORTED_MODULE_6__["style"])({
+                opacity: 1
+            }))),
+            Object(_angular_animations__WEBPACK_IMPORTED_MODULE_6__["animate"])('120ms cubic-bezier(0, 0, 0.2, 1)', Object(_angular_animations__WEBPACK_IMPORTED_MODULE_6__["style"])({ transform: 'scale(1)' })),
+        ])),
+        Object(_angular_animations__WEBPACK_IMPORTED_MODULE_6__["transition"])('* => void', Object(_angular_animations__WEBPACK_IMPORTED_MODULE_6__["animate"])('100ms 25ms linear', Object(_angular_animations__WEBPACK_IMPORTED_MODULE_6__["style"])({ opacity: 0 })))
+    ]),
+    /**
+     * This animation fades in the background color and content of the menu panel
+     * after its containing element is scaled in.
+     */
+    fadeInItems: Object(_angular_animations__WEBPACK_IMPORTED_MODULE_6__["trigger"])('fadeInItems', [
+        // TODO(crisbeto): this is inside the `transformMenu`
+        // now. Remove next time we do breaking changes.
+        Object(_angular_animations__WEBPACK_IMPORTED_MODULE_6__["state"])('showing', Object(_angular_animations__WEBPACK_IMPORTED_MODULE_6__["style"])({ opacity: 1 })),
+        Object(_angular_animations__WEBPACK_IMPORTED_MODULE_6__["transition"])('void => *', [
+            Object(_angular_animations__WEBPACK_IMPORTED_MODULE_6__["style"])({ opacity: 0 }),
+            Object(_angular_animations__WEBPACK_IMPORTED_MODULE_6__["animate"])('400ms 100ms cubic-bezier(0.55, 0, 0.55, 0.2)')
+        ])
+    ])
+};
+/**
+ * @deprecated
+ * @breaking-change 8.0.0
+ * @docs-private
+ */
+const fadeInItems = matMenuAnimations.fadeInItems;
+/**
+ * @deprecated
+ * @breaking-change 8.0.0
+ * @docs-private
+ */
+const transformMenu = matMenuAnimations.transformMenu;
+
+/**
+ * @license
+ * Copyright Google LLC All Rights Reserved.
+ *
+ * Use of this source code is governed by an MIT-style license that can be
+ * found in the LICENSE file at https://angular.io/license
+ */
+/**
+ * Injection token that can be used to reference instances of `MatMenuContent`. It serves
+ * as alternative token to the actual `MatMenuContent` class which could cause unnecessary
+ * retention of the class and its directive metadata.
+ */
+const MAT_MENU_CONTENT = new _angular_core__WEBPACK_IMPORTED_MODULE_3__["InjectionToken"]('MatMenuContent');
+/**
+ * Menu content that will be rendered lazily once the menu is opened.
+ */
+class MatMenuContent {
+    constructor(_template, _componentFactoryResolver, _appRef, _injector, _viewContainerRef, _document, _changeDetectorRef) {
+        this._template = _template;
+        this._componentFactoryResolver = _componentFactoryResolver;
+        this._appRef = _appRef;
+        this._injector = _injector;
+        this._viewContainerRef = _viewContainerRef;
+        this._document = _document;
+        this._changeDetectorRef = _changeDetectorRef;
+        /** Emits when the menu content has been attached. */
+        this._attached = new rxjs__WEBPACK_IMPORTED_MODULE_4__["Subject"]();
+    }
+    /**
+     * Attaches the content with a particular context.
+     * @docs-private
+     */
+    attach(context = {}) {
+        if (!this._portal) {
+            this._portal = new _angular_cdk_portal__WEBPACK_IMPORTED_MODULE_7__["TemplatePortal"](this._template, this._viewContainerRef);
+        }
+        this.detach();
+        if (!this._outlet) {
+            this._outlet = new _angular_cdk_portal__WEBPACK_IMPORTED_MODULE_7__["DomPortalOutlet"](this._document.createElement('div'), this._componentFactoryResolver, this._appRef, this._injector);
+        }
+        const element = this._template.elementRef.nativeElement;
+        // Because we support opening the same menu from different triggers (which in turn have their
+        // own `OverlayRef` panel), we have to re-insert the host element every time, otherwise we
+        // risk it staying attached to a pane that's no longer in the DOM.
+        element.parentNode.insertBefore(this._outlet.outletElement, element);
+        // When `MatMenuContent` is used in an `OnPush` component, the insertion of the menu
+        // content via `createEmbeddedView` does not cause the content to be seen as "dirty"
+        // by Angular. This causes the `@ContentChildren` for menu items within the menu to
+        // not be updated by Angular. By explicitly marking for check here, we tell Angular that
+        // it needs to check for new menu items and update the `@ContentChild` in `MatMenu`.
+        // @breaking-change 9.0.0 Make change detector ref required
+        if (this._changeDetectorRef) {
+            this._changeDetectorRef.markForCheck();
+        }
+        this._portal.attach(this._outlet, context);
+        this._attached.next();
+    }
+    /**
+     * Detaches the content.
+     * @docs-private
+     */
+    detach() {
+        if (this._portal.isAttached) {
+            this._portal.detach();
+        }
+    }
+    ngOnDestroy() {
+        if (this._outlet) {
+            this._outlet.dispose();
+        }
+    }
+}
+MatMenuContent.ɵfac = function MatMenuContent_Factory(t) { return new (t || MatMenuContent)(_angular_core__WEBPACK_IMPORTED_MODULE_3__["ɵɵdirectiveInject"](_angular_core__WEBPACK_IMPORTED_MODULE_3__["TemplateRef"]), _angular_core__WEBPACK_IMPORTED_MODULE_3__["ɵɵdirectiveInject"](_angular_core__WEBPACK_IMPORTED_MODULE_3__["ComponentFactoryResolver"]), _angular_core__WEBPACK_IMPORTED_MODULE_3__["ɵɵdirectiveInject"](_angular_core__WEBPACK_IMPORTED_MODULE_3__["ApplicationRef"]), _angular_core__WEBPACK_IMPORTED_MODULE_3__["ɵɵdirectiveInject"](_angular_core__WEBPACK_IMPORTED_MODULE_3__["Injector"]), _angular_core__WEBPACK_IMPORTED_MODULE_3__["ɵɵdirectiveInject"](_angular_core__WEBPACK_IMPORTED_MODULE_3__["ViewContainerRef"]), _angular_core__WEBPACK_IMPORTED_MODULE_3__["ɵɵdirectiveInject"](_angular_common__WEBPACK_IMPORTED_MODULE_8__["DOCUMENT"]), _angular_core__WEBPACK_IMPORTED_MODULE_3__["ɵɵdirectiveInject"](_angular_core__WEBPACK_IMPORTED_MODULE_3__["ChangeDetectorRef"])); };
+MatMenuContent.ɵdir = _angular_core__WEBPACK_IMPORTED_MODULE_3__["ɵɵdefineDirective"]({ type: MatMenuContent, selectors: [["ng-template", "matMenuContent", ""]], features: [_angular_core__WEBPACK_IMPORTED_MODULE_3__["ɵɵProvidersFeature"]([{ provide: MAT_MENU_CONTENT, useExisting: MatMenuContent }])] });
+MatMenuContent.ctorParameters = () => [
+    { type: _angular_core__WEBPACK_IMPORTED_MODULE_3__["TemplateRef"] },
+    { type: _angular_core__WEBPACK_IMPORTED_MODULE_3__["ComponentFactoryResolver"] },
+    { type: _angular_core__WEBPACK_IMPORTED_MODULE_3__["ApplicationRef"] },
+    { type: _angular_core__WEBPACK_IMPORTED_MODULE_3__["Injector"] },
+    { type: _angular_core__WEBPACK_IMPORTED_MODULE_3__["ViewContainerRef"] },
+    { type: undefined, decorators: [{ type: _angular_core__WEBPACK_IMPORTED_MODULE_3__["Inject"], args: [_angular_common__WEBPACK_IMPORTED_MODULE_8__["DOCUMENT"],] }] },
+    { type: _angular_core__WEBPACK_IMPORTED_MODULE_3__["ChangeDetectorRef"] }
+];
+/*@__PURE__*/ (function () { _angular_core__WEBPACK_IMPORTED_MODULE_3__["ɵsetClassMetadata"](MatMenuContent, [{
+        type: _angular_core__WEBPACK_IMPORTED_MODULE_3__["Directive"],
+        args: [{
+                selector: 'ng-template[matMenuContent]',
+                providers: [{ provide: MAT_MENU_CONTENT, useExisting: MatMenuContent }]
+            }]
+    }], function () { return [{ type: _angular_core__WEBPACK_IMPORTED_MODULE_3__["TemplateRef"] }, { type: _angular_core__WEBPACK_IMPORTED_MODULE_3__["ComponentFactoryResolver"] }, { type: _angular_core__WEBPACK_IMPORTED_MODULE_3__["ApplicationRef"] }, { type: _angular_core__WEBPACK_IMPORTED_MODULE_3__["Injector"] }, { type: _angular_core__WEBPACK_IMPORTED_MODULE_3__["ViewContainerRef"] }, { type: undefined, decorators: [{
+                type: _angular_core__WEBPACK_IMPORTED_MODULE_3__["Inject"],
+                args: [_angular_common__WEBPACK_IMPORTED_MODULE_8__["DOCUMENT"]]
+            }] }, { type: _angular_core__WEBPACK_IMPORTED_MODULE_3__["ChangeDetectorRef"] }]; }, null); })();
+
+/**
+ * @license
+ * Copyright Google LLC All Rights Reserved.
+ *
+ * Use of this source code is governed by an MIT-style license that can be
+ * found in the LICENSE file at https://angular.io/license
+ */
+/**
+ * Throws an exception for the case when menu trigger doesn't have a valid mat-menu instance
+ * @docs-private
+ */
+function throwMatMenuMissingError() {
+    throw Error(`matMenuTriggerFor: must pass in an mat-menu instance.
+
+    Example:
+      <mat-menu #menu="matMenu"></mat-menu>
+      <button [matMenuTriggerFor]="menu"></button>`);
+}
+/**
+ * Throws an exception for the case when menu's x-position value isn't valid.
+ * In other words, it doesn't match 'before' or 'after'.
+ * @docs-private
+ */
+function throwMatMenuInvalidPositionX() {
+    throw Error(`xPosition value must be either 'before' or after'.
+      Example: <mat-menu xPosition="before" #menu="matMenu"></mat-menu>`);
+}
+/**
+ * Throws an exception for the case when menu's y-position value isn't valid.
+ * In other words, it doesn't match 'above' or 'below'.
+ * @docs-private
+ */
+function throwMatMenuInvalidPositionY() {
+    throw Error(`yPosition value must be either 'above' or below'.
+      Example: <mat-menu yPosition="above" #menu="matMenu"></mat-menu>`);
+}
+/**
+ * Throws an exception for the case when a menu is assigned
+ * to a trigger that is placed inside the same menu.
+ * @docs-private
+ */
+function throwMatMenuRecursiveError() {
+    throw Error(`matMenuTriggerFor: menu cannot contain its own trigger. Assign a menu that is ` +
+        `not a parent of the trigger or move the trigger outside of the menu.`);
+}
+
+/**
+ * @license
+ * Copyright Google LLC All Rights Reserved.
+ *
+ * Use of this source code is governed by an MIT-style license that can be
+ * found in the LICENSE file at https://angular.io/license
+ */
+/**
+ * Injection token used to provide the parent menu to menu-specific components.
+ * @docs-private
+ */
+const MAT_MENU_PANEL = new _angular_core__WEBPACK_IMPORTED_MODULE_3__["InjectionToken"]('MAT_MENU_PANEL');
+
+/**
+ * @license
+ * Copyright Google LLC All Rights Reserved.
+ *
+ * Use of this source code is governed by an MIT-style license that can be
+ * found in the LICENSE file at https://angular.io/license
+ */
+// Boilerplate for applying mixins to MatMenuItem.
+/** @docs-private */
+class MatMenuItemBase {
+}
+const _MatMenuItemMixinBase = Object(_angular_material_core__WEBPACK_IMPORTED_MODULE_9__["mixinDisableRipple"])(Object(_angular_material_core__WEBPACK_IMPORTED_MODULE_9__["mixinDisabled"])(MatMenuItemBase));
+/**
+ * Single item inside of a `mat-menu`. Provides the menu item styling and accessibility treatment.
+ */
+class MatMenuItem extends _MatMenuItemMixinBase {
+    constructor(_elementRef, document, _focusMonitor, _parentMenu) {
+        // @breaking-change 8.0.0 make `_focusMonitor` and `document` required params.
+        super();
+        this._elementRef = _elementRef;
+        this._focusMonitor = _focusMonitor;
+        this._parentMenu = _parentMenu;
+        /** ARIA role for the menu item. */
+        this.role = 'menuitem';
+        /** Stream that emits when the menu item is hovered. */
+        this._hovered = new rxjs__WEBPACK_IMPORTED_MODULE_4__["Subject"]();
+        /** Stream that emits when the menu item is focused. */
+        this._focused = new rxjs__WEBPACK_IMPORTED_MODULE_4__["Subject"]();
+        /** Whether the menu item is highlighted. */
+        this._highlighted = false;
+        /** Whether the menu item acts as a trigger for a sub-menu. */
+        this._triggersSubmenu = false;
+        if (_parentMenu && _parentMenu.addItem) {
+            _parentMenu.addItem(this);
+        }
+        this._document = document;
+    }
+    /** Focuses the menu item. */
+    focus(origin = 'program', options) {
+        if (this._focusMonitor) {
+            this._focusMonitor.focusVia(this._getHostElement(), origin, options);
+        }
+        else {
+            this._getHostElement().focus(options);
+        }
+        this._focused.next(this);
+    }
+    ngAfterViewInit() {
+        if (this._focusMonitor) {
+            // Start monitoring the element so it gets the appropriate focused classes. We want
+            // to show the focus style for menu items only when the focus was not caused by a
+            // mouse or touch interaction.
+            this._focusMonitor.monitor(this._elementRef, false);
+        }
+    }
+    ngOnDestroy() {
+        if (this._focusMonitor) {
+            this._focusMonitor.stopMonitoring(this._elementRef);
+        }
+        if (this._parentMenu && this._parentMenu.removeItem) {
+            this._parentMenu.removeItem(this);
+        }
+        this._hovered.complete();
+        this._focused.complete();
+    }
+    /** Used to set the `tabindex`. */
+    _getTabIndex() {
+        return this.disabled ? '-1' : '0';
+    }
+    /** Returns the host DOM element. */
+    _getHostElement() {
+        return this._elementRef.nativeElement;
+    }
+    /** Prevents the default element actions if it is disabled. */
+    // We have to use a `HostListener` here in order to support both Ivy and ViewEngine.
+    // In Ivy the `host` bindings will be merged when this class is extended, whereas in
+    // ViewEngine they're overwritten.
+    // TODO(crisbeto): we move this back into `host` once Ivy is turned on by default.
+    // tslint:disable-next-line:no-host-decorator-in-concrete
+    _checkDisabled(event) {
+        if (this.disabled) {
+            event.preventDefault();
+            event.stopPropagation();
+        }
+    }
+    /** Emits to the hover stream. */
+    // We have to use a `HostListener` here in order to support both Ivy and ViewEngine.
+    // In Ivy the `host` bindings will be merged when this class is extended, whereas in
+    // ViewEngine they're overwritten.
+    // TODO(crisbeto): we move this back into `host` once Ivy is turned on by default.
+    // tslint:disable-next-line:no-host-decorator-in-concrete
+    _handleMouseEnter() {
+        this._hovered.next(this);
+    }
+    /** Gets the label to be used when determining whether the option should be focused. */
+    getLabel() {
+        const element = this._elementRef.nativeElement;
+        const textNodeType = this._document ? this._document.TEXT_NODE : 3;
+        let output = '';
+        if (element.childNodes) {
+            const length = element.childNodes.length;
+            // Go through all the top-level text nodes and extract their text.
+            // We skip anything that's not a text node to prevent the text from
+            // being thrown off by something like an icon.
+            for (let i = 0; i < length; i++) {
+                if (element.childNodes[i].nodeType === textNodeType) {
+                    output += element.childNodes[i].textContent;
+                }
+            }
+        }
+        return output.trim();
+    }
+}
+MatMenuItem.ɵfac = function MatMenuItem_Factory(t) { return new (t || MatMenuItem)(_angular_core__WEBPACK_IMPORTED_MODULE_3__["ɵɵdirectiveInject"](_angular_core__WEBPACK_IMPORTED_MODULE_3__["ElementRef"]), _angular_core__WEBPACK_IMPORTED_MODULE_3__["ɵɵdirectiveInject"](_angular_common__WEBPACK_IMPORTED_MODULE_8__["DOCUMENT"]), _angular_core__WEBPACK_IMPORTED_MODULE_3__["ɵɵdirectiveInject"](_angular_cdk_a11y__WEBPACK_IMPORTED_MODULE_0__["FocusMonitor"]), _angular_core__WEBPACK_IMPORTED_MODULE_3__["ɵɵdirectiveInject"](MAT_MENU_PANEL, 8)); };
+MatMenuItem.ɵcmp = _angular_core__WEBPACK_IMPORTED_MODULE_3__["ɵɵdefineComponent"]({ type: MatMenuItem, selectors: [["", "mat-menu-item", ""]], hostAttrs: [1, "mat-focus-indicator"], hostVars: 10, hostBindings: function MatMenuItem_HostBindings(rf, ctx) { if (rf & 1) {
+        _angular_core__WEBPACK_IMPORTED_MODULE_3__["ɵɵlistener"]("click", function MatMenuItem_click_HostBindingHandler($event) { return ctx._checkDisabled($event); })("mouseenter", function MatMenuItem_mouseenter_HostBindingHandler() { return ctx._handleMouseEnter(); });
+    } if (rf & 2) {
+        _angular_core__WEBPACK_IMPORTED_MODULE_3__["ɵɵattribute"]("role", ctx.role)("tabindex", ctx._getTabIndex())("aria-disabled", ctx.disabled.toString())("disabled", ctx.disabled || null);
+        _angular_core__WEBPACK_IMPORTED_MODULE_3__["ɵɵclassProp"]("mat-menu-item", true)("mat-menu-item-highlighted", ctx._highlighted)("mat-menu-item-submenu-trigger", ctx._triggersSubmenu);
+    } }, inputs: { disabled: "disabled", disableRipple: "disableRipple", role: "role" }, exportAs: ["matMenuItem"], features: [_angular_core__WEBPACK_IMPORTED_MODULE_3__["ɵɵInheritDefinitionFeature"]], attrs: _c0, ngContentSelectors: _c1, decls: 2, vars: 2, consts: [["matRipple", "", 1, "mat-menu-ripple", 3, "matRippleDisabled", "matRippleTrigger"]], template: function MatMenuItem_Template(rf, ctx) { if (rf & 1) {
+        _angular_core__WEBPACK_IMPORTED_MODULE_3__["ɵɵprojectionDef"]();
+        _angular_core__WEBPACK_IMPORTED_MODULE_3__["ɵɵprojection"](0);
+        _angular_core__WEBPACK_IMPORTED_MODULE_3__["ɵɵelement"](1, "div", 0);
+    } if (rf & 2) {
+        _angular_core__WEBPACK_IMPORTED_MODULE_3__["ɵɵadvance"](1);
+        _angular_core__WEBPACK_IMPORTED_MODULE_3__["ɵɵproperty"]("matRippleDisabled", ctx.disableRipple || ctx.disabled)("matRippleTrigger", ctx._getHostElement());
+    } }, directives: [_angular_material_core__WEBPACK_IMPORTED_MODULE_9__["MatRipple"]], encapsulation: 2, changeDetection: 0 });
+MatMenuItem.ctorParameters = () => [
+    { type: _angular_core__WEBPACK_IMPORTED_MODULE_3__["ElementRef"] },
+    { type: undefined, decorators: [{ type: _angular_core__WEBPACK_IMPORTED_MODULE_3__["Inject"], args: [_angular_common__WEBPACK_IMPORTED_MODULE_8__["DOCUMENT"],] }] },
+    { type: _angular_cdk_a11y__WEBPACK_IMPORTED_MODULE_0__["FocusMonitor"] },
+    { type: undefined, decorators: [{ type: _angular_core__WEBPACK_IMPORTED_MODULE_3__["Inject"], args: [MAT_MENU_PANEL,] }, { type: _angular_core__WEBPACK_IMPORTED_MODULE_3__["Optional"] }] }
+];
+MatMenuItem.propDecorators = {
+    role: [{ type: _angular_core__WEBPACK_IMPORTED_MODULE_3__["Input"] }],
+    _checkDisabled: [{ type: _angular_core__WEBPACK_IMPORTED_MODULE_3__["HostListener"], args: ['click', ['$event'],] }],
+    _handleMouseEnter: [{ type: _angular_core__WEBPACK_IMPORTED_MODULE_3__["HostListener"], args: ['mouseenter',] }]
+};
+/*@__PURE__*/ (function () { _angular_core__WEBPACK_IMPORTED_MODULE_3__["ɵsetClassMetadata"](MatMenuItem, [{
+        type: _angular_core__WEBPACK_IMPORTED_MODULE_3__["Component"],
+        args: [{
+                selector: '[mat-menu-item]',
+                exportAs: 'matMenuItem',
+                inputs: ['disabled', 'disableRipple'],
+                host: {
+                    '[attr.role]': 'role',
+                    '[class.mat-menu-item]': 'true',
+                    '[class.mat-menu-item-highlighted]': '_highlighted',
+                    '[class.mat-menu-item-submenu-trigger]': '_triggersSubmenu',
+                    '[attr.tabindex]': '_getTabIndex()',
+                    '[attr.aria-disabled]': 'disabled.toString()',
+                    '[attr.disabled]': 'disabled || null',
+                    'class': 'mat-focus-indicator'
+                },
+                changeDetection: _angular_core__WEBPACK_IMPORTED_MODULE_3__["ChangeDetectionStrategy"].OnPush,
+                encapsulation: _angular_core__WEBPACK_IMPORTED_MODULE_3__["ViewEncapsulation"].None,
+                template: "<ng-content></ng-content>\n<div class=\"mat-menu-ripple\" matRipple\n     [matRippleDisabled]=\"disableRipple || disabled\"\n     [matRippleTrigger]=\"_getHostElement()\">\n</div>\n"
+            }]
+    }], function () { return [{ type: _angular_core__WEBPACK_IMPORTED_MODULE_3__["ElementRef"] }, { type: undefined, decorators: [{
+                type: _angular_core__WEBPACK_IMPORTED_MODULE_3__["Inject"],
+                args: [_angular_common__WEBPACK_IMPORTED_MODULE_8__["DOCUMENT"]]
+            }] }, { type: _angular_cdk_a11y__WEBPACK_IMPORTED_MODULE_0__["FocusMonitor"] }, { type: undefined, decorators: [{
+                type: _angular_core__WEBPACK_IMPORTED_MODULE_3__["Inject"],
+                args: [MAT_MENU_PANEL]
+            }, {
+                type: _angular_core__WEBPACK_IMPORTED_MODULE_3__["Optional"]
+            }] }]; }, { role: [{
+            type: _angular_core__WEBPACK_IMPORTED_MODULE_3__["Input"]
+        }], _checkDisabled: [{
+            type: _angular_core__WEBPACK_IMPORTED_MODULE_3__["HostListener"],
+            args: ['click', ['$event']]
+        }], _handleMouseEnter: [{
+            type: _angular_core__WEBPACK_IMPORTED_MODULE_3__["HostListener"],
+            args: ['mouseenter']
+        }] }); })();
+
+/**
+ * @license
+ * Copyright Google LLC All Rights Reserved.
+ *
+ * Use of this source code is governed by an MIT-style license that can be
+ * found in the LICENSE file at https://angular.io/license
+ */
+/** Injection token to be used to override the default options for `mat-menu`. */
+const MAT_MENU_DEFAULT_OPTIONS = new _angular_core__WEBPACK_IMPORTED_MODULE_3__["InjectionToken"]('mat-menu-default-options', {
+    providedIn: 'root',
+    factory: MAT_MENU_DEFAULT_OPTIONS_FACTORY
+});
+/** @docs-private */
+function MAT_MENU_DEFAULT_OPTIONS_FACTORY() {
+    return {
+        overlapTrigger: false,
+        xPosition: 'after',
+        yPosition: 'below',
+        backdropClass: 'cdk-overlay-transparent-backdrop',
+    };
+}
+/**
+ * Start elevation for the menu panel.
+ * @docs-private
+ */
+const MAT_MENU_BASE_ELEVATION = 4;
+let menuPanelUid = 0;
+/** Base class with all of the `MatMenu` functionality. */
+class _MatMenuBase {
+    constructor(_elementRef, _ngZone, _defaultOptions) {
+        this._elementRef = _elementRef;
+        this._ngZone = _ngZone;
+        this._defaultOptions = _defaultOptions;
+        this._xPosition = this._defaultOptions.xPosition;
+        this._yPosition = this._defaultOptions.yPosition;
+        /** Only the direct descendant menu items. */
+        this._directDescendantItems = new _angular_core__WEBPACK_IMPORTED_MODULE_3__["QueryList"]();
+        /** Subscription to tab events on the menu panel */
+        this._tabSubscription = rxjs__WEBPACK_IMPORTED_MODULE_4__["Subscription"].EMPTY;
+        /** Config object to be passed into the menu's ngClass */
+        this._classList = {};
+        /** Current state of the panel animation. */
+        this._panelAnimationState = 'void';
+        /** Emits whenever an animation on the menu completes. */
+        this._animationDone = new rxjs__WEBPACK_IMPORTED_MODULE_4__["Subject"]();
+        /** Class or list of classes to be added to the overlay panel. */
+        this.overlayPanelClass = this._defaultOptions.overlayPanelClass || '';
+        /** Class to be added to the backdrop element. */
+        this.backdropClass = this._defaultOptions.backdropClass;
+        this._overlapTrigger = this._defaultOptions.overlapTrigger;
+        this._hasBackdrop = this._defaultOptions.hasBackdrop;
+        /** Event emitted when the menu is closed. */
+        this.closed = new _angular_core__WEBPACK_IMPORTED_MODULE_3__["EventEmitter"]();
+        /**
+         * Event emitted when the menu is closed.
+         * @deprecated Switch to `closed` instead
+         * @breaking-change 8.0.0
+         */
+        this.close = this.closed;
+        this.panelId = `mat-menu-panel-${menuPanelUid++}`;
+    }
+    /** Position of the menu in the X axis. */
+    get xPosition() { return this._xPosition; }
+    set xPosition(value) {
+        if (Object(_angular_core__WEBPACK_IMPORTED_MODULE_3__["isDevMode"])() && value !== 'before' && value !== 'after') {
+            throwMatMenuInvalidPositionX();
+        }
+        this._xPosition = value;
+        this.setPositionClasses();
+    }
+    /** Position of the menu in the Y axis. */
+    get yPosition() { return this._yPosition; }
+    set yPosition(value) {
+        if (Object(_angular_core__WEBPACK_IMPORTED_MODULE_3__["isDevMode"])() && value !== 'above' && value !== 'below') {
+            throwMatMenuInvalidPositionY();
+        }
+        this._yPosition = value;
+        this.setPositionClasses();
+    }
+    /** Whether the menu should overlap its trigger. */
+    get overlapTrigger() { return this._overlapTrigger; }
+    set overlapTrigger(value) {
+        this._overlapTrigger = Object(_angular_cdk_coercion__WEBPACK_IMPORTED_MODULE_1__["coerceBooleanProperty"])(value);
+    }
+    /** Whether the menu has a backdrop. */
+    get hasBackdrop() { return this._hasBackdrop; }
+    set hasBackdrop(value) {
+        this._hasBackdrop = Object(_angular_cdk_coercion__WEBPACK_IMPORTED_MODULE_1__["coerceBooleanProperty"])(value);
+    }
+    /**
+     * This method takes classes set on the host mat-menu element and applies them on the
+     * menu template that displays in the overlay container.  Otherwise, it's difficult
+     * to style the containing menu from outside the component.
+     * @param classes list of class names
+     */
+    set panelClass(classes) {
+        const previousPanelClass = this._previousPanelClass;
+        if (previousPanelClass && previousPanelClass.length) {
+            previousPanelClass.split(' ').forEach((className) => {
+                this._classList[className] = false;
+            });
+        }
+        this._previousPanelClass = classes;
+        if (classes && classes.length) {
+            classes.split(' ').forEach((className) => {
+                this._classList[className] = true;
+            });
+            this._elementRef.nativeElement.className = '';
+        }
+    }
+    /**
+     * This method takes classes set on the host mat-menu element and applies them on the
+     * menu template that displays in the overlay container.  Otherwise, it's difficult
+     * to style the containing menu from outside the component.
+     * @deprecated Use `panelClass` instead.
+     * @breaking-change 8.0.0
+     */
+    get classList() { return this.panelClass; }
+    set classList(classes) { this.panelClass = classes; }
+    ngOnInit() {
+        this.setPositionClasses();
+    }
+    ngAfterContentInit() {
+        this._updateDirectDescendants();
+        this._keyManager = new _angular_cdk_a11y__WEBPACK_IMPORTED_MODULE_0__["FocusKeyManager"](this._directDescendantItems).withWrap().withTypeAhead();
+        this._tabSubscription = this._keyManager.tabOut.subscribe(() => this.closed.emit('tab'));
+        // If a user manually (programatically) focuses a menu item, we need to reflect that focus
+        // change back to the key manager. Note that we don't need to unsubscribe here because _focused
+        // is internal and we know that it gets completed on destroy.
+        this._directDescendantItems.changes.pipe(Object(rxjs_operators__WEBPACK_IMPORTED_MODULE_5__["startWith"])(this._directDescendantItems), Object(rxjs_operators__WEBPACK_IMPORTED_MODULE_5__["switchMap"])(items => Object(rxjs__WEBPACK_IMPORTED_MODULE_4__["merge"])(...items.map((item) => item._focused)))).subscribe(focusedItem => this._keyManager.updateActiveItem(focusedItem));
+    }
+    ngOnDestroy() {
+        this._directDescendantItems.destroy();
+        this._tabSubscription.unsubscribe();
+        this.closed.complete();
+    }
+    /** Stream that emits whenever the hovered menu item changes. */
+    _hovered() {
+        // Coerce the `changes` property because Angular types it as `Observable<any>`
+        const itemChanges = this._directDescendantItems.changes;
+        return itemChanges.pipe(Object(rxjs_operators__WEBPACK_IMPORTED_MODULE_5__["startWith"])(this._directDescendantItems), Object(rxjs_operators__WEBPACK_IMPORTED_MODULE_5__["switchMap"])(items => Object(rxjs__WEBPACK_IMPORTED_MODULE_4__["merge"])(...items.map((item) => item._hovered))));
+    }
+    /*
+     * Registers a menu item with the menu.
+     * @docs-private
+     * @deprecated No longer being used. To be removed.
+     * @breaking-change 9.0.0
+     */
+    addItem(_item) { }
+    /**
+     * Removes an item from the menu.
+     * @docs-private
+     * @deprecated No longer being used. To be removed.
+     * @breaking-change 9.0.0
+     */
+    removeItem(_item) { }
+    /** Handle a keyboard event from the menu, delegating to the appropriate action. */
+    _handleKeydown(event) {
+        const keyCode = event.keyCode;
+        const manager = this._keyManager;
+        switch (keyCode) {
+            case _angular_cdk_keycodes__WEBPACK_IMPORTED_MODULE_2__["ESCAPE"]:
+                if (!Object(_angular_cdk_keycodes__WEBPACK_IMPORTED_MODULE_2__["hasModifierKey"])(event)) {
+                    event.preventDefault();
+                    this.closed.emit('keydown');
+                }
+                break;
+            case _angular_cdk_keycodes__WEBPACK_IMPORTED_MODULE_2__["LEFT_ARROW"]:
+                if (this.parentMenu && this.direction === 'ltr') {
+                    this.closed.emit('keydown');
+                }
+                break;
+            case _angular_cdk_keycodes__WEBPACK_IMPORTED_MODULE_2__["RIGHT_ARROW"]:
+                if (this.parentMenu && this.direction === 'rtl') {
+                    this.closed.emit('keydown');
+                }
+                break;
+            case _angular_cdk_keycodes__WEBPACK_IMPORTED_MODULE_2__["HOME"]:
+            case _angular_cdk_keycodes__WEBPACK_IMPORTED_MODULE_2__["END"]:
+                if (!Object(_angular_cdk_keycodes__WEBPACK_IMPORTED_MODULE_2__["hasModifierKey"])(event)) {
+                    keyCode === _angular_cdk_keycodes__WEBPACK_IMPORTED_MODULE_2__["HOME"] ? manager.setFirstItemActive() : manager.setLastItemActive();
+                    event.preventDefault();
+                }
+                break;
+            default:
+                if (keyCode === _angular_cdk_keycodes__WEBPACK_IMPORTED_MODULE_2__["UP_ARROW"] || keyCode === _angular_cdk_keycodes__WEBPACK_IMPORTED_MODULE_2__["DOWN_ARROW"]) {
+                    manager.setFocusOrigin('keyboard');
+                }
+                manager.onKeydown(event);
+        }
+    }
+    /**
+     * Focus the first item in the menu.
+     * @param origin Action from which the focus originated. Used to set the correct styling.
+     */
+    focusFirstItem(origin = 'program') {
+        // When the content is rendered lazily, it takes a bit before the items are inside the DOM.
+        if (this.lazyContent) {
+            this._ngZone.onStable.asObservable()
+                .pipe(Object(rxjs_operators__WEBPACK_IMPORTED_MODULE_5__["take"])(1))
+                .subscribe(() => this._focusFirstItem(origin));
+        }
+        else {
+            this._focusFirstItem(origin);
+        }
+    }
+    /**
+     * Actual implementation that focuses the first item. Needs to be separated
+     * out so we don't repeat the same logic in the public `focusFirstItem` method.
+     */
+    _focusFirstItem(origin) {
+        const manager = this._keyManager;
+        manager.setFocusOrigin(origin).setFirstItemActive();
+        // If there's no active item at this point, it means that all the items are disabled.
+        // Move focus to the menu panel so keyboard events like Escape still work. Also this will
+        // give _some_ feedback to screen readers.
+        if (!manager.activeItem && this._directDescendantItems.length) {
+            let element = this._directDescendantItems.first._getHostElement().parentElement;
+            // Because the `mat-menu` is at the DOM insertion point, not inside the overlay, we don't
+            // have a nice way of getting a hold of the menu panel. We can't use a `ViewChild` either
+            // because the panel is inside an `ng-template`. We work around it by starting from one of
+            // the items and walking up the DOM.
+            while (element) {
+                if (element.getAttribute('role') === 'menu') {
+                    element.focus();
+                    break;
+                }
+                else {
+                    element = element.parentElement;
+                }
+            }
+        }
+    }
+    /**
+     * Resets the active item in the menu. This is used when the menu is opened, allowing
+     * the user to start from the first option when pressing the down arrow.
+     */
+    resetActiveItem() {
+        this._keyManager.setActiveItem(-1);
+    }
+    /**
+     * Sets the menu panel elevation.
+     * @param depth Number of parent menus that come before the menu.
+     */
+    setElevation(depth) {
+        // The elevation starts at the base and increases by one for each level.
+        // Capped at 24 because that's the maximum elevation defined in the Material design spec.
+        const elevation = Math.min(MAT_MENU_BASE_ELEVATION + depth, 24);
+        const newElevation = `mat-elevation-z${elevation}`;
+        const customElevation = Object.keys(this._classList).find(c => c.startsWith('mat-elevation-z'));
+        if (!customElevation || customElevation === this._previousElevation) {
+            if (this._previousElevation) {
+                this._classList[this._previousElevation] = false;
+            }
+            this._classList[newElevation] = true;
+            this._previousElevation = newElevation;
+        }
+    }
+    /**
+     * Adds classes to the menu panel based on its position. Can be used by
+     * consumers to add specific styling based on the position.
+     * @param posX Position of the menu along the x axis.
+     * @param posY Position of the menu along the y axis.
+     * @docs-private
+     */
+    setPositionClasses(posX = this.xPosition, posY = this.yPosition) {
+        const classes = this._classList;
+        classes['mat-menu-before'] = posX === 'before';
+        classes['mat-menu-after'] = posX === 'after';
+        classes['mat-menu-above'] = posY === 'above';
+        classes['mat-menu-below'] = posY === 'below';
+    }
+    /** Starts the enter animation. */
+    _startAnimation() {
+        // @breaking-change 8.0.0 Combine with _resetAnimation.
+        this._panelAnimationState = 'enter';
+    }
+    /** Resets the panel animation to its initial state. */
+    _resetAnimation() {
+        // @breaking-change 8.0.0 Combine with _startAnimation.
+        this._panelAnimationState = 'void';
+    }
+    /** Callback that is invoked when the panel animation completes. */
+    _onAnimationDone(event) {
+        this._animationDone.next(event);
+        this._isAnimating = false;
+    }
+    _onAnimationStart(event) {
+        this._isAnimating = true;
+        // Scroll the content element to the top as soon as the animation starts. This is necessary,
+        // because we move focus to the first item while it's still being animated, which can throw
+        // the browser off when it determines the scroll position. Alternatively we can move focus
+        // when the animation is done, however moving focus asynchronously will interrupt screen
+        // readers which are in the process of reading out the menu already. We take the `element`
+        // from the `event` since we can't use a `ViewChild` to access the pane.
+        if (event.toState === 'enter' && this._keyManager.activeItemIndex === 0) {
+            event.element.scrollTop = 0;
+        }
+    }
+    /**
+     * Sets up a stream that will keep track of any newly-added menu items and will update the list
+     * of direct descendants. We collect the descendants this way, because `_allItems` can include
+     * items that are part of child menus, and using a custom way of registering items is unreliable
+     * when it comes to maintaining the item order.
+     */
+    _updateDirectDescendants() {
+        this._allItems.changes
+            .pipe(Object(rxjs_operators__WEBPACK_IMPORTED_MODULE_5__["startWith"])(this._allItems))
+            .subscribe((items) => {
+            this._directDescendantItems.reset(items.filter(item => item._parentMenu === this));
+            this._directDescendantItems.notifyOnChanges();
+        });
+    }
+}
+_MatMenuBase.ɵfac = function _MatMenuBase_Factory(t) { return new (t || _MatMenuBase)(_angular_core__WEBPACK_IMPORTED_MODULE_3__["ɵɵdirectiveInject"](_angular_core__WEBPACK_IMPORTED_MODULE_3__["ElementRef"]), _angular_core__WEBPACK_IMPORTED_MODULE_3__["ɵɵdirectiveInject"](_angular_core__WEBPACK_IMPORTED_MODULE_3__["NgZone"]), _angular_core__WEBPACK_IMPORTED_MODULE_3__["ɵɵdirectiveInject"](MAT_MENU_DEFAULT_OPTIONS)); };
+_MatMenuBase.ɵdir = _angular_core__WEBPACK_IMPORTED_MODULE_3__["ɵɵdefineDirective"]({ type: _MatMenuBase, contentQueries: function _MatMenuBase_ContentQueries(rf, ctx, dirIndex) { if (rf & 1) {
+        _angular_core__WEBPACK_IMPORTED_MODULE_3__["ɵɵcontentQuery"](dirIndex, MAT_MENU_CONTENT, true);
+        _angular_core__WEBPACK_IMPORTED_MODULE_3__["ɵɵcontentQuery"](dirIndex, MatMenuItem, true);
+        _angular_core__WEBPACK_IMPORTED_MODULE_3__["ɵɵcontentQuery"](dirIndex, MatMenuItem, false);
+    } if (rf & 2) {
+        var _t;
+        _angular_core__WEBPACK_IMPORTED_MODULE_3__["ɵɵqueryRefresh"](_t = _angular_core__WEBPACK_IMPORTED_MODULE_3__["ɵɵloadQuery"]()) && (ctx.lazyContent = _t.first);
+        _angular_core__WEBPACK_IMPORTED_MODULE_3__["ɵɵqueryRefresh"](_t = _angular_core__WEBPACK_IMPORTED_MODULE_3__["ɵɵloadQuery"]()) && (ctx._allItems = _t);
+        _angular_core__WEBPACK_IMPORTED_MODULE_3__["ɵɵqueryRefresh"](_t = _angular_core__WEBPACK_IMPORTED_MODULE_3__["ɵɵloadQuery"]()) && (ctx.items = _t);
+    } }, viewQuery: function _MatMenuBase_Query(rf, ctx) { if (rf & 1) {
+        _angular_core__WEBPACK_IMPORTED_MODULE_3__["ɵɵviewQuery"](_angular_core__WEBPACK_IMPORTED_MODULE_3__["TemplateRef"], true);
+    } if (rf & 2) {
+        var _t;
+        _angular_core__WEBPACK_IMPORTED_MODULE_3__["ɵɵqueryRefresh"](_t = _angular_core__WEBPACK_IMPORTED_MODULE_3__["ɵɵloadQuery"]()) && (ctx.templateRef = _t.first);
+    } }, inputs: { backdropClass: "backdropClass", xPosition: "xPosition", yPosition: "yPosition", overlapTrigger: "overlapTrigger", hasBackdrop: "hasBackdrop", panelClass: ["class", "panelClass"], classList: "classList", ariaLabel: ["aria-label", "ariaLabel"], ariaLabelledby: ["aria-labelledby", "ariaLabelledby"], ariaDescribedby: ["aria-describedby", "ariaDescribedby"] }, outputs: { closed: "closed", close: "close" } });
+_MatMenuBase.ctorParameters = () => [
+    { type: _angular_core__WEBPACK_IMPORTED_MODULE_3__["ElementRef"] },
+    { type: _angular_core__WEBPACK_IMPORTED_MODULE_3__["NgZone"] },
+    { type: undefined, decorators: [{ type: _angular_core__WEBPACK_IMPORTED_MODULE_3__["Inject"], args: [MAT_MENU_DEFAULT_OPTIONS,] }] }
+];
+_MatMenuBase.propDecorators = {
+    _allItems: [{ type: _angular_core__WEBPACK_IMPORTED_MODULE_3__["ContentChildren"], args: [MatMenuItem, { descendants: true },] }],
+    backdropClass: [{ type: _angular_core__WEBPACK_IMPORTED_MODULE_3__["Input"] }],
+    ariaLabel: [{ type: _angular_core__WEBPACK_IMPORTED_MODULE_3__["Input"], args: ['aria-label',] }],
+    ariaLabelledby: [{ type: _angular_core__WEBPACK_IMPORTED_MODULE_3__["Input"], args: ['aria-labelledby',] }],
+    ariaDescribedby: [{ type: _angular_core__WEBPACK_IMPORTED_MODULE_3__["Input"], args: ['aria-describedby',] }],
+    xPosition: [{ type: _angular_core__WEBPACK_IMPORTED_MODULE_3__["Input"] }],
+    yPosition: [{ type: _angular_core__WEBPACK_IMPORTED_MODULE_3__["Input"] }],
+    templateRef: [{ type: _angular_core__WEBPACK_IMPORTED_MODULE_3__["ViewChild"], args: [_angular_core__WEBPACK_IMPORTED_MODULE_3__["TemplateRef"],] }],
+    items: [{ type: _angular_core__WEBPACK_IMPORTED_MODULE_3__["ContentChildren"], args: [MatMenuItem, { descendants: false },] }],
+    lazyContent: [{ type: _angular_core__WEBPACK_IMPORTED_MODULE_3__["ContentChild"], args: [MAT_MENU_CONTENT,] }],
+    overlapTrigger: [{ type: _angular_core__WEBPACK_IMPORTED_MODULE_3__["Input"] }],
+    hasBackdrop: [{ type: _angular_core__WEBPACK_IMPORTED_MODULE_3__["Input"] }],
+    panelClass: [{ type: _angular_core__WEBPACK_IMPORTED_MODULE_3__["Input"], args: ['class',] }],
+    classList: [{ type: _angular_core__WEBPACK_IMPORTED_MODULE_3__["Input"] }],
+    closed: [{ type: _angular_core__WEBPACK_IMPORTED_MODULE_3__["Output"] }],
+    close: [{ type: _angular_core__WEBPACK_IMPORTED_MODULE_3__["Output"] }]
+};
+/*@__PURE__*/ (function () { _angular_core__WEBPACK_IMPORTED_MODULE_3__["ɵsetClassMetadata"](_MatMenuBase, [{
+        type: _angular_core__WEBPACK_IMPORTED_MODULE_3__["Directive"]
+    }], function () { return [{ type: _angular_core__WEBPACK_IMPORTED_MODULE_3__["ElementRef"] }, { type: _angular_core__WEBPACK_IMPORTED_MODULE_3__["NgZone"] }, { type: undefined, decorators: [{
+                type: _angular_core__WEBPACK_IMPORTED_MODULE_3__["Inject"],
+                args: [MAT_MENU_DEFAULT_OPTIONS]
+            }] }]; }, { backdropClass: [{
+            type: _angular_core__WEBPACK_IMPORTED_MODULE_3__["Input"]
+        }], closed: [{
+            type: _angular_core__WEBPACK_IMPORTED_MODULE_3__["Output"]
+        }], close: [{
+            type: _angular_core__WEBPACK_IMPORTED_MODULE_3__["Output"]
+        }], xPosition: [{
+            type: _angular_core__WEBPACK_IMPORTED_MODULE_3__["Input"]
+        }], yPosition: [{
+            type: _angular_core__WEBPACK_IMPORTED_MODULE_3__["Input"]
+        }], overlapTrigger: [{
+            type: _angular_core__WEBPACK_IMPORTED_MODULE_3__["Input"]
+        }], hasBackdrop: [{
+            type: _angular_core__WEBPACK_IMPORTED_MODULE_3__["Input"]
+        }], panelClass: [{
+            type: _angular_core__WEBPACK_IMPORTED_MODULE_3__["Input"],
+            args: ['class']
+        }], classList: [{
+            type: _angular_core__WEBPACK_IMPORTED_MODULE_3__["Input"]
+        }], _allItems: [{
+            type: _angular_core__WEBPACK_IMPORTED_MODULE_3__["ContentChildren"],
+            args: [MatMenuItem, { descendants: true }]
+        }], ariaLabel: [{
+            type: _angular_core__WEBPACK_IMPORTED_MODULE_3__["Input"],
+            args: ['aria-label']
+        }], ariaLabelledby: [{
+            type: _angular_core__WEBPACK_IMPORTED_MODULE_3__["Input"],
+            args: ['aria-labelledby']
+        }], ariaDescribedby: [{
+            type: _angular_core__WEBPACK_IMPORTED_MODULE_3__["Input"],
+            args: ['aria-describedby']
+        }], templateRef: [{
+            type: _angular_core__WEBPACK_IMPORTED_MODULE_3__["ViewChild"],
+            args: [_angular_core__WEBPACK_IMPORTED_MODULE_3__["TemplateRef"]]
+        }], items: [{
+            type: _angular_core__WEBPACK_IMPORTED_MODULE_3__["ContentChildren"],
+            args: [MatMenuItem, { descendants: false }]
+        }], lazyContent: [{
+            type: _angular_core__WEBPACK_IMPORTED_MODULE_3__["ContentChild"],
+            args: [MAT_MENU_CONTENT]
+        }] }); })();
+/** @docs-private We show the "_MatMenu" class as "MatMenu" in the docs. */
+class MatMenu extends _MatMenuBase {
+}
+MatMenu.ɵfac = function MatMenu_Factory(t) { return ɵMatMenu_BaseFactory(t || MatMenu); };
+MatMenu.ɵdir = _angular_core__WEBPACK_IMPORTED_MODULE_3__["ɵɵdefineDirective"]({ type: MatMenu, features: [_angular_core__WEBPACK_IMPORTED_MODULE_3__["ɵɵInheritDefinitionFeature"]] });
+const ɵMatMenu_BaseFactory = _angular_core__WEBPACK_IMPORTED_MODULE_3__["ɵɵgetInheritedFactory"](MatMenu);
+/*@__PURE__*/ (function () { _angular_core__WEBPACK_IMPORTED_MODULE_3__["ɵsetClassMetadata"](MatMenu, [{
+        type: _angular_core__WEBPACK_IMPORTED_MODULE_3__["Directive"]
+    }], null, null); })();
+// Note on the weird inheritance setup: we need three classes, because the MDC-based menu has to
+// extend `MatMenu`, however keeping a reference to it will cause the inlined template and styles
+// to be retained as well. The MDC menu also has to provide itself as a `MatMenu` in order for
+// queries and DI to work correctly, while still not referencing the actual menu class.
+// Class responsibility is split up as follows:
+// * _MatMenuBase - provides all the functionality without any of the Angular metadata.
+// * MatMenu - keeps the same name symbol name as the current menu and
+// is used as a provider for DI and query purposes.
+// * _MatMenu - the actual menu component implementation with the Angular metadata that should
+// be tree shaken away for MDC.
+/** @docs-public MatMenu */
+class _MatMenu extends MatMenu {
+    constructor(elementRef, ngZone, defaultOptions) {
+        super(elementRef, ngZone, defaultOptions);
+    }
+}
+_MatMenu.ɵfac = function _MatMenu_Factory(t) { return new (t || _MatMenu)(_angular_core__WEBPACK_IMPORTED_MODULE_3__["ɵɵdirectiveInject"](_angular_core__WEBPACK_IMPORTED_MODULE_3__["ElementRef"]), _angular_core__WEBPACK_IMPORTED_MODULE_3__["ɵɵdirectiveInject"](_angular_core__WEBPACK_IMPORTED_MODULE_3__["NgZone"]), _angular_core__WEBPACK_IMPORTED_MODULE_3__["ɵɵdirectiveInject"](MAT_MENU_DEFAULT_OPTIONS)); };
+_MatMenu.ɵcmp = _angular_core__WEBPACK_IMPORTED_MODULE_3__["ɵɵdefineComponent"]({ type: _MatMenu, selectors: [["mat-menu"]], exportAs: ["matMenu"], features: [_angular_core__WEBPACK_IMPORTED_MODULE_3__["ɵɵProvidersFeature"]([
+            { provide: MAT_MENU_PANEL, useExisting: MatMenu },
+            { provide: MatMenu, useExisting: _MatMenu }
+        ]), _angular_core__WEBPACK_IMPORTED_MODULE_3__["ɵɵInheritDefinitionFeature"]], ngContentSelectors: _c1, decls: 1, vars: 0, consts: [["tabindex", "-1", "role", "menu", 1, "mat-menu-panel", 3, "id", "ngClass", "keydown", "click"], [1, "mat-menu-content"]], template: function _MatMenu_Template(rf, ctx) { if (rf & 1) {
+        _angular_core__WEBPACK_IMPORTED_MODULE_3__["ɵɵprojectionDef"]();
+        _angular_core__WEBPACK_IMPORTED_MODULE_3__["ɵɵtemplate"](0, _MatMenu_ng_template_0_Template, 3, 6, "ng-template");
+    } }, directives: [_angular_common__WEBPACK_IMPORTED_MODULE_8__["NgClass"]], styles: [".mat-menu-panel{min-width:112px;max-width:280px;overflow:auto;-webkit-overflow-scrolling:touch;max-height:calc(100vh - 48px);border-radius:4px;outline:0;min-height:64px}.mat-menu-panel.ng-animating{pointer-events:none}.cdk-high-contrast-active .mat-menu-panel{outline:solid 1px}.mat-menu-content:not(:empty){padding-top:8px;padding-bottom:8px}.mat-menu-item{-webkit-user-select:none;-moz-user-select:none;-ms-user-select:none;user-select:none;cursor:pointer;outline:none;border:none;-webkit-tap-highlight-color:transparent;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:block;line-height:48px;height:48px;padding:0 16px;text-align:left;text-decoration:none;max-width:100%;position:relative}.mat-menu-item::-moz-focus-inner{border:0}.mat-menu-item[disabled]{cursor:default}[dir=rtl] .mat-menu-item{text-align:right}.mat-menu-item .mat-icon{margin-right:16px;vertical-align:middle}.mat-menu-item .mat-icon svg{vertical-align:top}[dir=rtl] .mat-menu-item .mat-icon{margin-left:16px;margin-right:0}.mat-menu-item[disabled]{pointer-events:none}.cdk-high-contrast-active .mat-menu-item.cdk-program-focused,.cdk-high-contrast-active .mat-menu-item.cdk-keyboard-focused,.cdk-high-contrast-active .mat-menu-item-highlighted{outline:dotted 1px}.mat-menu-item-submenu-trigger{padding-right:32px}.mat-menu-item-submenu-trigger::after{width:0;height:0;border-style:solid;border-width:5px 0 5px 5px;border-color:transparent transparent transparent currentColor;content:\"\";display:inline-block;position:absolute;top:50%;right:16px;transform:translateY(-50%)}[dir=rtl] .mat-menu-item-submenu-trigger{padding-right:16px;padding-left:32px}[dir=rtl] .mat-menu-item-submenu-trigger::after{right:auto;left:16px;transform:rotateY(180deg) translateY(-50%)}button.mat-menu-item{width:100%}.mat-menu-item .mat-menu-ripple{top:0;left:0;right:0;bottom:0;position:absolute;pointer-events:none}\n"], encapsulation: 2, data: { animation: [
+            matMenuAnimations.transformMenu,
+            matMenuAnimations.fadeInItems
+        ] }, changeDetection: 0 });
+_MatMenu.ctorParameters = () => [
+    { type: _angular_core__WEBPACK_IMPORTED_MODULE_3__["ElementRef"] },
+    { type: _angular_core__WEBPACK_IMPORTED_MODULE_3__["NgZone"] },
+    { type: undefined, decorators: [{ type: _angular_core__WEBPACK_IMPORTED_MODULE_3__["Inject"], args: [MAT_MENU_DEFAULT_OPTIONS,] }] }
+];
+/*@__PURE__*/ (function () { _angular_core__WEBPACK_IMPORTED_MODULE_3__["ɵsetClassMetadata"](_MatMenu, [{
+        type: _angular_core__WEBPACK_IMPORTED_MODULE_3__["Component"],
+        args: [{
+                selector: 'mat-menu',
+                template: "<ng-template>\n  <div\n    class=\"mat-menu-panel\"\n    [id]=\"panelId\"\n    [ngClass]=\"_classList\"\n    (keydown)=\"_handleKeydown($event)\"\n    (click)=\"closed.emit('click')\"\n    [@transformMenu]=\"_panelAnimationState\"\n    (@transformMenu.start)=\"_onAnimationStart($event)\"\n    (@transformMenu.done)=\"_onAnimationDone($event)\"\n    tabindex=\"-1\"\n    role=\"menu\"\n    [attr.aria-label]=\"ariaLabel || null\"\n    [attr.aria-labelledby]=\"ariaLabelledby || null\"\n    [attr.aria-describedby]=\"ariaDescribedby || null\">\n    <div class=\"mat-menu-content\">\n      <ng-content></ng-content>\n    </div>\n  </div>\n</ng-template>\n",
+                changeDetection: _angular_core__WEBPACK_IMPORTED_MODULE_3__["ChangeDetectionStrategy"].OnPush,
+                encapsulation: _angular_core__WEBPACK_IMPORTED_MODULE_3__["ViewEncapsulation"].None,
+                exportAs: 'matMenu',
+                animations: [
+                    matMenuAnimations.transformMenu,
+                    matMenuAnimations.fadeInItems
+                ],
+                providers: [
+                    { provide: MAT_MENU_PANEL, useExisting: MatMenu },
+                    { provide: MatMenu, useExisting: _MatMenu }
+                ],
+                styles: [".mat-menu-panel{min-width:112px;max-width:280px;overflow:auto;-webkit-overflow-scrolling:touch;max-height:calc(100vh - 48px);border-radius:4px;outline:0;min-height:64px}.mat-menu-panel.ng-animating{pointer-events:none}.cdk-high-contrast-active .mat-menu-panel{outline:solid 1px}.mat-menu-content:not(:empty){padding-top:8px;padding-bottom:8px}.mat-menu-item{-webkit-user-select:none;-moz-user-select:none;-ms-user-select:none;user-select:none;cursor:pointer;outline:none;border:none;-webkit-tap-highlight-color:transparent;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:block;line-height:48px;height:48px;padding:0 16px;text-align:left;text-decoration:none;max-width:100%;position:relative}.mat-menu-item::-moz-focus-inner{border:0}.mat-menu-item[disabled]{cursor:default}[dir=rtl] .mat-menu-item{text-align:right}.mat-menu-item .mat-icon{margin-right:16px;vertical-align:middle}.mat-menu-item .mat-icon svg{vertical-align:top}[dir=rtl] .mat-menu-item .mat-icon{margin-left:16px;margin-right:0}.mat-menu-item[disabled]{pointer-events:none}.cdk-high-contrast-active .mat-menu-item.cdk-program-focused,.cdk-high-contrast-active .mat-menu-item.cdk-keyboard-focused,.cdk-high-contrast-active .mat-menu-item-highlighted{outline:dotted 1px}.mat-menu-item-submenu-trigger{padding-right:32px}.mat-menu-item-submenu-trigger::after{width:0;height:0;border-style:solid;border-width:5px 0 5px 5px;border-color:transparent transparent transparent currentColor;content:\"\";display:inline-block;position:absolute;top:50%;right:16px;transform:translateY(-50%)}[dir=rtl] .mat-menu-item-submenu-trigger{padding-right:16px;padding-left:32px}[dir=rtl] .mat-menu-item-submenu-trigger::after{right:auto;left:16px;transform:rotateY(180deg) translateY(-50%)}button.mat-menu-item{width:100%}.mat-menu-item .mat-menu-ripple{top:0;left:0;right:0;bottom:0;position:absolute;pointer-events:none}\n"]
+            }]
+    }], function () { return [{ type: _angular_core__WEBPACK_IMPORTED_MODULE_3__["ElementRef"] }, { type: _angular_core__WEBPACK_IMPORTED_MODULE_3__["NgZone"] }, { type: undefined, decorators: [{
+                type: _angular_core__WEBPACK_IMPORTED_MODULE_3__["Inject"],
+                args: [MAT_MENU_DEFAULT_OPTIONS]
+            }] }]; }, null); })();
+
+/**
+ * @license
+ * Copyright Google LLC All Rights Reserved.
+ *
+ * Use of this source code is governed by an MIT-style license that can be
+ * found in the LICENSE file at https://angular.io/license
+ */
+/** Injection token that determines the scroll handling while the menu is open. */
+const MAT_MENU_SCROLL_STRATEGY = new _angular_core__WEBPACK_IMPORTED_MODULE_3__["InjectionToken"]('mat-menu-scroll-strategy');
+/** @docs-private */
+function MAT_MENU_SCROLL_STRATEGY_FACTORY(overlay) {
+    return () => overlay.scrollStrategies.reposition();
+}
+/** @docs-private */
+const MAT_MENU_SCROLL_STRATEGY_FACTORY_PROVIDER = {
+    provide: MAT_MENU_SCROLL_STRATEGY,
+    deps: [_angular_cdk_overlay__WEBPACK_IMPORTED_MODULE_11__["Overlay"]],
+    useFactory: MAT_MENU_SCROLL_STRATEGY_FACTORY,
+};
+/** Default top padding of the menu panel. */
+const MENU_PANEL_TOP_PADDING = 8;
+/** Options for binding a passive event listener. */
+const passiveEventListenerOptions = Object(_angular_cdk_platform__WEBPACK_IMPORTED_MODULE_12__["normalizePassiveListenerOptions"])({ passive: true });
+// TODO(andrewseguin): Remove the kebab versions in favor of camelCased attribute selectors
+/** Directive applied to an element that should trigger a `mat-menu`. */
+class MatMenuTrigger {
+    constructor(_overlay, _element, _viewContainerRef, scrollStrategy, _parentMenu, _menuItemInstance, _dir, 
+    // TODO(crisbeto): make the _focusMonitor required when doing breaking changes.
+    // @breaking-change 8.0.0
+    _focusMonitor) {
+        this._overlay = _overlay;
+        this._element = _element;
+        this._viewContainerRef = _viewContainerRef;
+        this._parentMenu = _parentMenu;
+        this._menuItemInstance = _menuItemInstance;
+        this._dir = _dir;
+        this._focusMonitor = _focusMonitor;
+        this._overlayRef = null;
+        this._menuOpen = false;
+        this._closingActionsSubscription = rxjs__WEBPACK_IMPORTED_MODULE_4__["Subscription"].EMPTY;
+        this._hoverSubscription = rxjs__WEBPACK_IMPORTED_MODULE_4__["Subscription"].EMPTY;
+        this._menuCloseSubscription = rxjs__WEBPACK_IMPORTED_MODULE_4__["Subscription"].EMPTY;
+        /**
+         * Handles touch start events on the trigger.
+         * Needs to be an arrow function so we can easily use addEventListener and removeEventListener.
+         */
+        this._handleTouchStart = () => this._openedBy = 'touch';
+        // Tracking input type is necessary so it's possible to only auto-focus
+        // the first item of the list when the menu is opened via the keyboard
+        this._openedBy = null;
+        /**
+         * Whether focus should be restored when the menu is closed.
+         * Note that disabling this option can have accessibility implications
+         * and it's up to you to manage focus, if you decide to turn it off.
+         */
+        this.restoreFocus = true;
+        /** Event emitted when the associated menu is opened. */
+        this.menuOpened = new _angular_core__WEBPACK_IMPORTED_MODULE_3__["EventEmitter"]();
+        /**
+         * Event emitted when the associated menu is opened.
+         * @deprecated Switch to `menuOpened` instead
+         * @breaking-change 8.0.0
+         */
+        // tslint:disable-next-line:no-output-on-prefix
+        this.onMenuOpen = this.menuOpened;
+        /** Event emitted when the associated menu is closed. */
+        this.menuClosed = new _angular_core__WEBPACK_IMPORTED_MODULE_3__["EventEmitter"]();
+        /**
+         * Event emitted when the associated menu is closed.
+         * @deprecated Switch to `menuClosed` instead
+         * @breaking-change 8.0.0
+         */
+        // tslint:disable-next-line:no-output-on-prefix
+        this.onMenuClose = this.menuClosed;
+        _element.nativeElement.addEventListener('touchstart', this._handleTouchStart, passiveEventListenerOptions);
+        if (_menuItemInstance) {
+            _menuItemInstance._triggersSubmenu = this.triggersSubmenu();
+        }
+        this._scrollStrategy = scrollStrategy;
+    }
+    /**
+     * @deprecated
+     * @breaking-change 8.0.0
+     */
+    get _deprecatedMatMenuTriggerFor() { return this.menu; }
+    set _deprecatedMatMenuTriggerFor(v) {
+        this.menu = v;
+    }
+    /** References the menu instance that the trigger is associated with. */
+    get menu() { return this._menu; }
+    set menu(menu) {
+        if (menu === this._menu) {
+            return;
+        }
+        this._menu = menu;
+        this._menuCloseSubscription.unsubscribe();
+        if (menu) {
+            if (Object(_angular_core__WEBPACK_IMPORTED_MODULE_3__["isDevMode"])() && menu === this._parentMenu) {
+                throwMatMenuRecursiveError();
+            }
+            this._menuCloseSubscription = menu.close.asObservable().subscribe(reason => {
+                this._destroyMenu();
+                // If a click closed the menu, we should close the entire chain of nested menus.
+                if ((reason === 'click' || reason === 'tab') && this._parentMenu) {
+                    this._parentMenu.closed.emit(reason);
+                }
+            });
+        }
+    }
+    ngAfterContentInit() {
+        this._checkMenu();
+        this._handleHover();
+    }
+    ngOnDestroy() {
+        if (this._overlayRef) {
+            this._overlayRef.dispose();
+            this._overlayRef = null;
+        }
+        this._element.nativeElement.removeEventListener('touchstart', this._handleTouchStart, passiveEventListenerOptions);
+        this._menuCloseSubscription.unsubscribe();
+        this._closingActionsSubscription.unsubscribe();
+        this._hoverSubscription.unsubscribe();
+    }
+    /** Whether the menu is open. */
+    get menuOpen() {
+        return this._menuOpen;
+    }
+    /** The text direction of the containing app. */
+    get dir() {
+        return this._dir && this._dir.value === 'rtl' ? 'rtl' : 'ltr';
+    }
+    /** Whether the menu triggers a sub-menu or a top-level one. */
+    triggersSubmenu() {
+        return !!(this._menuItemInstance && this._parentMenu);
+    }
+    /** Toggles the menu between the open and closed states. */
+    toggleMenu() {
+        return this._menuOpen ? this.closeMenu() : this.openMenu();
+    }
+    /** Opens the menu. */
+    openMenu() {
+        if (this._menuOpen) {
+            return;
+        }
+        this._checkMenu();
+        const overlayRef = this._createOverlay();
+        const overlayConfig = overlayRef.getConfig();
+        this._setPosition(overlayConfig.positionStrategy);
+        overlayConfig.hasBackdrop = this.menu.hasBackdrop == null ? !this.triggersSubmenu() :
+            this.menu.hasBackdrop;
+        overlayRef.attach(this._getPortal());
+        if (this.menu.lazyContent) {
+            this.menu.lazyContent.attach(this.menuData);
+        }
+        this._closingActionsSubscription = this._menuClosingActions().subscribe(() => this.closeMenu());
+        this._initMenu();
+        if (this.menu instanceof MatMenu) {
+            this.menu._startAnimation();
+        }
+    }
+    /** Closes the menu. */
+    closeMenu() {
+        this.menu.close.emit();
+    }
+    /**
+     * Focuses the menu trigger.
+     * @param origin Source of the menu trigger's focus.
+     */
+    focus(origin = 'program', options) {
+        if (this._focusMonitor) {
+            this._focusMonitor.focusVia(this._element, origin, options);
+        }
+        else {
+            this._element.nativeElement.focus(options);
+        }
+    }
+    /** Closes the menu and does the necessary cleanup. */
+    _destroyMenu() {
+        if (!this._overlayRef || !this.menuOpen) {
+            return;
+        }
+        const menu = this.menu;
+        this._closingActionsSubscription.unsubscribe();
+        this._overlayRef.detach();
+        this._restoreFocus();
+        if (menu instanceof MatMenu) {
+            menu._resetAnimation();
+            if (menu.lazyContent) {
+                // Wait for the exit animation to finish before detaching the content.
+                menu._animationDone
+                    .pipe(Object(rxjs_operators__WEBPACK_IMPORTED_MODULE_5__["filter"])(event => event.toState === 'void'), Object(rxjs_operators__WEBPACK_IMPORTED_MODULE_5__["take"])(1), 
+                // Interrupt if the content got re-attached.
+                Object(rxjs_operators__WEBPACK_IMPORTED_MODULE_5__["takeUntil"])(menu.lazyContent._attached))
+                    .subscribe({
+                    next: () => menu.lazyContent.detach(),
+                    // No matter whether the content got re-attached, reset the menu.
+                    complete: () => this._setIsMenuOpen(false)
+                });
+            }
+            else {
+                this._setIsMenuOpen(false);
+            }
+        }
+        else {
+            this._setIsMenuOpen(false);
+            if (menu.lazyContent) {
+                menu.lazyContent.detach();
+            }
+        }
+    }
+    /**
+     * This method sets the menu state to open and focuses the first item if
+     * the menu was opened via the keyboard.
+     */
+    _initMenu() {
+        this.menu.parentMenu = this.triggersSubmenu() ? this._parentMenu : undefined;
+        this.menu.direction = this.dir;
+        this._setMenuElevation();
+        this._setIsMenuOpen(true);
+        this.menu.focusFirstItem(this._openedBy || 'program');
+    }
+    /** Updates the menu elevation based on the amount of parent menus that it has. */
+    _setMenuElevation() {
+        if (this.menu.setElevation) {
+            let depth = 0;
+            let parentMenu = this.menu.parentMenu;
+            while (parentMenu) {
+                depth++;
+                parentMenu = parentMenu.parentMenu;
+            }
+            this.menu.setElevation(depth);
+        }
+    }
+    /** Restores focus to the element that was focused before the menu was open. */
+    _restoreFocus() {
+        // We should reset focus if the user is navigating using a keyboard or
+        // if we have a top-level trigger which might cause focus to be lost
+        // when clicking on the backdrop.
+        if (this.restoreFocus) {
+            if (!this._openedBy) {
+                // Note that the focus style will show up both for `program` and
+                // `keyboard` so we don't have to specify which one it is.
+                this.focus();
+            }
+            else if (!this.triggersSubmenu()) {
+                this.focus(this._openedBy);
+            }
+        }
+        this._openedBy = null;
+    }
+    // set state rather than toggle to support triggers sharing a menu
+    _setIsMenuOpen(isOpen) {
+        this._menuOpen = isOpen;
+        this._menuOpen ? this.menuOpened.emit() : this.menuClosed.emit();
+        if (this.triggersSubmenu()) {
+            this._menuItemInstance._highlighted = isOpen;
+        }
+    }
+    /**
+     * This method checks that a valid instance of MatMenu has been passed into
+     * matMenuTriggerFor. If not, an exception is thrown.
+     */
+    _checkMenu() {
+        if (Object(_angular_core__WEBPACK_IMPORTED_MODULE_3__["isDevMode"])() && !this.menu) {
+            throwMatMenuMissingError();
+        }
+    }
+    /**
+     * This method creates the overlay from the provided menu's template and saves its
+     * OverlayRef so that it can be attached to the DOM when openMenu is called.
+     */
+    _createOverlay() {
+        if (!this._overlayRef) {
+            const config = this._getOverlayConfig();
+            this._subscribeToPositions(config.positionStrategy);
+            this._overlayRef = this._overlay.create(config);
+            // Consume the `keydownEvents` in order to prevent them from going to another overlay.
+            // Ideally we'd also have our keyboard event logic in here, however doing so will
+            // break anybody that may have implemented the `MatMenuPanel` themselves.
+            this._overlayRef.keydownEvents().subscribe();
+        }
+        return this._overlayRef;
+    }
+    /**
+     * This method builds the configuration object needed to create the overlay, the OverlayState.
+     * @returns OverlayConfig
+     */
+    _getOverlayConfig() {
+        return new _angular_cdk_overlay__WEBPACK_IMPORTED_MODULE_11__["OverlayConfig"]({
+            positionStrategy: this._overlay.position()
+                .flexibleConnectedTo(this._element)
+                .withLockedPosition()
+                .withTransformOriginOn('.mat-menu-panel, .mat-mdc-menu-panel'),
+            backdropClass: this.menu.backdropClass || 'cdk-overlay-transparent-backdrop',
+            panelClass: this.menu.overlayPanelClass,
+            scrollStrategy: this._scrollStrategy(),
+            direction: this._dir
+        });
+    }
+    /**
+     * Listens to changes in the position of the overlay and sets the correct classes
+     * on the menu based on the new position. This ensures the animation origin is always
+     * correct, even if a fallback position is used for the overlay.
+     */
+    _subscribeToPositions(position) {
+        if (this.menu.setPositionClasses) {
+            position.positionChanges.subscribe(change => {
+                const posX = change.connectionPair.overlayX === 'start' ? 'after' : 'before';
+                const posY = change.connectionPair.overlayY === 'top' ? 'below' : 'above';
+                this.menu.setPositionClasses(posX, posY);
+            });
+        }
+    }
+    /**
+     * Sets the appropriate positions on a position strategy
+     * so the overlay connects with the trigger correctly.
+     * @param positionStrategy Strategy whose position to update.
+     */
+    _setPosition(positionStrategy) {
+        let [originX, originFallbackX] = this.menu.xPosition === 'before' ? ['end', 'start'] : ['start', 'end'];
+        let [overlayY, overlayFallbackY] = this.menu.yPosition === 'above' ? ['bottom', 'top'] : ['top', 'bottom'];
+        let [originY, originFallbackY] = [overlayY, overlayFallbackY];
+        let [overlayX, overlayFallbackX] = [originX, originFallbackX];
+        let offsetY = 0;
+        if (this.triggersSubmenu()) {
+            // When the menu is a sub-menu, it should always align itself
+            // to the edges of the trigger, instead of overlapping it.
+            overlayFallbackX = originX = this.menu.xPosition === 'before' ? 'start' : 'end';
+            originFallbackX = overlayX = originX === 'end' ? 'start' : 'end';
+            offsetY = overlayY === 'bottom' ? MENU_PANEL_TOP_PADDING : -MENU_PANEL_TOP_PADDING;
+        }
+        else if (!this.menu.overlapTrigger) {
+            originY = overlayY === 'top' ? 'bottom' : 'top';
+            originFallbackY = overlayFallbackY === 'top' ? 'bottom' : 'top';
+        }
+        positionStrategy.withPositions([
+            { originX, originY, overlayX, overlayY, offsetY },
+            { originX: originFallbackX, originY, overlayX: overlayFallbackX, overlayY, offsetY },
+            {
+                originX,
+                originY: originFallbackY,
+                overlayX,
+                overlayY: overlayFallbackY,
+                offsetY: -offsetY
+            },
+            {
+                originX: originFallbackX,
+                originY: originFallbackY,
+                overlayX: overlayFallbackX,
+                overlayY: overlayFallbackY,
+                offsetY: -offsetY
+            }
+        ]);
+    }
+    /** Returns a stream that emits whenever an action that should close the menu occurs. */
+    _menuClosingActions() {
+        const backdrop = this._overlayRef.backdropClick();
+        const detachments = this._overlayRef.detachments();
+        const parentClose = this._parentMenu ? this._parentMenu.closed : Object(rxjs__WEBPACK_IMPORTED_MODULE_4__["of"])();
+        const hover = this._parentMenu ? this._parentMenu._hovered().pipe(Object(rxjs_operators__WEBPACK_IMPORTED_MODULE_5__["filter"])(active => active !== this._menuItemInstance), Object(rxjs_operators__WEBPACK_IMPORTED_MODULE_5__["filter"])(() => this._menuOpen)) : Object(rxjs__WEBPACK_IMPORTED_MODULE_4__["of"])();
+        return Object(rxjs__WEBPACK_IMPORTED_MODULE_4__["merge"])(backdrop, parentClose, hover, detachments);
+    }
+    /** Handles mouse presses on the trigger. */
+    _handleMousedown(event) {
+        if (!Object(_angular_cdk_a11y__WEBPACK_IMPORTED_MODULE_0__["isFakeMousedownFromScreenReader"])(event)) {
+            // Since right or middle button clicks won't trigger the `click` event,
+            // we shouldn't consider the menu as opened by mouse in those cases.
+            this._openedBy = event.button === 0 ? 'mouse' : null;
+            // Since clicking on the trigger won't close the menu if it opens a sub-menu,
+            // we should prevent focus from moving onto it via click to avoid the
+            // highlight from lingering on the menu item.
+            if (this.triggersSubmenu()) {
+                event.preventDefault();
+            }
+        }
+    }
+    /** Handles key presses on the trigger. */
+    _handleKeydown(event) {
+        const keyCode = event.keyCode;
+        if (this.triggersSubmenu() && ((keyCode === _angular_cdk_keycodes__WEBPACK_IMPORTED_MODULE_2__["RIGHT_ARROW"] && this.dir === 'ltr') ||
+            (keyCode === _angular_cdk_keycodes__WEBPACK_IMPORTED_MODULE_2__["LEFT_ARROW"] && this.dir === 'rtl'))) {
+            this.openMenu();
+        }
+    }
+    /** Handles click events on the trigger. */
+    _handleClick(event) {
+        if (this.triggersSubmenu()) {
+            // Stop event propagation to avoid closing the parent menu.
+            event.stopPropagation();
+            this.openMenu();
+        }
+        else {
+            this.toggleMenu();
+        }
+    }
+    /** Handles the cases where the user hovers over the trigger. */
+    _handleHover() {
+        // Subscribe to changes in the hovered item in order to toggle the panel.
+        if (!this.triggersSubmenu()) {
+            return;
+        }
+        this._hoverSubscription = this._parentMenu._hovered()
+            // Since we might have multiple competing triggers for the same menu (e.g. a sub-menu
+            // with different data and triggers), we have to delay it by a tick to ensure that
+            // it won't be closed immediately after it is opened.
+            .pipe(Object(rxjs_operators__WEBPACK_IMPORTED_MODULE_5__["filter"])(active => active === this._menuItemInstance && !active.disabled), Object(rxjs_operators__WEBPACK_IMPORTED_MODULE_5__["delay"])(0, rxjs__WEBPACK_IMPORTED_MODULE_4__["asapScheduler"]))
+            .subscribe(() => {
+            this._openedBy = 'mouse';
+            // If the same menu is used between multiple triggers, it might still be animating
+            // while the new trigger tries to re-open it. Wait for the animation to finish
+            // before doing so. Also interrupt if the user moves to another item.
+            if (this.menu instanceof MatMenu && this.menu._isAnimating) {
+                // We need the `delay(0)` here in order to avoid
+                // 'changed after checked' errors in some cases. See #12194.
+                this.menu._animationDone
+                    .pipe(Object(rxjs_operators__WEBPACK_IMPORTED_MODULE_5__["take"])(1), Object(rxjs_operators__WEBPACK_IMPORTED_MODULE_5__["delay"])(0, rxjs__WEBPACK_IMPORTED_MODULE_4__["asapScheduler"]), Object(rxjs_operators__WEBPACK_IMPORTED_MODULE_5__["takeUntil"])(this._parentMenu._hovered()))
+                    .subscribe(() => this.openMenu());
+            }
+            else {
+                this.openMenu();
+            }
+        });
+    }
+    /** Gets the portal that should be attached to the overlay. */
+    _getPortal() {
+        // Note that we can avoid this check by keeping the portal on the menu panel.
+        // While it would be cleaner, we'd have to introduce another required method on
+        // `MatMenuPanel`, making it harder to consume.
+        if (!this._portal || this._portal.templateRef !== this.menu.templateRef) {
+            this._portal = new _angular_cdk_portal__WEBPACK_IMPORTED_MODULE_7__["TemplatePortal"](this.menu.templateRef, this._viewContainerRef);
+        }
+        return this._portal;
+    }
+}
+MatMenuTrigger.ɵfac = function MatMenuTrigger_Factory(t) { return new (t || MatMenuTrigger)(_angular_core__WEBPACK_IMPORTED_MODULE_3__["ɵɵdirectiveInject"](_angular_cdk_overlay__WEBPACK_IMPORTED_MODULE_11__["Overlay"]), _angular_core__WEBPACK_IMPORTED_MODULE_3__["ɵɵdirectiveInject"](_angular_core__WEBPACK_IMPORTED_MODULE_3__["ElementRef"]), _angular_core__WEBPACK_IMPORTED_MODULE_3__["ɵɵdirectiveInject"](_angular_core__WEBPACK_IMPORTED_MODULE_3__["ViewContainerRef"]), _angular_core__WEBPACK_IMPORTED_MODULE_3__["ɵɵdirectiveInject"](MAT_MENU_SCROLL_STRATEGY), _angular_core__WEBPACK_IMPORTED_MODULE_3__["ɵɵdirectiveInject"](MatMenu, 8), _angular_core__WEBPACK_IMPORTED_MODULE_3__["ɵɵdirectiveInject"](MatMenuItem, 10), _angular_core__WEBPACK_IMPORTED_MODULE_3__["ɵɵdirectiveInject"](_angular_cdk_bidi__WEBPACK_IMPORTED_MODULE_10__["Directionality"], 8), _angular_core__WEBPACK_IMPORTED_MODULE_3__["ɵɵdirectiveInject"](_angular_cdk_a11y__WEBPACK_IMPORTED_MODULE_0__["FocusMonitor"])); };
+MatMenuTrigger.ɵdir = _angular_core__WEBPACK_IMPORTED_MODULE_3__["ɵɵdefineDirective"]({ type: MatMenuTrigger, selectors: [["", "mat-menu-trigger-for", ""], ["", "matMenuTriggerFor", ""]], hostAttrs: ["aria-haspopup", "true", 1, "mat-menu-trigger"], hostVars: 2, hostBindings: function MatMenuTrigger_HostBindings(rf, ctx) { if (rf & 1) {
+        _angular_core__WEBPACK_IMPORTED_MODULE_3__["ɵɵlistener"]("mousedown", function MatMenuTrigger_mousedown_HostBindingHandler($event) { return ctx._handleMousedown($event); })("keydown", function MatMenuTrigger_keydown_HostBindingHandler($event) { return ctx._handleKeydown($event); })("click", function MatMenuTrigger_click_HostBindingHandler($event) { return ctx._handleClick($event); });
+    } if (rf & 2) {
+        _angular_core__WEBPACK_IMPORTED_MODULE_3__["ɵɵattribute"]("aria-expanded", ctx.menuOpen || null)("aria-controls", ctx.menuOpen ? ctx.menu.panelId : null);
+    } }, inputs: { restoreFocus: ["matMenuTriggerRestoreFocus", "restoreFocus"], _deprecatedMatMenuTriggerFor: ["mat-menu-trigger-for", "_deprecatedMatMenuTriggerFor"], menu: ["matMenuTriggerFor", "menu"], menuData: ["matMenuTriggerData", "menuData"] }, outputs: { menuOpened: "menuOpened", onMenuOpen: "onMenuOpen", menuClosed: "menuClosed", onMenuClose: "onMenuClose" }, exportAs: ["matMenuTrigger"] });
+MatMenuTrigger.ctorParameters = () => [
+    { type: _angular_cdk_overlay__WEBPACK_IMPORTED_MODULE_11__["Overlay"] },
+    { type: _angular_core__WEBPACK_IMPORTED_MODULE_3__["ElementRef"] },
+    { type: _angular_core__WEBPACK_IMPORTED_MODULE_3__["ViewContainerRef"] },
+    { type: undefined, decorators: [{ type: _angular_core__WEBPACK_IMPORTED_MODULE_3__["Inject"], args: [MAT_MENU_SCROLL_STRATEGY,] }] },
+    { type: MatMenu, decorators: [{ type: _angular_core__WEBPACK_IMPORTED_MODULE_3__["Optional"] }] },
+    { type: MatMenuItem, decorators: [{ type: _angular_core__WEBPACK_IMPORTED_MODULE_3__["Optional"] }, { type: _angular_core__WEBPACK_IMPORTED_MODULE_3__["Self"] }] },
+    { type: _angular_cdk_bidi__WEBPACK_IMPORTED_MODULE_10__["Directionality"], decorators: [{ type: _angular_core__WEBPACK_IMPORTED_MODULE_3__["Optional"] }] },
+    { type: _angular_cdk_a11y__WEBPACK_IMPORTED_MODULE_0__["FocusMonitor"] }
+];
+MatMenuTrigger.propDecorators = {
+    _deprecatedMatMenuTriggerFor: [{ type: _angular_core__WEBPACK_IMPORTED_MODULE_3__["Input"], args: ['mat-menu-trigger-for',] }],
+    menu: [{ type: _angular_core__WEBPACK_IMPORTED_MODULE_3__["Input"], args: ['matMenuTriggerFor',] }],
+    menuData: [{ type: _angular_core__WEBPACK_IMPORTED_MODULE_3__["Input"], args: ['matMenuTriggerData',] }],
+    restoreFocus: [{ type: _angular_core__WEBPACK_IMPORTED_MODULE_3__["Input"], args: ['matMenuTriggerRestoreFocus',] }],
+    menuOpened: [{ type: _angular_core__WEBPACK_IMPORTED_MODULE_3__["Output"] }],
+    onMenuOpen: [{ type: _angular_core__WEBPACK_IMPORTED_MODULE_3__["Output"] }],
+    menuClosed: [{ type: _angular_core__WEBPACK_IMPORTED_MODULE_3__["Output"] }],
+    onMenuClose: [{ type: _angular_core__WEBPACK_IMPORTED_MODULE_3__["Output"] }]
+};
+/*@__PURE__*/ (function () { _angular_core__WEBPACK_IMPORTED_MODULE_3__["ɵsetClassMetadata"](MatMenuTrigger, [{
+        type: _angular_core__WEBPACK_IMPORTED_MODULE_3__["Directive"],
+        args: [{
+                selector: `[mat-menu-trigger-for], [matMenuTriggerFor]`,
+                host: {
+                    'class': 'mat-menu-trigger',
+                    'aria-haspopup': 'true',
+                    '[attr.aria-expanded]': 'menuOpen || null',
+                    '[attr.aria-controls]': 'menuOpen ? menu.panelId : null',
+                    '(mousedown)': '_handleMousedown($event)',
+                    '(keydown)': '_handleKeydown($event)',
+                    '(click)': '_handleClick($event)'
+                },
+                exportAs: 'matMenuTrigger'
+            }]
+    }], function () { return [{ type: _angular_cdk_overlay__WEBPACK_IMPORTED_MODULE_11__["Overlay"] }, { type: _angular_core__WEBPACK_IMPORTED_MODULE_3__["ElementRef"] }, { type: _angular_core__WEBPACK_IMPORTED_MODULE_3__["ViewContainerRef"] }, { type: undefined, decorators: [{
+                type: _angular_core__WEBPACK_IMPORTED_MODULE_3__["Inject"],
+                args: [MAT_MENU_SCROLL_STRATEGY]
+            }] }, { type: MatMenu, decorators: [{
+                type: _angular_core__WEBPACK_IMPORTED_MODULE_3__["Optional"]
+            }] }, { type: MatMenuItem, decorators: [{
+                type: _angular_core__WEBPACK_IMPORTED_MODULE_3__["Optional"]
+            }, {
+                type: _angular_core__WEBPACK_IMPORTED_MODULE_3__["Self"]
+            }] }, { type: _angular_cdk_bidi__WEBPACK_IMPORTED_MODULE_10__["Directionality"], decorators: [{
+                type: _angular_core__WEBPACK_IMPORTED_MODULE_3__["Optional"]
+            }] }, { type: _angular_cdk_a11y__WEBPACK_IMPORTED_MODULE_0__["FocusMonitor"] }]; }, { restoreFocus: [{
+            type: _angular_core__WEBPACK_IMPORTED_MODULE_3__["Input"],
+            args: ['matMenuTriggerRestoreFocus']
+        }], menuOpened: [{
+            type: _angular_core__WEBPACK_IMPORTED_MODULE_3__["Output"]
+        }], onMenuOpen: [{
+            type: _angular_core__WEBPACK_IMPORTED_MODULE_3__["Output"]
+        }], menuClosed: [{
+            type: _angular_core__WEBPACK_IMPORTED_MODULE_3__["Output"]
+        }], onMenuClose: [{
+            type: _angular_core__WEBPACK_IMPORTED_MODULE_3__["Output"]
+        }], _deprecatedMatMenuTriggerFor: [{
+            type: _angular_core__WEBPACK_IMPORTED_MODULE_3__["Input"],
+            args: ['mat-menu-trigger-for']
+        }], menu: [{
+            type: _angular_core__WEBPACK_IMPORTED_MODULE_3__["Input"],
+            args: ['matMenuTriggerFor']
+        }], menuData: [{
+            type: _angular_core__WEBPACK_IMPORTED_MODULE_3__["Input"],
+            args: ['matMenuTriggerData']
+        }] }); })();
+
+/**
+ * @license
+ * Copyright Google LLC All Rights Reserved.
+ *
+ * Use of this source code is governed by an MIT-style license that can be
+ * found in the LICENSE file at https://angular.io/license
+ */
+/**
+ * Used by both the current `MatMenuModule` and the MDC `MatMenuModule`
+ * to declare the menu-related directives.
+ */
+class _MatMenuDirectivesModule {
+}
+_MatMenuDirectivesModule.ɵmod = _angular_core__WEBPACK_IMPORTED_MODULE_3__["ɵɵdefineNgModule"]({ type: _MatMenuDirectivesModule });
+_MatMenuDirectivesModule.ɵinj = _angular_core__WEBPACK_IMPORTED_MODULE_3__["ɵɵdefineInjector"]({ factory: function _MatMenuDirectivesModule_Factory(t) { return new (t || _MatMenuDirectivesModule)(); }, providers: [MAT_MENU_SCROLL_STRATEGY_FACTORY_PROVIDER], imports: [_angular_material_core__WEBPACK_IMPORTED_MODULE_9__["MatCommonModule"]] });
+(function () { (typeof ngJitMode === "undefined" || ngJitMode) && _angular_core__WEBPACK_IMPORTED_MODULE_3__["ɵɵsetNgModuleScope"](_MatMenuDirectivesModule, { declarations: function () { return [MatMenuTrigger, MatMenuContent]; }, exports: function () { return [MatMenuTrigger, MatMenuContent, _angular_material_core__WEBPACK_IMPORTED_MODULE_9__["MatCommonModule"]]; } }); })();
+/*@__PURE__*/ (function () { _angular_core__WEBPACK_IMPORTED_MODULE_3__["ɵsetClassMetadata"](_MatMenuDirectivesModule, [{
+        type: _angular_core__WEBPACK_IMPORTED_MODULE_3__["NgModule"],
+        args: [{
+                exports: [MatMenuTrigger, MatMenuContent, _angular_material_core__WEBPACK_IMPORTED_MODULE_9__["MatCommonModule"]],
+                declarations: [
+                    MatMenuTrigger,
+                    MatMenuContent,
+                ],
+                providers: [MAT_MENU_SCROLL_STRATEGY_FACTORY_PROVIDER]
+            }]
+    }], null, null); })();
+class MatMenuModule {
+}
+MatMenuModule.ɵmod = _angular_core__WEBPACK_IMPORTED_MODULE_3__["ɵɵdefineNgModule"]({ type: MatMenuModule });
+MatMenuModule.ɵinj = _angular_core__WEBPACK_IMPORTED_MODULE_3__["ɵɵdefineInjector"]({ factory: function MatMenuModule_Factory(t) { return new (t || MatMenuModule)(); }, providers: [MAT_MENU_SCROLL_STRATEGY_FACTORY_PROVIDER], imports: [[
+            _angular_common__WEBPACK_IMPORTED_MODULE_8__["CommonModule"],
+            _angular_material_core__WEBPACK_IMPORTED_MODULE_9__["MatCommonModule"],
+            _angular_material_core__WEBPACK_IMPORTED_MODULE_9__["MatRippleModule"],
+            _angular_cdk_overlay__WEBPACK_IMPORTED_MODULE_11__["OverlayModule"],
+            _MatMenuDirectivesModule,
+        ], _angular_cdk_scrolling__WEBPACK_IMPORTED_MODULE_13__["CdkScrollableModule"], _angular_material_core__WEBPACK_IMPORTED_MODULE_9__["MatCommonModule"], _MatMenuDirectivesModule] });
+(function () { (typeof ngJitMode === "undefined" || ngJitMode) && _angular_core__WEBPACK_IMPORTED_MODULE_3__["ɵɵsetNgModuleScope"](MatMenuModule, { declarations: function () { return [_MatMenu, MatMenuItem]; }, imports: function () { return [_angular_common__WEBPACK_IMPORTED_MODULE_8__["CommonModule"],
+        _angular_material_core__WEBPACK_IMPORTED_MODULE_9__["MatCommonModule"],
+        _angular_material_core__WEBPACK_IMPORTED_MODULE_9__["MatRippleModule"],
+        _angular_cdk_overlay__WEBPACK_IMPORTED_MODULE_11__["OverlayModule"], _MatMenuDirectivesModule]; }, exports: function () { return [_angular_cdk_scrolling__WEBPACK_IMPORTED_MODULE_13__["CdkScrollableModule"], _angular_material_core__WEBPACK_IMPORTED_MODULE_9__["MatCommonModule"], _MatMenu, MatMenuItem, _MatMenuDirectivesModule]; } }); })();
+/*@__PURE__*/ (function () { _angular_core__WEBPACK_IMPORTED_MODULE_3__["ɵsetClassMetadata"](MatMenuModule, [{
+        type: _angular_core__WEBPACK_IMPORTED_MODULE_3__["NgModule"],
+        args: [{
+                imports: [
+                    _angular_common__WEBPACK_IMPORTED_MODULE_8__["CommonModule"],
+                    _angular_material_core__WEBPACK_IMPORTED_MODULE_9__["MatCommonModule"],
+                    _angular_material_core__WEBPACK_IMPORTED_MODULE_9__["MatRippleModule"],
+                    _angular_cdk_overlay__WEBPACK_IMPORTED_MODULE_11__["OverlayModule"],
+                    _MatMenuDirectivesModule,
+                ],
+                exports: [_angular_cdk_scrolling__WEBPACK_IMPORTED_MODULE_13__["CdkScrollableModule"], _angular_material_core__WEBPACK_IMPORTED_MODULE_9__["MatCommonModule"], _MatMenu, MatMenuItem, _MatMenuDirectivesModule],
+                declarations: [_MatMenu, MatMenuItem],
+                providers: [MAT_MENU_SCROLL_STRATEGY_FACTORY_PROVIDER]
+            }]
+    }], null, null); })();
+
+/**
+ * @license
+ * Copyright Google LLC All Rights Reserved.
+ *
+ * Use of this source code is governed by an MIT-style license that can be
+ * found in the LICENSE file at https://angular.io/license
+ */
+
+/**
+ * @license
+ * Copyright Google LLC All Rights Reserved.
+ *
+ * Use of this source code is governed by an MIT-style license that can be
+ * found in the LICENSE file at https://angular.io/license
+ */
+
+/**
+ * Generated bundle index. Do not edit.
+ */
+
+
+
+//# sourceMappingURL=menu.js.map
 
 /***/ }),
 
@@ -62396,6 +70390,6815 @@ const VERSION = new _angular_core__WEBPACK_IMPORTED_MODULE_1__["Version"]('10.0.
 
 /***/ }),
 
+/***/ "./node_modules/@firebase/app/dist/index.cjs.js":
+/*!******************************************************!*\
+  !*** ./node_modules/@firebase/app/dist/index.cjs.js ***!
+  \******************************************************/
+/*! no static exports found */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+
+Object.defineProperty(exports, '__esModule', { value: true });
+
+var tslib = __webpack_require__(/*! tslib */ "./node_modules/@firebase/storage/node_modules/tslib/tslib.es6.js");
+var util = __webpack_require__(/*! @firebase/util */ "./node_modules/@firebase/util/dist/index.cjs.js");
+var component = __webpack_require__(/*! @firebase/component */ "./node_modules/@firebase/component/dist/index.cjs.js");
+var logger$1 = __webpack_require__(/*! @firebase/logger */ "./node_modules/@firebase/logger/dist/index.esm.js");
+
+/**
+ * @license
+ * Copyright 2019 Google LLC
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+var _a;
+var ERRORS = (_a = {},
+    _a["no-app" /* NO_APP */] = "No Firebase App '{$appName}' has been created - " +
+        'call Firebase App.initializeApp()',
+    _a["bad-app-name" /* BAD_APP_NAME */] = "Illegal App name: '{$appName}",
+    _a["duplicate-app" /* DUPLICATE_APP */] = "Firebase App named '{$appName}' already exists",
+    _a["app-deleted" /* APP_DELETED */] = "Firebase App named '{$appName}' already deleted",
+    _a["invalid-app-argument" /* INVALID_APP_ARGUMENT */] = 'firebase.{$appName}() takes either no argument or a ' +
+        'Firebase App instance.',
+    _a["invalid-log-argument" /* INVALID_LOG_ARGUMENT */] = 'First argument to `onLog` must be null or a function.',
+    _a);
+var ERROR_FACTORY = new util.ErrorFactory('app', 'Firebase', ERRORS);
+
+var name$1 = "@firebase/app";
+var version = "0.6.9";
+
+var name$2 = "@firebase/analytics";
+
+var name$3 = "@firebase/auth";
+
+var name$4 = "@firebase/database";
+
+var name$5 = "@firebase/functions";
+
+var name$6 = "@firebase/installations";
+
+var name$7 = "@firebase/messaging";
+
+var name$8 = "@firebase/performance";
+
+var name$9 = "@firebase/remote-config";
+
+var name$a = "@firebase/storage";
+
+var name$b = "@firebase/firestore";
+
+var name$c = "firebase-wrapper";
+
+/**
+ * @license
+ * Copyright 2019 Google LLC
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+var _a$1;
+var DEFAULT_ENTRY_NAME = '[DEFAULT]';
+var PLATFORM_LOG_STRING = (_a$1 = {},
+    _a$1[name$1] = 'fire-core',
+    _a$1[name$2] = 'fire-analytics',
+    _a$1[name$3] = 'fire-auth',
+    _a$1[name$4] = 'fire-rtdb',
+    _a$1[name$5] = 'fire-fn',
+    _a$1[name$6] = 'fire-iid',
+    _a$1[name$7] = 'fire-fcm',
+    _a$1[name$8] = 'fire-perf',
+    _a$1[name$9] = 'fire-rc',
+    _a$1[name$a] = 'fire-gcs',
+    _a$1[name$b] = 'fire-fst',
+    _a$1['fire-js'] = 'fire-js',
+    _a$1[name$c] = 'fire-js-all',
+    _a$1);
+
+/**
+ * @license
+ * Copyright 2019 Google LLC
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+var logger = new logger$1.Logger('@firebase/app');
+
+/**
+ * @license
+ * Copyright 2017 Google LLC
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+/**
+ * Global context object for a collection of services using
+ * a shared authentication state.
+ */
+var FirebaseAppImpl = /** @class */ (function () {
+    function FirebaseAppImpl(options, config, firebase_) {
+        var e_1, _a;
+        var _this = this;
+        this.firebase_ = firebase_;
+        this.isDeleted_ = false;
+        this.name_ = config.name;
+        this.automaticDataCollectionEnabled_ =
+            config.automaticDataCollectionEnabled || false;
+        this.options_ = util.deepCopy(options);
+        this.container = new component.ComponentContainer(config.name);
+        // add itself to container
+        this._addComponent(new component.Component('app', function () { return _this; }, "PUBLIC" /* PUBLIC */));
+        try {
+            // populate ComponentContainer with existing components
+            for (var _b = tslib.__values(this.firebase_.INTERNAL.components.values()), _c = _b.next(); !_c.done; _c = _b.next()) {
+                var component$1 = _c.value;
+                this._addComponent(component$1);
+            }
+        }
+        catch (e_1_1) { e_1 = { error: e_1_1 }; }
+        finally {
+            try {
+                if (_c && !_c.done && (_a = _b.return)) _a.call(_b);
+            }
+            finally { if (e_1) throw e_1.error; }
+        }
+    }
+    Object.defineProperty(FirebaseAppImpl.prototype, "automaticDataCollectionEnabled", {
+        get: function () {
+            this.checkDestroyed_();
+            return this.automaticDataCollectionEnabled_;
+        },
+        set: function (val) {
+            this.checkDestroyed_();
+            this.automaticDataCollectionEnabled_ = val;
+        },
+        enumerable: false,
+        configurable: true
+    });
+    Object.defineProperty(FirebaseAppImpl.prototype, "name", {
+        get: function () {
+            this.checkDestroyed_();
+            return this.name_;
+        },
+        enumerable: false,
+        configurable: true
+    });
+    Object.defineProperty(FirebaseAppImpl.prototype, "options", {
+        get: function () {
+            this.checkDestroyed_();
+            return this.options_;
+        },
+        enumerable: false,
+        configurable: true
+    });
+    FirebaseAppImpl.prototype.delete = function () {
+        var _this = this;
+        return new Promise(function (resolve) {
+            _this.checkDestroyed_();
+            resolve();
+        })
+            .then(function () {
+            _this.firebase_.INTERNAL.removeApp(_this.name_);
+            return Promise.all(_this.container.getProviders().map(function (provider) { return provider.delete(); }));
+        })
+            .then(function () {
+            _this.isDeleted_ = true;
+        });
+    };
+    /**
+     * Return a service instance associated with this app (creating it
+     * on demand), identified by the passed instanceIdentifier.
+     *
+     * NOTE: Currently storage and functions are the only ones that are leveraging this
+     * functionality. They invoke it by calling:
+     *
+     * ```javascript
+     * firebase.app().storage('STORAGE BUCKET ID')
+     * ```
+     *
+     * The service name is passed to this already
+     * @internal
+     */
+    FirebaseAppImpl.prototype._getService = function (name, instanceIdentifier) {
+        if (instanceIdentifier === void 0) { instanceIdentifier = DEFAULT_ENTRY_NAME; }
+        this.checkDestroyed_();
+        // getImmediate will always succeed because _getService is only called for registered components.
+        return this.container.getProvider(name).getImmediate({
+            identifier: instanceIdentifier
+        });
+    };
+    /**
+     * Remove a service instance from the cache, so we will create a new instance for this service
+     * when people try to get this service again.
+     *
+     * NOTE: currently only firestore is using this functionality to support firestore shutdown.
+     *
+     * @param name The service name
+     * @param instanceIdentifier instance identifier in case multiple instances are allowed
+     * @internal
+     */
+    FirebaseAppImpl.prototype._removeServiceInstance = function (name, instanceIdentifier) {
+        if (instanceIdentifier === void 0) { instanceIdentifier = DEFAULT_ENTRY_NAME; }
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        this.container.getProvider(name).clearInstance(instanceIdentifier);
+    };
+    /**
+     * @param component the component being added to this app's container
+     */
+    FirebaseAppImpl.prototype._addComponent = function (component) {
+        try {
+            this.container.addComponent(component);
+        }
+        catch (e) {
+            logger.debug("Component " + component.name + " failed to register with FirebaseApp " + this.name, e);
+        }
+    };
+    FirebaseAppImpl.prototype._addOrOverwriteComponent = function (component) {
+        this.container.addOrOverwriteComponent(component);
+    };
+    /**
+     * This function will throw an Error if the App has already been deleted -
+     * use before performing API actions on the App.
+     */
+    FirebaseAppImpl.prototype.checkDestroyed_ = function () {
+        if (this.isDeleted_) {
+            throw ERROR_FACTORY.create("app-deleted" /* APP_DELETED */, { appName: this.name_ });
+        }
+    };
+    return FirebaseAppImpl;
+}());
+// Prevent dead-code elimination of these methods w/o invalid property
+// copying.
+(FirebaseAppImpl.prototype.name && FirebaseAppImpl.prototype.options) ||
+    FirebaseAppImpl.prototype.delete ||
+    console.log('dc');
+
+var version$1 = "7.17.1";
+
+/**
+ * @license
+ * Copyright 2019 Google LLC
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+/**
+ * Because auth can't share code with other components, we attach the utility functions
+ * in an internal namespace to share code.
+ * This function return a firebase namespace object without
+ * any utility functions, so it can be shared between the regular firebaseNamespace and
+ * the lite version.
+ */
+function createFirebaseNamespaceCore(firebaseAppImpl) {
+    var apps = {};
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    var components = new Map();
+    // A namespace is a plain JavaScript Object.
+    var namespace = {
+        // Hack to prevent Babel from modifying the object returned
+        // as the firebase namespace.
+        // @ts-ignore
+        __esModule: true,
+        initializeApp: initializeApp,
+        // @ts-ignore
+        app: app,
+        registerVersion: registerVersion,
+        setLogLevel: logger$1.setLogLevel,
+        onLog: onLog,
+        // @ts-ignore
+        apps: null,
+        SDK_VERSION: version$1,
+        INTERNAL: {
+            registerComponent: registerComponent,
+            removeApp: removeApp,
+            components: components,
+            useAsService: useAsService
+        }
+    };
+    // Inject a circular default export to allow Babel users who were previously
+    // using:
+    //
+    //   import firebase from 'firebase';
+    //   which becomes: var firebase = require('firebase').default;
+    //
+    // instead of
+    //
+    //   import * as firebase from 'firebase';
+    //   which becomes: var firebase = require('firebase');
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    namespace['default'] = namespace;
+    // firebase.apps is a read-only getter.
+    Object.defineProperty(namespace, 'apps', {
+        get: getApps
+    });
+    /**
+     * Called by App.delete() - but before any services associated with the App
+     * are deleted.
+     */
+    function removeApp(name) {
+        delete apps[name];
+    }
+    /**
+     * Get the App object for a given name (or DEFAULT).
+     */
+    function app(name) {
+        name = name || DEFAULT_ENTRY_NAME;
+        if (!util.contains(apps, name)) {
+            throw ERROR_FACTORY.create("no-app" /* NO_APP */, { appName: name });
+        }
+        return apps[name];
+    }
+    // @ts-ignore
+    app['App'] = firebaseAppImpl;
+    function initializeApp(options, rawConfig) {
+        if (rawConfig === void 0) { rawConfig = {}; }
+        if (typeof rawConfig !== 'object' || rawConfig === null) {
+            var name_1 = rawConfig;
+            rawConfig = { name: name_1 };
+        }
+        var config = rawConfig;
+        if (config.name === undefined) {
+            config.name = DEFAULT_ENTRY_NAME;
+        }
+        var name = config.name;
+        if (typeof name !== 'string' || !name) {
+            throw ERROR_FACTORY.create("bad-app-name" /* BAD_APP_NAME */, {
+                appName: String(name)
+            });
+        }
+        if (util.contains(apps, name)) {
+            throw ERROR_FACTORY.create("duplicate-app" /* DUPLICATE_APP */, { appName: name });
+        }
+        var app = new firebaseAppImpl(options, config, namespace);
+        apps[name] = app;
+        return app;
+    }
+    /*
+     * Return an array of all the non-deleted FirebaseApps.
+     */
+    function getApps() {
+        // Make a copy so caller cannot mutate the apps list.
+        return Object.keys(apps).map(function (name) { return apps[name]; });
+    }
+    function registerComponent(component) {
+        var e_1, _a;
+        var componentName = component.name;
+        if (components.has(componentName)) {
+            logger.debug("There were multiple attempts to register component " + componentName + ".");
+            return component.type === "PUBLIC" /* PUBLIC */
+                ? // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                    namespace[componentName]
+                : null;
+        }
+        components.set(componentName, component);
+        // create service namespace for public components
+        if (component.type === "PUBLIC" /* PUBLIC */) {
+            // The Service namespace is an accessor function ...
+            var serviceNamespace = function (appArg) {
+                if (appArg === void 0) { appArg = app(); }
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                if (typeof appArg[componentName] !== 'function') {
+                    // Invalid argument.
+                    // This happens in the following case: firebase.storage('gs:/')
+                    throw ERROR_FACTORY.create("invalid-app-argument" /* INVALID_APP_ARGUMENT */, {
+                        appName: componentName
+                    });
+                }
+                // Forward service instance lookup to the FirebaseApp.
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                return appArg[componentName]();
+            };
+            // ... and a container for service-level properties.
+            if (component.serviceProps !== undefined) {
+                util.deepExtend(serviceNamespace, component.serviceProps);
+            }
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            namespace[componentName] = serviceNamespace;
+            // Patch the FirebaseAppImpl prototype
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            firebaseAppImpl.prototype[componentName] =
+                // TODO: The eslint disable can be removed and the 'ignoreRestArgs'
+                // option added to the no-explicit-any rule when ESlint releases it.
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                function () {
+                    var args = [];
+                    for (var _i = 0; _i < arguments.length; _i++) {
+                        args[_i] = arguments[_i];
+                    }
+                    var serviceFxn = this._getService.bind(this, componentName);
+                    return serviceFxn.apply(this, component.multipleInstances ? args : []);
+                };
+        }
+        try {
+            // add the component to existing app instances
+            for (var _b = tslib.__values(Object.keys(apps)), _c = _b.next(); !_c.done; _c = _b.next()) {
+                var appName = _c.value;
+                apps[appName]._addComponent(component);
+            }
+        }
+        catch (e_1_1) { e_1 = { error: e_1_1 }; }
+        finally {
+            try {
+                if (_c && !_c.done && (_a = _b.return)) _a.call(_b);
+            }
+            finally { if (e_1) throw e_1.error; }
+        }
+        return component.type === "PUBLIC" /* PUBLIC */
+            ? // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                namespace[componentName]
+            : null;
+    }
+    function registerVersion(libraryKeyOrName, version, variant) {
+        var _a;
+        // TODO: We can use this check to whitelist strings when/if we set up
+        // a good whitelist system.
+        var library = (_a = PLATFORM_LOG_STRING[libraryKeyOrName]) !== null && _a !== void 0 ? _a : libraryKeyOrName;
+        if (variant) {
+            library += "-" + variant;
+        }
+        var libraryMismatch = library.match(/\s|\//);
+        var versionMismatch = version.match(/\s|\//);
+        if (libraryMismatch || versionMismatch) {
+            var warning = [
+                "Unable to register library \"" + library + "\" with version \"" + version + "\":"
+            ];
+            if (libraryMismatch) {
+                warning.push("library name \"" + library + "\" contains illegal characters (whitespace or \"/\")");
+            }
+            if (libraryMismatch && versionMismatch) {
+                warning.push('and');
+            }
+            if (versionMismatch) {
+                warning.push("version name \"" + version + "\" contains illegal characters (whitespace or \"/\")");
+            }
+            logger.warn(warning.join(' '));
+            return;
+        }
+        registerComponent(new component.Component(library + "-version", function () { return ({ library: library, version: version }); }, "VERSION" /* VERSION */));
+    }
+    function onLog(logCallback, options) {
+        if (logCallback !== null && typeof logCallback !== 'function') {
+            throw ERROR_FACTORY.create("invalid-log-argument" /* INVALID_LOG_ARGUMENT */, {
+                appName: name
+            });
+        }
+        logger$1.setUserLogHandler(logCallback, options);
+    }
+    // Map the requested service to a registered service name
+    // (used to map auth to serverAuth service when needed).
+    function useAsService(app, name) {
+        if (name === 'serverAuth') {
+            return null;
+        }
+        var useService = name;
+        return useService;
+    }
+    return namespace;
+}
+
+/**
+ * @license
+ * Copyright 2019 Google LLC
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+/**
+ * Return a firebase namespace object.
+ *
+ * In production, this will be called exactly once and the result
+ * assigned to the 'firebase' global.  It may be called multiple times
+ * in unit tests.
+ */
+function createFirebaseNamespace() {
+    var namespace = createFirebaseNamespaceCore(FirebaseAppImpl);
+    namespace.INTERNAL = tslib.__assign(tslib.__assign({}, namespace.INTERNAL), { createFirebaseNamespace: createFirebaseNamespace,
+        extendNamespace: extendNamespace,
+        createSubscribe: util.createSubscribe,
+        ErrorFactory: util.ErrorFactory,
+        deepExtend: util.deepExtend });
+    /**
+     * Patch the top-level firebase namespace with additional properties.
+     *
+     * firebase.INTERNAL.extendNamespace()
+     */
+    function extendNamespace(props) {
+        util.deepExtend(namespace, props);
+    }
+    return namespace;
+}
+var firebase = createFirebaseNamespace();
+
+/**
+ * @license
+ * Copyright 2019 Google LLC
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+var PlatformLoggerService = /** @class */ (function () {
+    function PlatformLoggerService(container) {
+        this.container = container;
+    }
+    // In initial implementation, this will be called by installations on
+    // auth token refresh, and installations will send this string.
+    PlatformLoggerService.prototype.getPlatformInfoString = function () {
+        var providers = this.container.getProviders();
+        // Loop through providers and get library/version pairs from any that are
+        // version components.
+        return providers
+            .map(function (provider) {
+            if (isVersionServiceProvider(provider)) {
+                var service = provider.getImmediate();
+                return service.library + "/" + service.version;
+            }
+            else {
+                return null;
+            }
+        })
+            .filter(function (logString) { return logString; })
+            .join(' ');
+    };
+    return PlatformLoggerService;
+}());
+/**
+ *
+ * @param provider check if this provider provides a VersionService
+ *
+ * NOTE: Using Provider<'app-version'> is a hack to indicate that the provider
+ * provides VersionService. The provider is not necessarily a 'app-version'
+ * provider.
+ */
+function isVersionServiceProvider(provider) {
+    var component = provider.getComponent();
+    return (component === null || component === void 0 ? void 0 : component.type) === "VERSION" /* VERSION */;
+}
+
+/**
+ * @license
+ * Copyright 2019 Google LLC
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+function registerCoreComponents(firebase, variant) {
+    firebase.INTERNAL.registerComponent(new component.Component('platform-logger', function (container) { return new PlatformLoggerService(container); }, "PRIVATE" /* PRIVATE */));
+    // Register `app` package.
+    firebase.registerVersion(name$1, version, variant);
+    // Register platform SDK identifier (no version).
+    firebase.registerVersion('fire-js', '');
+}
+
+/**
+ * @license
+ * Copyright 2017 Google LLC
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+// Firebase Lite detection test
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+if (util.isBrowser() && self.firebase !== undefined) {
+    logger.warn("\n    Warning: Firebase is already defined in the global scope. Please make sure\n    Firebase library is only loaded once.\n  ");
+    // eslint-disable-next-line
+    var sdkVersion = self.firebase.SDK_VERSION;
+    if (sdkVersion && sdkVersion.indexOf('LITE') >= 0) {
+        logger.warn("\n    Warning: You are trying to load Firebase while using Firebase Performance standalone script.\n    You should load Firebase Performance with this instance of Firebase to avoid loading duplicate code.\n    ");
+    }
+}
+var initializeApp = firebase.initializeApp;
+// TODO: This disable can be removed and the 'ignoreRestArgs' option added to
+// the no-explicit-any rule when ESlint releases it.
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+firebase.initializeApp = function () {
+    var args = [];
+    for (var _i = 0; _i < arguments.length; _i++) {
+        args[_i] = arguments[_i];
+    }
+    // Environment check before initializing app
+    // Do the check in initializeApp, so people have a chance to disable it by setting logLevel
+    // in @firebase/logger
+    if (util.isNode()) {
+        logger.warn("\n      Warning: This is a browser-targeted Firebase bundle but it appears it is being\n      run in a Node environment.  If running in a Node environment, make sure you\n      are using the bundle specified by the \"main\" field in package.json.\n      \n      If you are using Webpack, you can specify \"main\" as the first item in\n      \"resolve.mainFields\":\n      https://webpack.js.org/configuration/resolve/#resolvemainfields\n      \n      If using Rollup, use the rollup-plugin-node-resolve plugin and specify \"main\"\n      as the first item in \"mainFields\", e.g. ['main', 'module'].\n      https://github.com/rollup/rollup-plugin-node-resolve\n      ");
+    }
+    return initializeApp.apply(undefined, args);
+};
+var firebase$1 = firebase;
+registerCoreComponents(firebase$1);
+
+exports.default = firebase$1;
+exports.firebase = firebase$1;
+//# sourceMappingURL=index.cjs.js.map
+
+
+/***/ }),
+
+/***/ "./node_modules/@firebase/component/dist/index.cjs.js":
+/*!************************************************************!*\
+  !*** ./node_modules/@firebase/component/dist/index.cjs.js ***!
+  \************************************************************/
+/*! no static exports found */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+
+Object.defineProperty(exports, '__esModule', { value: true });
+
+var tslib = __webpack_require__(/*! tslib */ "./node_modules/@firebase/storage/node_modules/tslib/tslib.es6.js");
+var util = __webpack_require__(/*! @firebase/util */ "./node_modules/@firebase/util/dist/index.cjs.js");
+
+/**
+ * Component for service name T, e.g. `auth`, `auth-internal`
+ */
+var Component = /** @class */ (function () {
+    /**
+     *
+     * @param name The public service name, e.g. app, auth, firestore, database
+     * @param instanceFactory Service factory responsible for creating the public interface
+     * @param type whether the service provided by the component is public or private
+     */
+    function Component(name, instanceFactory, type) {
+        this.name = name;
+        this.instanceFactory = instanceFactory;
+        this.type = type;
+        this.multipleInstances = false;
+        /**
+         * Properties to be added to the service namespace
+         */
+        this.serviceProps = {};
+        this.instantiationMode = "LAZY" /* LAZY */;
+    }
+    Component.prototype.setInstantiationMode = function (mode) {
+        this.instantiationMode = mode;
+        return this;
+    };
+    Component.prototype.setMultipleInstances = function (multipleInstances) {
+        this.multipleInstances = multipleInstances;
+        return this;
+    };
+    Component.prototype.setServiceProps = function (props) {
+        this.serviceProps = props;
+        return this;
+    };
+    return Component;
+}());
+
+/**
+ * @license
+ * Copyright 2019 Google LLC
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+var DEFAULT_ENTRY_NAME = '[DEFAULT]';
+
+/**
+ * @license
+ * Copyright 2019 Google LLC
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+/**
+ * Provider for instance for service name T, e.g. 'auth', 'auth-internal'
+ * NameServiceMapping[T] is an alias for the type of the instance
+ */
+var Provider = /** @class */ (function () {
+    function Provider(name, container) {
+        this.name = name;
+        this.container = container;
+        this.component = null;
+        this.instances = new Map();
+        this.instancesDeferred = new Map();
+    }
+    /**
+     * @param identifier A provider can provide mulitple instances of a service
+     * if this.component.multipleInstances is true.
+     */
+    Provider.prototype.get = function (identifier) {
+        if (identifier === void 0) { identifier = DEFAULT_ENTRY_NAME; }
+        // if multipleInstances is not supported, use the default name
+        var normalizedIdentifier = this.normalizeInstanceIdentifier(identifier);
+        if (!this.instancesDeferred.has(normalizedIdentifier)) {
+            var deferred = new util.Deferred();
+            this.instancesDeferred.set(normalizedIdentifier, deferred);
+            // If the service instance is available, resolve the promise with it immediately
+            try {
+                var instance = this.getOrInitializeService(normalizedIdentifier);
+                if (instance) {
+                    deferred.resolve(instance);
+                }
+            }
+            catch (e) {
+                // when the instance factory throws an exception during get(), it should not cause
+                // a fatal error. We just return the unresolved promise in this case.
+            }
+        }
+        return this.instancesDeferred.get(normalizedIdentifier).promise;
+    };
+    Provider.prototype.getImmediate = function (options) {
+        var _a = tslib.__assign({ identifier: DEFAULT_ENTRY_NAME, optional: false }, options), identifier = _a.identifier, optional = _a.optional;
+        // if multipleInstances is not supported, use the default name
+        var normalizedIdentifier = this.normalizeInstanceIdentifier(identifier);
+        try {
+            var instance = this.getOrInitializeService(normalizedIdentifier);
+            if (!instance) {
+                if (optional) {
+                    return null;
+                }
+                throw Error("Service " + this.name + " is not available");
+            }
+            return instance;
+        }
+        catch (e) {
+            if (optional) {
+                return null;
+            }
+            else {
+                throw e;
+            }
+        }
+    };
+    Provider.prototype.getComponent = function () {
+        return this.component;
+    };
+    Provider.prototype.setComponent = function (component) {
+        var e_1, _a;
+        if (component.name !== this.name) {
+            throw Error("Mismatching Component " + component.name + " for Provider " + this.name + ".");
+        }
+        if (this.component) {
+            throw Error("Component for " + this.name + " has already been provided");
+        }
+        this.component = component;
+        // if the service is eager, initialize the default instance
+        if (isComponentEager(component)) {
+            try {
+                this.getOrInitializeService(DEFAULT_ENTRY_NAME);
+            }
+            catch (e) {
+                // when the instance factory for an eager Component throws an exception during the eager
+                // initialization, it should not cause a fatal error.
+                // TODO: Investigate if we need to make it configurable, because some component may want to cause
+                // a fatal error in this case?
+            }
+        }
+        try {
+            // Create service instances for the pending promises and resolve them
+            // NOTE: if this.multipleInstances is false, only the default instance will be created
+            // and all promises with resolve with it regardless of the identifier.
+            for (var _b = tslib.__values(this.instancesDeferred.entries()), _c = _b.next(); !_c.done; _c = _b.next()) {
+                var _d = tslib.__read(_c.value, 2), instanceIdentifier = _d[0], instanceDeferred = _d[1];
+                var normalizedIdentifier = this.normalizeInstanceIdentifier(instanceIdentifier);
+                try {
+                    // `getOrInitializeService()` should always return a valid instance since a component is guaranteed. use ! to make typescript happy.
+                    var instance = this.getOrInitializeService(normalizedIdentifier);
+                    instanceDeferred.resolve(instance);
+                }
+                catch (e) {
+                    // when the instance factory throws an exception, it should not cause
+                    // a fatal error. We just leave the promise unresolved.
+                }
+            }
+        }
+        catch (e_1_1) { e_1 = { error: e_1_1 }; }
+        finally {
+            try {
+                if (_c && !_c.done && (_a = _b.return)) _a.call(_b);
+            }
+            finally { if (e_1) throw e_1.error; }
+        }
+    };
+    Provider.prototype.clearInstance = function (identifier) {
+        if (identifier === void 0) { identifier = DEFAULT_ENTRY_NAME; }
+        this.instancesDeferred.delete(identifier);
+        this.instances.delete(identifier);
+    };
+    // app.delete() will call this method on every provider to delete the services
+    // TODO: should we mark the provider as deleted?
+    Provider.prototype.delete = function () {
+        return tslib.__awaiter(this, void 0, void 0, function () {
+            var services;
+            return tslib.__generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0:
+                        services = Array.from(this.instances.values());
+                        return [4 /*yield*/, Promise.all(services
+                                .filter(function (service) { return 'INTERNAL' in service; })
+                                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                                .map(function (service) { return service.INTERNAL.delete(); }))];
+                    case 1:
+                        _a.sent();
+                        return [2 /*return*/];
+                }
+            });
+        });
+    };
+    Provider.prototype.isComponentSet = function () {
+        return this.component != null;
+    };
+    Provider.prototype.getOrInitializeService = function (identifier) {
+        var instance = this.instances.get(identifier);
+        if (!instance && this.component) {
+            instance = this.component.instanceFactory(this.container, normalizeIdentifierForFactory(identifier));
+            this.instances.set(identifier, instance);
+        }
+        return instance || null;
+    };
+    Provider.prototype.normalizeInstanceIdentifier = function (identifier) {
+        if (this.component) {
+            return this.component.multipleInstances ? identifier : DEFAULT_ENTRY_NAME;
+        }
+        else {
+            return identifier; // assume multiple instances are supported before the component is provided.
+        }
+    };
+    return Provider;
+}());
+// undefined should be passed to the service factory for the default instance
+function normalizeIdentifierForFactory(identifier) {
+    return identifier === DEFAULT_ENTRY_NAME ? undefined : identifier;
+}
+function isComponentEager(component) {
+    return component.instantiationMode === "EAGER" /* EAGER */;
+}
+
+/**
+ * @license
+ * Copyright 2019 Google LLC
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+/**
+ * ComponentContainer that provides Providers for service name T, e.g. `auth`, `auth-internal`
+ */
+var ComponentContainer = /** @class */ (function () {
+    function ComponentContainer(name) {
+        this.name = name;
+        this.providers = new Map();
+    }
+    /**
+     *
+     * @param component Component being added
+     * @param overwrite When a component with the same name has already been registered,
+     * if overwrite is true: overwrite the existing component with the new component and create a new
+     * provider with the new component. It can be useful in tests where you want to use different mocks
+     * for different tests.
+     * if overwrite is false: throw an exception
+     */
+    ComponentContainer.prototype.addComponent = function (component) {
+        var provider = this.getProvider(component.name);
+        if (provider.isComponentSet()) {
+            throw new Error("Component " + component.name + " has already been registered with " + this.name);
+        }
+        provider.setComponent(component);
+    };
+    ComponentContainer.prototype.addOrOverwriteComponent = function (component) {
+        var provider = this.getProvider(component.name);
+        if (provider.isComponentSet()) {
+            // delete the existing provider from the container, so we can register the new component
+            this.providers.delete(component.name);
+        }
+        this.addComponent(component);
+    };
+    /**
+     * getProvider provides a type safe interface where it can only be called with a field name
+     * present in NameServiceMapping interface.
+     *
+     * Firebase SDKs providing services should extend NameServiceMapping interface to register
+     * themselves.
+     */
+    ComponentContainer.prototype.getProvider = function (name) {
+        if (this.providers.has(name)) {
+            return this.providers.get(name);
+        }
+        // create a Provider for a service that hasn't registered with Firebase
+        var provider = new Provider(name, this);
+        this.providers.set(name, provider);
+        return provider;
+    };
+    ComponentContainer.prototype.getProviders = function () {
+        return Array.from(this.providers.values());
+    };
+    return ComponentContainer;
+}());
+
+exports.Component = Component;
+exports.ComponentContainer = ComponentContainer;
+exports.Provider = Provider;
+//# sourceMappingURL=index.cjs.js.map
+
+
+/***/ }),
+
+/***/ "./node_modules/@firebase/logger/dist/index.esm.js":
+/*!*********************************************************!*\
+  !*** ./node_modules/@firebase/logger/dist/index.esm.js ***!
+  \*********************************************************/
+/*! exports provided: LogLevel, Logger, setLogLevel, setUserLogHandler */
+/***/ (function(module, __webpack_exports__, __webpack_require__) {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "LogLevel", function() { return LogLevel; });
+/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "Logger", function() { return Logger; });
+/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "setLogLevel", function() { return setLogLevel; });
+/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "setUserLogHandler", function() { return setUserLogHandler; });
+/*! *****************************************************************************
+Copyright (c) Microsoft Corporation. All rights reserved.
+Licensed under the Apache License, Version 2.0 (the "License"); you may not use
+this file except in compliance with the License. You may obtain a copy of the
+License at http://www.apache.org/licenses/LICENSE-2.0
+
+THIS CODE IS PROVIDED ON AN *AS IS* BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+KIND, EITHER EXPRESS OR IMPLIED, INCLUDING WITHOUT LIMITATION ANY IMPLIED
+WARRANTIES OR CONDITIONS OF TITLE, FITNESS FOR A PARTICULAR PURPOSE,
+MERCHANTABLITY OR NON-INFRINGEMENT.
+
+See the Apache Version 2.0 License for specific language governing permissions
+and limitations under the License.
+***************************************************************************** */
+
+function __spreadArrays() {
+    for (var s = 0, i = 0, il = arguments.length; i < il; i++) s += arguments[i].length;
+    for (var r = Array(s), k = 0, i = 0; i < il; i++)
+        for (var a = arguments[i], j = 0, jl = a.length; j < jl; j++, k++)
+            r[k] = a[j];
+    return r;
+}
+
+/**
+ * @license
+ * Copyright 2017 Google LLC
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+var _a;
+/**
+ * A container for all of the Logger instances
+ */
+var instances = [];
+/**
+ * The JS SDK supports 5 log levels and also allows a user the ability to
+ * silence the logs altogether.
+ *
+ * The order is a follows:
+ * DEBUG < VERBOSE < INFO < WARN < ERROR
+ *
+ * All of the log types above the current log level will be captured (i.e. if
+ * you set the log level to `INFO`, errors will still be logged, but `DEBUG` and
+ * `VERBOSE` logs will not)
+ */
+var LogLevel;
+(function (LogLevel) {
+    LogLevel[LogLevel["DEBUG"] = 0] = "DEBUG";
+    LogLevel[LogLevel["VERBOSE"] = 1] = "VERBOSE";
+    LogLevel[LogLevel["INFO"] = 2] = "INFO";
+    LogLevel[LogLevel["WARN"] = 3] = "WARN";
+    LogLevel[LogLevel["ERROR"] = 4] = "ERROR";
+    LogLevel[LogLevel["SILENT"] = 5] = "SILENT";
+})(LogLevel || (LogLevel = {}));
+var levelStringToEnum = {
+    'debug': LogLevel.DEBUG,
+    'verbose': LogLevel.VERBOSE,
+    'info': LogLevel.INFO,
+    'warn': LogLevel.WARN,
+    'error': LogLevel.ERROR,
+    'silent': LogLevel.SILENT
+};
+/**
+ * The default log level
+ */
+var defaultLogLevel = LogLevel.INFO;
+/**
+ * By default, `console.debug` is not displayed in the developer console (in
+ * chrome). To avoid forcing users to have to opt-in to these logs twice
+ * (i.e. once for firebase, and once in the console), we are sending `DEBUG`
+ * logs to the `console.log` function.
+ */
+var ConsoleMethod = (_a = {},
+    _a[LogLevel.DEBUG] = 'log',
+    _a[LogLevel.VERBOSE] = 'log',
+    _a[LogLevel.INFO] = 'info',
+    _a[LogLevel.WARN] = 'warn',
+    _a[LogLevel.ERROR] = 'error',
+    _a);
+/**
+ * The default log handler will forward DEBUG, VERBOSE, INFO, WARN, and ERROR
+ * messages on to their corresponding console counterparts (if the log method
+ * is supported by the current log level)
+ */
+var defaultLogHandler = function (instance, logType) {
+    var args = [];
+    for (var _i = 2; _i < arguments.length; _i++) {
+        args[_i - 2] = arguments[_i];
+    }
+    if (logType < instance.logLevel) {
+        return;
+    }
+    var now = new Date().toISOString();
+    var method = ConsoleMethod[logType];
+    if (method) {
+        console[method].apply(console, __spreadArrays(["[" + now + "]  " + instance.name + ":"], args));
+    }
+    else {
+        throw new Error("Attempted to log a message with an invalid logType (value: " + logType + ")");
+    }
+};
+var Logger = /** @class */ (function () {
+    /**
+     * Gives you an instance of a Logger to capture messages according to
+     * Firebase's logging scheme.
+     *
+     * @param name The name that the logs will be associated with
+     */
+    function Logger(name) {
+        this.name = name;
+        /**
+         * The log level of the given Logger instance.
+         */
+        this._logLevel = defaultLogLevel;
+        /**
+         * The main (internal) log handler for the Logger instance.
+         * Can be set to a new function in internal package code but not by user.
+         */
+        this._logHandler = defaultLogHandler;
+        /**
+         * The optional, additional, user-defined log handler for the Logger instance.
+         */
+        this._userLogHandler = null;
+        /**
+         * Capture the current instance for later use
+         */
+        instances.push(this);
+    }
+    Object.defineProperty(Logger.prototype, "logLevel", {
+        get: function () {
+            return this._logLevel;
+        },
+        set: function (val) {
+            if (!(val in LogLevel)) {
+                throw new TypeError("Invalid value \"" + val + "\" assigned to `logLevel`");
+            }
+            this._logLevel = val;
+        },
+        enumerable: false,
+        configurable: true
+    });
+    // Workaround for setter/getter having to be the same type.
+    Logger.prototype.setLogLevel = function (val) {
+        this._logLevel = typeof val === 'string' ? levelStringToEnum[val] : val;
+    };
+    Object.defineProperty(Logger.prototype, "logHandler", {
+        get: function () {
+            return this._logHandler;
+        },
+        set: function (val) {
+            if (typeof val !== 'function') {
+                throw new TypeError('Value assigned to `logHandler` must be a function');
+            }
+            this._logHandler = val;
+        },
+        enumerable: false,
+        configurable: true
+    });
+    Object.defineProperty(Logger.prototype, "userLogHandler", {
+        get: function () {
+            return this._userLogHandler;
+        },
+        set: function (val) {
+            this._userLogHandler = val;
+        },
+        enumerable: false,
+        configurable: true
+    });
+    /**
+     * The functions below are all based on the `console` interface
+     */
+    Logger.prototype.debug = function () {
+        var args = [];
+        for (var _i = 0; _i < arguments.length; _i++) {
+            args[_i] = arguments[_i];
+        }
+        this._userLogHandler && this._userLogHandler.apply(this, __spreadArrays([this, LogLevel.DEBUG], args));
+        this._logHandler.apply(this, __spreadArrays([this, LogLevel.DEBUG], args));
+    };
+    Logger.prototype.log = function () {
+        var args = [];
+        for (var _i = 0; _i < arguments.length; _i++) {
+            args[_i] = arguments[_i];
+        }
+        this._userLogHandler && this._userLogHandler.apply(this, __spreadArrays([this, LogLevel.VERBOSE], args));
+        this._logHandler.apply(this, __spreadArrays([this, LogLevel.VERBOSE], args));
+    };
+    Logger.prototype.info = function () {
+        var args = [];
+        for (var _i = 0; _i < arguments.length; _i++) {
+            args[_i] = arguments[_i];
+        }
+        this._userLogHandler && this._userLogHandler.apply(this, __spreadArrays([this, LogLevel.INFO], args));
+        this._logHandler.apply(this, __spreadArrays([this, LogLevel.INFO], args));
+    };
+    Logger.prototype.warn = function () {
+        var args = [];
+        for (var _i = 0; _i < arguments.length; _i++) {
+            args[_i] = arguments[_i];
+        }
+        this._userLogHandler && this._userLogHandler.apply(this, __spreadArrays([this, LogLevel.WARN], args));
+        this._logHandler.apply(this, __spreadArrays([this, LogLevel.WARN], args));
+    };
+    Logger.prototype.error = function () {
+        var args = [];
+        for (var _i = 0; _i < arguments.length; _i++) {
+            args[_i] = arguments[_i];
+        }
+        this._userLogHandler && this._userLogHandler.apply(this, __spreadArrays([this, LogLevel.ERROR], args));
+        this._logHandler.apply(this, __spreadArrays([this, LogLevel.ERROR], args));
+    };
+    return Logger;
+}());
+function setLogLevel(level) {
+    instances.forEach(function (inst) {
+        inst.setLogLevel(level);
+    });
+}
+function setUserLogHandler(logCallback, options) {
+    var _loop_1 = function (instance) {
+        var customLogLevel = null;
+        if (options && options.level) {
+            customLogLevel = levelStringToEnum[options.level];
+        }
+        if (logCallback === null) {
+            instance.userLogHandler = null;
+        }
+        else {
+            instance.userLogHandler = function (instance, level) {
+                var args = [];
+                for (var _i = 2; _i < arguments.length; _i++) {
+                    args[_i - 2] = arguments[_i];
+                }
+                var message = args
+                    .map(function (arg) {
+                    if (arg == null) {
+                        return null;
+                    }
+                    else if (typeof arg === 'string') {
+                        return arg;
+                    }
+                    else if (typeof arg === 'number' || typeof arg === 'boolean') {
+                        return arg.toString();
+                    }
+                    else if (arg instanceof Error) {
+                        return arg.message;
+                    }
+                    else {
+                        try {
+                            return JSON.stringify(arg);
+                        }
+                        catch (ignored) {
+                            return null;
+                        }
+                    }
+                })
+                    .filter(function (arg) { return arg; })
+                    .join(' ');
+                if (level >= (customLogLevel !== null && customLogLevel !== void 0 ? customLogLevel : instance.logLevel)) {
+                    logCallback({
+                        level: LogLevel[level].toLowerCase(),
+                        message: message,
+                        args: args,
+                        type: instance.name
+                    });
+                }
+            };
+        }
+    };
+    for (var _i = 0, instances_1 = instances; _i < instances_1.length; _i++) {
+        var instance = instances_1[_i];
+        _loop_1(instance);
+    }
+}
+
+
+//# sourceMappingURL=index.esm.js.map
+
+
+/***/ }),
+
+/***/ "./node_modules/@firebase/storage/dist/index.esm.js":
+/*!**********************************************************!*\
+  !*** ./node_modules/@firebase/storage/dist/index.esm.js ***!
+  \**********************************************************/
+/*! exports provided: registerStorage */
+/***/ (function(module, __webpack_exports__, __webpack_require__) {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "registerStorage", function() { return registerStorage; });
+/* harmony import */ var _firebase_app__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! @firebase/app */ "./node_modules/@firebase/app/dist/index.cjs.js");
+/* harmony import */ var _firebase_app__WEBPACK_IMPORTED_MODULE_0___default = /*#__PURE__*/__webpack_require__.n(_firebase_app__WEBPACK_IMPORTED_MODULE_0__);
+/* harmony import */ var tslib__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! tslib */ "./node_modules/@firebase/storage/node_modules/tslib/tslib.es6.js");
+/* harmony import */ var _firebase_component__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! @firebase/component */ "./node_modules/@firebase/component/dist/index.cjs.js");
+/* harmony import */ var _firebase_component__WEBPACK_IMPORTED_MODULE_2___default = /*#__PURE__*/__webpack_require__.n(_firebase_component__WEBPACK_IMPORTED_MODULE_2__);
+
+
+
+
+/**
+ * @license
+ * Copyright 2017 Google LLC
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+/**
+ * @fileoverview Constants used in the Firebase Storage library.
+ */
+/**
+ * Domain name for firebase storage.
+ */
+var DEFAULT_HOST = 'firebasestorage.googleapis.com';
+/**
+ * The key in Firebase config json for the storage bucket.
+ */
+var CONFIG_STORAGE_BUCKET_KEY = 'storageBucket';
+/**
+ * 2 minutes
+ *
+ * The timeout for all operations except upload.
+ */
+var DEFAULT_MAX_OPERATION_RETRY_TIME = 2 * 60 * 1000;
+/**
+ * 10 minutes
+ *
+ * The timeout for upload.
+ */
+var DEFAULT_MAX_UPLOAD_RETRY_TIME = 10 * 60 * 1000;
+
+/**
+ * @license
+ * Copyright 2017 Google LLC
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+var FirebaseStorageError = /** @class */ (function () {
+    function FirebaseStorageError(code, message) {
+        this.code_ = prependCode(code);
+        this.message_ = 'Firebase Storage: ' + message;
+        this.serverResponse_ = null;
+        this.name_ = 'FirebaseError';
+    }
+    FirebaseStorageError.prototype.codeProp = function () {
+        return this.code;
+    };
+    FirebaseStorageError.prototype.codeEquals = function (code) {
+        return prependCode(code) === this.codeProp();
+    };
+    FirebaseStorageError.prototype.serverResponseProp = function () {
+        return this.serverResponse_;
+    };
+    FirebaseStorageError.prototype.setServerResponseProp = function (serverResponse) {
+        this.serverResponse_ = serverResponse;
+    };
+    Object.defineProperty(FirebaseStorageError.prototype, "name", {
+        get: function () {
+            return this.name_;
+        },
+        enumerable: false,
+        configurable: true
+    });
+    Object.defineProperty(FirebaseStorageError.prototype, "code", {
+        get: function () {
+            return this.code_;
+        },
+        enumerable: false,
+        configurable: true
+    });
+    Object.defineProperty(FirebaseStorageError.prototype, "message", {
+        get: function () {
+            if (this.serverResponse_) {
+                return this.message_ + '\n' + this.serverResponse_;
+            }
+            else {
+                return this.message_;
+            }
+        },
+        enumerable: false,
+        configurable: true
+    });
+    Object.defineProperty(FirebaseStorageError.prototype, "serverResponse", {
+        get: function () {
+            return this.serverResponse_;
+        },
+        enumerable: false,
+        configurable: true
+    });
+    return FirebaseStorageError;
+}());
+var Code = {
+    // Shared between all platforms
+    UNKNOWN: 'unknown',
+    OBJECT_NOT_FOUND: 'object-not-found',
+    BUCKET_NOT_FOUND: 'bucket-not-found',
+    PROJECT_NOT_FOUND: 'project-not-found',
+    QUOTA_EXCEEDED: 'quota-exceeded',
+    UNAUTHENTICATED: 'unauthenticated',
+    UNAUTHORIZED: 'unauthorized',
+    RETRY_LIMIT_EXCEEDED: 'retry-limit-exceeded',
+    INVALID_CHECKSUM: 'invalid-checksum',
+    CANCELED: 'canceled',
+    // JS specific
+    INVALID_EVENT_NAME: 'invalid-event-name',
+    INVALID_URL: 'invalid-url',
+    INVALID_DEFAULT_BUCKET: 'invalid-default-bucket',
+    NO_DEFAULT_BUCKET: 'no-default-bucket',
+    CANNOT_SLICE_BLOB: 'cannot-slice-blob',
+    SERVER_FILE_WRONG_SIZE: 'server-file-wrong-size',
+    NO_DOWNLOAD_URL: 'no-download-url',
+    INVALID_ARGUMENT: 'invalid-argument',
+    INVALID_ARGUMENT_COUNT: 'invalid-argument-count',
+    APP_DELETED: 'app-deleted',
+    INVALID_ROOT_OPERATION: 'invalid-root-operation',
+    INVALID_FORMAT: 'invalid-format',
+    INTERNAL_ERROR: 'internal-error'
+};
+function prependCode(code) {
+    return 'storage/' + code;
+}
+function unknown() {
+    var message = 'An unknown error occurred, please check the error payload for ' +
+        'server response.';
+    return new FirebaseStorageError(Code.UNKNOWN, message);
+}
+function objectNotFound(path) {
+    return new FirebaseStorageError(Code.OBJECT_NOT_FOUND, "Object '" + path + "' does not exist.");
+}
+function quotaExceeded(bucket) {
+    return new FirebaseStorageError(Code.QUOTA_EXCEEDED, "Quota for bucket '" +
+        bucket +
+        "' exceeded, please view quota on " +
+        'https://firebase.google.com/pricing/.');
+}
+function unauthenticated() {
+    var message = 'User is not authenticated, please authenticate using Firebase ' +
+        'Authentication and try again.';
+    return new FirebaseStorageError(Code.UNAUTHENTICATED, message);
+}
+function unauthorized(path) {
+    return new FirebaseStorageError(Code.UNAUTHORIZED, "User does not have permission to access '" + path + "'.");
+}
+function retryLimitExceeded() {
+    return new FirebaseStorageError(Code.RETRY_LIMIT_EXCEEDED, 'Max retry time for operation exceeded, please try again.');
+}
+function canceled() {
+    return new FirebaseStorageError(Code.CANCELED, 'User canceled the upload/download.');
+}
+function invalidUrl(url) {
+    return new FirebaseStorageError(Code.INVALID_URL, "Invalid URL '" + url + "'.");
+}
+function invalidDefaultBucket(bucket) {
+    return new FirebaseStorageError(Code.INVALID_DEFAULT_BUCKET, "Invalid default bucket '" + bucket + "'.");
+}
+function cannotSliceBlob() {
+    return new FirebaseStorageError(Code.CANNOT_SLICE_BLOB, 'Cannot slice blob for upload. Please retry the upload.');
+}
+function serverFileWrongSize() {
+    return new FirebaseStorageError(Code.SERVER_FILE_WRONG_SIZE, 'Server recorded incorrect upload file size, please retry the upload.');
+}
+function noDownloadURL() {
+    return new FirebaseStorageError(Code.NO_DOWNLOAD_URL, 'The given file does not have any download URLs.');
+}
+function invalidArgument(index, fnName, message) {
+    return new FirebaseStorageError(Code.INVALID_ARGUMENT, 'Invalid argument in `' + fnName + '` at index ' + index + ': ' + message);
+}
+function invalidArgumentCount(argMin, argMax, fnName, real) {
+    var countPart;
+    var plural;
+    if (argMin === argMax) {
+        countPart = argMin;
+        plural = argMin === 1 ? 'argument' : 'arguments';
+    }
+    else {
+        countPart = 'between ' + argMin + ' and ' + argMax;
+        plural = 'arguments';
+    }
+    return new FirebaseStorageError(Code.INVALID_ARGUMENT_COUNT, 'Invalid argument count in `' +
+        fnName +
+        '`: Expected ' +
+        countPart +
+        ' ' +
+        plural +
+        ', received ' +
+        real +
+        '.');
+}
+function appDeleted() {
+    return new FirebaseStorageError(Code.APP_DELETED, 'The Firebase app was deleted.');
+}
+/**
+ * @param name The name of the operation that was invalid.
+ */
+function invalidRootOperation(name) {
+    return new FirebaseStorageError(Code.INVALID_ROOT_OPERATION, "The operation '" +
+        name +
+        "' cannot be performed on a root reference, create a non-root " +
+        "reference using child, such as .child('file.png').");
+}
+/**
+ * @param format The format that was not valid.
+ * @param message A message describing the format violation.
+ */
+function invalidFormat(format, message) {
+    return new FirebaseStorageError(Code.INVALID_FORMAT, "String does not match format '" + format + "': " + message);
+}
+/**
+ * @param message A message describing the internal error.
+ */
+function internalError(message) {
+    throw new FirebaseStorageError(Code.INTERNAL_ERROR, 'Internal error: ' + message);
+}
+
+/**
+ * @license
+ * Copyright 2017 Google LLC
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+var StringFormat = {
+    RAW: 'raw',
+    BASE64: 'base64',
+    BASE64URL: 'base64url',
+    DATA_URL: 'data_url'
+};
+function formatValidator(stringFormat) {
+    switch (stringFormat) {
+        case StringFormat.RAW:
+        case StringFormat.BASE64:
+        case StringFormat.BASE64URL:
+        case StringFormat.DATA_URL:
+            return;
+        default:
+            throw ('Expected one of the event types: [' +
+                StringFormat.RAW +
+                ', ' +
+                StringFormat.BASE64 +
+                ', ' +
+                StringFormat.BASE64URL +
+                ', ' +
+                StringFormat.DATA_URL +
+                '].');
+    }
+}
+/**
+ * @struct
+ */
+var StringData = /** @class */ (function () {
+    function StringData(data, contentType) {
+        this.data = data;
+        this.contentType = contentType || null;
+    }
+    return StringData;
+}());
+function dataFromString(format, stringData) {
+    switch (format) {
+        case StringFormat.RAW:
+            return new StringData(utf8Bytes_(stringData));
+        case StringFormat.BASE64:
+        case StringFormat.BASE64URL:
+            return new StringData(base64Bytes_(format, stringData));
+        case StringFormat.DATA_URL:
+            return new StringData(dataURLBytes_(stringData), dataURLContentType_(stringData));
+        // do nothing
+    }
+    // assert(false);
+    throw unknown();
+}
+function utf8Bytes_(value) {
+    var b = [];
+    for (var i = 0; i < value.length; i++) {
+        var c = value.charCodeAt(i);
+        if (c <= 127) {
+            b.push(c);
+        }
+        else {
+            if (c <= 2047) {
+                b.push(192 | (c >> 6), 128 | (c & 63));
+            }
+            else {
+                if ((c & 64512) === 55296) {
+                    // The start of a surrogate pair.
+                    var valid = i < value.length - 1 && (value.charCodeAt(i + 1) & 64512) === 56320;
+                    if (!valid) {
+                        // The second surrogate wasn't there.
+                        b.push(239, 191, 189);
+                    }
+                    else {
+                        var hi = c;
+                        var lo = value.charCodeAt(++i);
+                        c = 65536 | ((hi & 1023) << 10) | (lo & 1023);
+                        b.push(240 | (c >> 18), 128 | ((c >> 12) & 63), 128 | ((c >> 6) & 63), 128 | (c & 63));
+                    }
+                }
+                else {
+                    if ((c & 64512) === 56320) {
+                        // Invalid low surrogate.
+                        b.push(239, 191, 189);
+                    }
+                    else {
+                        b.push(224 | (c >> 12), 128 | ((c >> 6) & 63), 128 | (c & 63));
+                    }
+                }
+            }
+        }
+    }
+    return new Uint8Array(b);
+}
+function percentEncodedBytes_(value) {
+    var decoded;
+    try {
+        decoded = decodeURIComponent(value);
+    }
+    catch (e) {
+        throw invalidFormat(StringFormat.DATA_URL, 'Malformed data URL.');
+    }
+    return utf8Bytes_(decoded);
+}
+function base64Bytes_(format, value) {
+    switch (format) {
+        case StringFormat.BASE64: {
+            var hasMinus = value.indexOf('-') !== -1;
+            var hasUnder = value.indexOf('_') !== -1;
+            if (hasMinus || hasUnder) {
+                var invalidChar = hasMinus ? '-' : '_';
+                throw invalidFormat(format, "Invalid character '" +
+                    invalidChar +
+                    "' found: is it base64url encoded?");
+            }
+            break;
+        }
+        case StringFormat.BASE64URL: {
+            var hasPlus = value.indexOf('+') !== -1;
+            var hasSlash = value.indexOf('/') !== -1;
+            if (hasPlus || hasSlash) {
+                var invalidChar = hasPlus ? '+' : '/';
+                throw invalidFormat(format, "Invalid character '" + invalidChar + "' found: is it base64 encoded?");
+            }
+            value = value.replace(/-/g, '+').replace(/_/g, '/');
+            break;
+        }
+        // do nothing
+    }
+    var bytes;
+    try {
+        bytes = atob(value);
+    }
+    catch (e) {
+        throw invalidFormat(format, 'Invalid character found');
+    }
+    var array = new Uint8Array(bytes.length);
+    for (var i = 0; i < bytes.length; i++) {
+        array[i] = bytes.charCodeAt(i);
+    }
+    return array;
+}
+/**
+ * @struct
+ */
+var DataURLParts = /** @class */ (function () {
+    function DataURLParts(dataURL) {
+        this.base64 = false;
+        this.contentType = null;
+        var matches = dataURL.match(/^data:([^,]+)?,/);
+        if (matches === null) {
+            throw invalidFormat(StringFormat.DATA_URL, "Must be formatted 'data:[<mediatype>][;base64],<data>");
+        }
+        var middle = matches[1] || null;
+        if (middle != null) {
+            this.base64 = endsWith(middle, ';base64');
+            this.contentType = this.base64
+                ? middle.substring(0, middle.length - ';base64'.length)
+                : middle;
+        }
+        this.rest = dataURL.substring(dataURL.indexOf(',') + 1);
+    }
+    return DataURLParts;
+}());
+function dataURLBytes_(dataUrl) {
+    var parts = new DataURLParts(dataUrl);
+    if (parts.base64) {
+        return base64Bytes_(StringFormat.BASE64, parts.rest);
+    }
+    else {
+        return percentEncodedBytes_(parts.rest);
+    }
+}
+function dataURLContentType_(dataUrl) {
+    var parts = new DataURLParts(dataUrl);
+    return parts.contentType;
+}
+function endsWith(s, end) {
+    var longEnough = s.length >= end.length;
+    if (!longEnough) {
+        return false;
+    }
+    return s.substring(s.length - end.length) === end;
+}
+
+/**
+ * @license
+ * Copyright 2017 Google LLC
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+var TaskEvent = {
+    /** Triggered whenever the task changes or progress is updated. */
+    STATE_CHANGED: 'state_changed'
+};
+var InternalTaskState = {
+    RUNNING: 'running',
+    PAUSING: 'pausing',
+    PAUSED: 'paused',
+    SUCCESS: 'success',
+    CANCELING: 'canceling',
+    CANCELED: 'canceled',
+    ERROR: 'error'
+};
+var TaskState = {
+    /** The task is currently transferring data. */
+    RUNNING: 'running',
+    /** The task was paused by the user. */
+    PAUSED: 'paused',
+    /** The task completed successfully. */
+    SUCCESS: 'success',
+    /** The task was canceled. */
+    CANCELED: 'canceled',
+    /** The task failed with an error. */
+    ERROR: 'error'
+};
+function taskStateFromInternalTaskState(state) {
+    switch (state) {
+        case InternalTaskState.RUNNING:
+        case InternalTaskState.PAUSING:
+        case InternalTaskState.CANCELING:
+            return TaskState.RUNNING;
+        case InternalTaskState.PAUSED:
+            return TaskState.PAUSED;
+        case InternalTaskState.SUCCESS:
+            return TaskState.SUCCESS;
+        case InternalTaskState.CANCELED:
+            return TaskState.CANCELED;
+        case InternalTaskState.ERROR:
+            return TaskState.ERROR;
+        default:
+            // TODO(andysoto): assert(false);
+            return TaskState.ERROR;
+    }
+}
+
+/**
+ * @license
+ * Copyright 2017 Google LLC
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+/**
+ * @return False if the object is undefined or null, true otherwise.
+ */
+function isDef(p) {
+    return p != null;
+}
+function isJustDef(p) {
+    return p !== void 0;
+}
+function isFunction(p) {
+    return typeof p === 'function';
+}
+function isObject(p) {
+    return typeof p === 'object';
+}
+function isNonNullObject(p) {
+    return isObject(p) && p !== null;
+}
+function isNonArrayObject(p) {
+    return isObject(p) && !Array.isArray(p);
+}
+function isString(p) {
+    return typeof p === 'string' || p instanceof String;
+}
+function isInteger(p) {
+    return isNumber(p) && Number.isInteger(p);
+}
+function isNumber(p) {
+    return typeof p === 'number' || p instanceof Number;
+}
+function isNativeBlob(p) {
+    return isNativeBlobDefined() && p instanceof Blob;
+}
+function isNativeBlobDefined() {
+    return typeof Blob !== 'undefined';
+}
+
+/**
+ * @license
+ * Copyright 2017 Google LLC
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+/**
+ * @enum{number}
+ */
+var ErrorCode;
+(function (ErrorCode) {
+    ErrorCode[ErrorCode["NO_ERROR"] = 0] = "NO_ERROR";
+    ErrorCode[ErrorCode["NETWORK_ERROR"] = 1] = "NETWORK_ERROR";
+    ErrorCode[ErrorCode["ABORT"] = 2] = "ABORT";
+})(ErrorCode || (ErrorCode = {}));
+
+/**
+ * @license
+ * Copyright 2017 Google LLC
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+/**
+ * We use this instead of goog.net.XhrIo because goog.net.XhrIo is hyuuuuge and
+ * doesn't work in React Native on Android.
+ */
+var NetworkXhrIo = /** @class */ (function () {
+    function NetworkXhrIo() {
+        var _this = this;
+        this.sent_ = false;
+        this.xhr_ = new XMLHttpRequest();
+        this.errorCode_ = ErrorCode.NO_ERROR;
+        this.sendPromise_ = new Promise(function (resolve) {
+            _this.xhr_.addEventListener('abort', function () {
+                _this.errorCode_ = ErrorCode.ABORT;
+                resolve(_this);
+            });
+            _this.xhr_.addEventListener('error', function () {
+                _this.errorCode_ = ErrorCode.NETWORK_ERROR;
+                resolve(_this);
+            });
+            _this.xhr_.addEventListener('load', function () {
+                resolve(_this);
+            });
+        });
+    }
+    /**
+     * @override
+     */
+    NetworkXhrIo.prototype.send = function (url, method, body, headers) {
+        if (this.sent_) {
+            throw internalError('cannot .send() more than once');
+        }
+        this.sent_ = true;
+        this.xhr_.open(method, url, true);
+        if (isDef(headers)) {
+            for (var key in headers) {
+                if (headers.hasOwnProperty(key)) {
+                    this.xhr_.setRequestHeader(key, headers[key].toString());
+                }
+            }
+        }
+        if (isDef(body)) {
+            this.xhr_.send(body);
+        }
+        else {
+            this.xhr_.send();
+        }
+        return this.sendPromise_;
+    };
+    /**
+     * @override
+     */
+    NetworkXhrIo.prototype.getErrorCode = function () {
+        if (!this.sent_) {
+            throw internalError('cannot .getErrorCode() before sending');
+        }
+        return this.errorCode_;
+    };
+    /**
+     * @override
+     */
+    NetworkXhrIo.prototype.getStatus = function () {
+        if (!this.sent_) {
+            throw internalError('cannot .getStatus() before sending');
+        }
+        try {
+            return this.xhr_.status;
+        }
+        catch (e) {
+            return -1;
+        }
+    };
+    /**
+     * @override
+     */
+    NetworkXhrIo.prototype.getResponseText = function () {
+        if (!this.sent_) {
+            throw internalError('cannot .getResponseText() before sending');
+        }
+        return this.xhr_.responseText;
+    };
+    /**
+     * Aborts the request.
+     * @override
+     */
+    NetworkXhrIo.prototype.abort = function () {
+        this.xhr_.abort();
+    };
+    /**
+     * @override
+     */
+    NetworkXhrIo.prototype.getResponseHeader = function (header) {
+        return this.xhr_.getResponseHeader(header);
+    };
+    /**
+     * @override
+     */
+    NetworkXhrIo.prototype.addUploadProgressListener = function (listener) {
+        if (isDef(this.xhr_.upload)) {
+            this.xhr_.upload.addEventListener('progress', listener);
+        }
+    };
+    /**
+     * @override
+     */
+    NetworkXhrIo.prototype.removeUploadProgressListener = function (listener) {
+        if (isDef(this.xhr_.upload)) {
+            this.xhr_.upload.removeEventListener('progress', listener);
+        }
+    };
+    return NetworkXhrIo;
+}());
+
+/**
+ * @license
+ * Copyright 2017 Google LLC
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+/**
+ * Factory-like class for creating XhrIo instances.
+ */
+var XhrIoPool = /** @class */ (function () {
+    function XhrIoPool() {
+    }
+    XhrIoPool.prototype.createXhrIo = function () {
+        return new NetworkXhrIo();
+    };
+    return XhrIoPool;
+}());
+
+/**
+ * @license
+ * Copyright 2017 Google LLC
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+function getBlobBuilder() {
+    if (typeof BlobBuilder !== 'undefined') {
+        return BlobBuilder;
+    }
+    else if (typeof WebKitBlobBuilder !== 'undefined') {
+        return WebKitBlobBuilder;
+    }
+    else {
+        return undefined;
+    }
+}
+/**
+ * Concatenates one or more values together and converts them to a Blob.
+ *
+ * @param args The values that will make up the resulting blob.
+ * @return The blob.
+ */
+function getBlob() {
+    var args = [];
+    for (var _i = 0; _i < arguments.length; _i++) {
+        args[_i] = arguments[_i];
+    }
+    var BlobBuilder = getBlobBuilder();
+    if (BlobBuilder !== undefined) {
+        var bb = new BlobBuilder();
+        for (var i = 0; i < args.length; i++) {
+            bb.append(args[i]);
+        }
+        return bb.getBlob();
+    }
+    else {
+        if (isNativeBlobDefined()) {
+            return new Blob(args);
+        }
+        else {
+            throw Error("This browser doesn't seem to support creating Blobs");
+        }
+    }
+}
+/**
+ * Slices the blob. The returned blob contains data from the start byte
+ * (inclusive) till the end byte (exclusive). Negative indices cannot be used.
+ *
+ * @param blob The blob to be sliced.
+ * @param start Index of the starting byte.
+ * @param end Index of the ending byte.
+ * @return The blob slice or null if not supported.
+ */
+function sliceBlob(blob, start, end) {
+    if (blob.webkitSlice) {
+        return blob.webkitSlice(start, end);
+    }
+    else if (blob.mozSlice) {
+        return blob.mozSlice(start, end);
+    }
+    else if (blob.slice) {
+        return blob.slice(start, end);
+    }
+    return null;
+}
+
+/**
+ * @license
+ * Copyright 2017 Google LLC
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+/**
+ * @param opt_elideCopy If true, doesn't copy mutable input data
+ *     (e.g. Uint8Arrays). Pass true only if you know the objects will not be
+ *     modified after this blob's construction.
+ */
+var FbsBlob = /** @class */ (function () {
+    function FbsBlob(data, elideCopy) {
+        var size = 0;
+        var blobType = '';
+        if (isNativeBlob(data)) {
+            this.data_ = data;
+            size = data.size;
+            blobType = data.type;
+        }
+        else if (data instanceof ArrayBuffer) {
+            if (elideCopy) {
+                this.data_ = new Uint8Array(data);
+            }
+            else {
+                this.data_ = new Uint8Array(data.byteLength);
+                this.data_.set(new Uint8Array(data));
+            }
+            size = this.data_.length;
+        }
+        else if (data instanceof Uint8Array) {
+            if (elideCopy) {
+                this.data_ = data;
+            }
+            else {
+                this.data_ = new Uint8Array(data.length);
+                this.data_.set(data);
+            }
+            size = data.length;
+        }
+        this.size_ = size;
+        this.type_ = blobType;
+    }
+    FbsBlob.prototype.size = function () {
+        return this.size_;
+    };
+    FbsBlob.prototype.type = function () {
+        return this.type_;
+    };
+    FbsBlob.prototype.slice = function (startByte, endByte) {
+        if (isNativeBlob(this.data_)) {
+            var realBlob = this.data_;
+            var sliced = sliceBlob(realBlob, startByte, endByte);
+            if (sliced === null) {
+                return null;
+            }
+            return new FbsBlob(sliced);
+        }
+        else {
+            var slice = new Uint8Array(this.data_.buffer, startByte, endByte - startByte);
+            return new FbsBlob(slice, true);
+        }
+    };
+    FbsBlob.getBlob = function () {
+        var args = [];
+        for (var _i = 0; _i < arguments.length; _i++) {
+            args[_i] = arguments[_i];
+        }
+        if (isNativeBlobDefined()) {
+            var blobby = args.map(function (val) {
+                if (val instanceof FbsBlob) {
+                    return val.data_;
+                }
+                else {
+                    return val;
+                }
+            });
+            return new FbsBlob(getBlob.apply(null, blobby));
+        }
+        else {
+            var uint8Arrays = args.map(function (val) {
+                if (isString(val)) {
+                    return dataFromString(StringFormat.RAW, val).data;
+                }
+                else {
+                    // Blobs don't exist, so this has to be a Uint8Array.
+                    return val.data_;
+                }
+            });
+            var finalLength_1 = 0;
+            uint8Arrays.forEach(function (array) {
+                finalLength_1 += array.byteLength;
+            });
+            var merged_1 = new Uint8Array(finalLength_1);
+            var index_1 = 0;
+            uint8Arrays.forEach(function (array) {
+                for (var i = 0; i < array.length; i++) {
+                    merged_1[index_1++] = array[i];
+                }
+            });
+            return new FbsBlob(merged_1, true);
+        }
+    };
+    FbsBlob.prototype.uploadData = function () {
+        return this.data_;
+    };
+    return FbsBlob;
+}());
+
+/**
+ * @license
+ * Copyright 2017 Google LLC
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+/**
+ * @struct
+ */
+var Location = /** @class */ (function () {
+    function Location(bucket, path) {
+        this.bucket = bucket;
+        this.path_ = path;
+    }
+    Object.defineProperty(Location.prototype, "path", {
+        get: function () {
+            return this.path_;
+        },
+        enumerable: false,
+        configurable: true
+    });
+    Object.defineProperty(Location.prototype, "isRoot", {
+        get: function () {
+            return this.path.length === 0;
+        },
+        enumerable: false,
+        configurable: true
+    });
+    Location.prototype.fullServerUrl = function () {
+        var encode = encodeURIComponent;
+        return '/b/' + encode(this.bucket) + '/o/' + encode(this.path);
+    };
+    Location.prototype.bucketOnlyServerUrl = function () {
+        var encode = encodeURIComponent;
+        return '/b/' + encode(this.bucket) + '/o';
+    };
+    Location.makeFromBucketSpec = function (bucketString) {
+        var bucketLocation;
+        try {
+            bucketLocation = Location.makeFromUrl(bucketString);
+        }
+        catch (e) {
+            // Not valid URL, use as-is. This lets you put bare bucket names in
+            // config.
+            return new Location(bucketString, '');
+        }
+        if (bucketLocation.path === '') {
+            return bucketLocation;
+        }
+        else {
+            throw invalidDefaultBucket(bucketString);
+        }
+    };
+    Location.makeFromUrl = function (url) {
+        var location = null;
+        var bucketDomain = '([A-Za-z0-9.\\-_]+)';
+        function gsModify(loc) {
+            if (loc.path.charAt(loc.path.length - 1) === '/') {
+                loc.path_ = loc.path_.slice(0, -1);
+            }
+        }
+        var gsPath = '(/(.*))?$';
+        var gsRegex = new RegExp('^gs://' + bucketDomain + gsPath, 'i');
+        var gsIndices = { bucket: 1, path: 3 };
+        function httpModify(loc) {
+            loc.path_ = decodeURIComponent(loc.path);
+        }
+        var version = 'v[A-Za-z0-9_]+';
+        var firebaseStorageHost = DEFAULT_HOST.replace(/[.]/g, '\\.');
+        var firebaseStoragePath = '(/([^?#]*).*)?$';
+        var firebaseStorageRegExp = new RegExp("^https?://" + firebaseStorageHost + "/" + version + "/b/" + bucketDomain + "/o" + firebaseStoragePath, 'i');
+        var firebaseStorageIndices = { bucket: 1, path: 3 };
+        var cloudStorageHost = '(?:storage.googleapis.com|storage.cloud.google.com)';
+        var cloudStoragePath = '([^?#]*)';
+        var cloudStorageRegExp = new RegExp("^https?://" + cloudStorageHost + "/" + bucketDomain + "/" + cloudStoragePath, 'i');
+        var cloudStorageIndices = { bucket: 1, path: 2 };
+        var groups = [
+            { regex: gsRegex, indices: gsIndices, postModify: gsModify },
+            {
+                regex: firebaseStorageRegExp,
+                indices: firebaseStorageIndices,
+                postModify: httpModify
+            },
+            {
+                regex: cloudStorageRegExp,
+                indices: cloudStorageIndices,
+                postModify: httpModify
+            }
+        ];
+        for (var i = 0; i < groups.length; i++) {
+            var group = groups[i];
+            var captures = group.regex.exec(url);
+            if (captures) {
+                var bucketValue = captures[group.indices.bucket];
+                var pathValue = captures[group.indices.path];
+                if (!pathValue) {
+                    pathValue = '';
+                }
+                location = new Location(bucketValue, pathValue);
+                group.postModify(location);
+                break;
+            }
+        }
+        if (location == null) {
+            throw invalidUrl(url);
+        }
+        return location;
+    };
+    return Location;
+}());
+
+/**
+ * @license
+ * Copyright 2017 Google LLC
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+/**
+ * Returns the Object resulting from parsing the given JSON, or null if the
+ * given string does not represent a JSON object.
+ */
+function jsonObjectOrNull(s) {
+    var obj;
+    try {
+        obj = JSON.parse(s);
+    }
+    catch (e) {
+        return null;
+    }
+    if (isNonArrayObject(obj)) {
+        return obj;
+    }
+    else {
+        return null;
+    }
+}
+
+/**
+ * @license
+ * Copyright 2017 Google LLC
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+/**
+ * @fileoverview Contains helper methods for manipulating paths.
+ */
+/**
+ * @return Null if the path is already at the root.
+ */
+function parent(path) {
+    if (path.length === 0) {
+        return null;
+    }
+    var index = path.lastIndexOf('/');
+    if (index === -1) {
+        return '';
+    }
+    var newPath = path.slice(0, index);
+    return newPath;
+}
+function child(path, childPath) {
+    var canonicalChildPath = childPath
+        .split('/')
+        .filter(function (component) { return component.length > 0; })
+        .join('/');
+    if (path.length === 0) {
+        return canonicalChildPath;
+    }
+    else {
+        return path + '/' + canonicalChildPath;
+    }
+}
+/**
+ * Returns the last component of a path.
+ * '/foo/bar' -> 'bar'
+ * '/foo/bar/baz/' -> 'baz/'
+ * '/a' -> 'a'
+ */
+function lastComponent(path) {
+    var index = path.lastIndexOf('/', path.length - 2);
+    if (index === -1) {
+        return path;
+    }
+    else {
+        return path.slice(index + 1);
+    }
+}
+
+/**
+ * @license
+ * Copyright 2017 Google LLC
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+function makeUrl(urlPart) {
+    return "https://" + DEFAULT_HOST + "/v0" + urlPart;
+}
+function makeQueryString(params) {
+    var encode = encodeURIComponent;
+    var queryPart = '?';
+    for (var key in params) {
+        if (params.hasOwnProperty(key)) {
+            // @ts-ignore TODO: remove once typescript is upgraded to 3.5.x
+            var nextPart = encode(key) + '=' + encode(params[key]);
+            queryPart = queryPart + nextPart + '&';
+        }
+    }
+    // Chop off the extra '&' or '?' on the end
+    queryPart = queryPart.slice(0, -1);
+    return queryPart;
+}
+
+/**
+ * @license
+ * Copyright 2017 Google LLC
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+function noXform_(metadata, value) {
+    return value;
+}
+/**
+ * @struct
+ */
+var Mapping = /** @class */ (function () {
+    function Mapping(server, local, writable, xform) {
+        this.server = server;
+        this.local = local || server;
+        this.writable = !!writable;
+        this.xform = xform || noXform_;
+    }
+    return Mapping;
+}());
+var mappings_ = null;
+function xformPath(fullPath) {
+    if (!isString(fullPath) || fullPath.length < 2) {
+        return fullPath;
+    }
+    else {
+        return lastComponent(fullPath);
+    }
+}
+function getMappings() {
+    if (mappings_) {
+        return mappings_;
+    }
+    var mappings = [];
+    mappings.push(new Mapping('bucket'));
+    mappings.push(new Mapping('generation'));
+    mappings.push(new Mapping('metageneration'));
+    mappings.push(new Mapping('name', 'fullPath', true));
+    function mappingsXformPath(_metadata, fullPath) {
+        return xformPath(fullPath);
+    }
+    var nameMapping = new Mapping('name');
+    nameMapping.xform = mappingsXformPath;
+    mappings.push(nameMapping);
+    /**
+     * Coerces the second param to a number, if it is defined.
+     */
+    function xformSize(_metadata, size) {
+        if (isDef(size)) {
+            return Number(size);
+        }
+        else {
+            return size;
+        }
+    }
+    var sizeMapping = new Mapping('size');
+    sizeMapping.xform = xformSize;
+    mappings.push(sizeMapping);
+    mappings.push(new Mapping('timeCreated'));
+    mappings.push(new Mapping('updated'));
+    mappings.push(new Mapping('md5Hash', null, true));
+    mappings.push(new Mapping('cacheControl', null, true));
+    mappings.push(new Mapping('contentDisposition', null, true));
+    mappings.push(new Mapping('contentEncoding', null, true));
+    mappings.push(new Mapping('contentLanguage', null, true));
+    mappings.push(new Mapping('contentType', null, true));
+    mappings.push(new Mapping('metadata', 'customMetadata', true));
+    mappings_ = mappings;
+    return mappings_;
+}
+function addRef(metadata, service) {
+    function generateRef() {
+        var bucket = metadata['bucket'];
+        var path = metadata['fullPath'];
+        var loc = new Location(bucket, path);
+        return service.makeStorageReference(loc);
+    }
+    Object.defineProperty(metadata, 'ref', { get: generateRef });
+}
+function fromResource(service, resource, mappings) {
+    var metadata = {};
+    metadata['type'] = 'file';
+    var len = mappings.length;
+    for (var i = 0; i < len; i++) {
+        var mapping = mappings[i];
+        metadata[mapping.local] = mapping.xform(metadata, resource[mapping.server]);
+    }
+    addRef(metadata, service);
+    return metadata;
+}
+function fromResourceString(service, resourceString, mappings) {
+    var obj = jsonObjectOrNull(resourceString);
+    if (obj === null) {
+        return null;
+    }
+    var resource = obj;
+    return fromResource(service, resource, mappings);
+}
+function downloadUrlFromResourceString(metadata, resourceString) {
+    var obj = jsonObjectOrNull(resourceString);
+    if (obj === null) {
+        return null;
+    }
+    if (!isString(obj['downloadTokens'])) {
+        // This can happen if objects are uploaded through GCS and retrieved
+        // through list, so we don't want to throw an Error.
+        return null;
+    }
+    var tokens = obj['downloadTokens'];
+    if (tokens.length === 0) {
+        return null;
+    }
+    var encode = encodeURIComponent;
+    var tokensList = tokens.split(',');
+    var urls = tokensList.map(function (token) {
+        var bucket = metadata['bucket'];
+        var path = metadata['fullPath'];
+        var urlPart = '/b/' + encode(bucket) + '/o/' + encode(path);
+        var base = makeUrl(urlPart);
+        var queryString = makeQueryString({
+            alt: 'media',
+            token: token
+        });
+        return base + queryString;
+    });
+    return urls[0];
+}
+function toResourceString(metadata, mappings) {
+    var resource = {};
+    var len = mappings.length;
+    for (var i = 0; i < len; i++) {
+        var mapping = mappings[i];
+        if (mapping.writable) {
+            resource[mapping.server] = metadata[mapping.local];
+        }
+    }
+    return JSON.stringify(resource);
+}
+function metadataValidator(p) {
+    if (!isObject(p) || !p) {
+        throw 'Expected Metadata object.';
+    }
+    for (var key in p) {
+        if (p.hasOwnProperty(key)) {
+            var val = p[key];
+            if (key === 'customMetadata') {
+                if (!isObject(val)) {
+                    throw 'Expected object for \'customMetadata\' mapping.';
+                }
+            }
+            else {
+                if (isNonNullObject(val)) {
+                    throw "Mapping for '" + key + "' cannot be an object.";
+                }
+            }
+        }
+    }
+}
+
+/**
+ * @license
+ * Copyright 2019 Google LLC
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+var MAX_RESULTS_KEY = 'maxResults';
+var MAX_MAX_RESULTS = 1000;
+var PAGE_TOKEN_KEY = 'pageToken';
+var PREFIXES_KEY = 'prefixes';
+var ITEMS_KEY = 'items';
+function fromBackendResponse(service, bucket, resource) {
+    var listResult = {
+        prefixes: [],
+        items: [],
+        nextPageToken: resource['nextPageToken']
+    };
+    if (resource[PREFIXES_KEY]) {
+        for (var _i = 0, _a = resource[PREFIXES_KEY]; _i < _a.length; _i++) {
+            var path = _a[_i];
+            var pathWithoutTrailingSlash = path.replace(/\/$/, '');
+            var reference = service.makeStorageReference(new Location(bucket, pathWithoutTrailingSlash));
+            listResult.prefixes.push(reference);
+        }
+    }
+    if (resource[ITEMS_KEY]) {
+        for (var _b = 0, _c = resource[ITEMS_KEY]; _b < _c.length; _b++) {
+            var item = _c[_b];
+            var reference = service.makeStorageReference(new Location(bucket, item['name']));
+            listResult.items.push(reference);
+        }
+    }
+    return listResult;
+}
+function fromResponseString(service, bucket, resourceString) {
+    var obj = jsonObjectOrNull(resourceString);
+    if (obj === null) {
+        return null;
+    }
+    var resource = obj;
+    return fromBackendResponse(service, bucket, resource);
+}
+function listOptionsValidator(p) {
+    if (!isObject(p) || !p) {
+        throw 'Expected ListOptions object.';
+    }
+    for (var key in p) {
+        if (key === MAX_RESULTS_KEY) {
+            if (!isInteger(p[MAX_RESULTS_KEY]) ||
+                p[MAX_RESULTS_KEY] <= 0) {
+                throw 'Expected maxResults to be a positive number.';
+            }
+            if (p[MAX_RESULTS_KEY] > 1000) {
+                throw "Expected maxResults to be less than or equal to " + MAX_MAX_RESULTS + ".";
+            }
+        }
+        else if (key === PAGE_TOKEN_KEY) {
+            if (p[PAGE_TOKEN_KEY] && !isString(p[PAGE_TOKEN_KEY])) {
+                throw 'Expected pageToken to be string.';
+            }
+        }
+        else {
+            throw 'Unknown option: ' + key;
+        }
+    }
+}
+
+var RequestInfo = /** @class */ (function () {
+    function RequestInfo(url, method, 
+    /**
+     * Returns the value with which to resolve the request's promise. Only called
+     * if the request is successful. Throw from this function to reject the
+     * returned Request's promise with the thrown error.
+     * Note: The XhrIo passed to this function may be reused after this callback
+     * returns. Do not keep a reference to it in any way.
+     */
+    handler, timeout) {
+        this.url = url;
+        this.method = method;
+        this.handler = handler;
+        this.timeout = timeout;
+        this.urlParams = {};
+        this.headers = {};
+        this.body = null;
+        this.errorHandler = null;
+        /**
+         * Called with the current number of bytes uploaded and total size (-1 if not
+         * computable) of the request body (i.e. used to report upload progress).
+         */
+        this.progressCallback = null;
+        this.successCodes = [200];
+        this.additionalRetryCodes = [];
+    }
+    return RequestInfo;
+}());
+
+/**
+ * @license
+ * Copyright 2017 Google LLC
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+/**
+ * Throws the UNKNOWN FirebaseStorageError if cndn is false.
+ */
+function handlerCheck(cndn) {
+    if (!cndn) {
+        throw unknown();
+    }
+}
+function metadataHandler(service, mappings) {
+    function handler(xhr, text) {
+        var metadata = fromResourceString(service, text, mappings);
+        handlerCheck(metadata !== null);
+        return metadata;
+    }
+    return handler;
+}
+function listHandler(service, bucket) {
+    function handler(xhr, text) {
+        var listResult = fromResponseString(service, bucket, text);
+        handlerCheck(listResult !== null);
+        return listResult;
+    }
+    return handler;
+}
+function downloadUrlHandler(service, mappings) {
+    function handler(xhr, text) {
+        var metadata = fromResourceString(service, text, mappings);
+        handlerCheck(metadata !== null);
+        return downloadUrlFromResourceString(metadata, text);
+    }
+    return handler;
+}
+function sharedErrorHandler(location) {
+    function errorHandler(xhr, err) {
+        var newErr;
+        if (xhr.getStatus() === 401) {
+            newErr = unauthenticated();
+        }
+        else {
+            if (xhr.getStatus() === 402) {
+                newErr = quotaExceeded(location.bucket);
+            }
+            else {
+                if (xhr.getStatus() === 403) {
+                    newErr = unauthorized(location.path);
+                }
+                else {
+                    newErr = err;
+                }
+            }
+        }
+        newErr.setServerResponseProp(err.serverResponseProp());
+        return newErr;
+    }
+    return errorHandler;
+}
+function objectErrorHandler(location) {
+    var shared = sharedErrorHandler(location);
+    function errorHandler(xhr, err) {
+        var newErr = shared(xhr, err);
+        if (xhr.getStatus() === 404) {
+            newErr = objectNotFound(location.path);
+        }
+        newErr.setServerResponseProp(err.serverResponseProp());
+        return newErr;
+    }
+    return errorHandler;
+}
+function getMetadata(service, location, mappings) {
+    var urlPart = location.fullServerUrl();
+    var url = makeUrl(urlPart);
+    var method = 'GET';
+    var timeout = service.maxOperationRetryTime;
+    var requestInfo = new RequestInfo(url, method, metadataHandler(service, mappings), timeout);
+    requestInfo.errorHandler = objectErrorHandler(location);
+    return requestInfo;
+}
+function list(service, location, delimiter, pageToken, maxResults) {
+    var urlParams = {};
+    if (location.isRoot) {
+        urlParams['prefix'] = '';
+    }
+    else {
+        urlParams['prefix'] = location.path + '/';
+    }
+    if (delimiter && delimiter.length > 0) {
+        urlParams['delimiter'] = delimiter;
+    }
+    if (pageToken) {
+        urlParams['pageToken'] = pageToken;
+    }
+    if (maxResults) {
+        urlParams['maxResults'] = maxResults;
+    }
+    var urlPart = location.bucketOnlyServerUrl();
+    var url = makeUrl(urlPart);
+    var method = 'GET';
+    var timeout = service.maxOperationRetryTime;
+    var requestInfo = new RequestInfo(url, method, listHandler(service, location.bucket), timeout);
+    requestInfo.urlParams = urlParams;
+    requestInfo.errorHandler = sharedErrorHandler(location);
+    return requestInfo;
+}
+function getDownloadUrl(service, location, mappings) {
+    var urlPart = location.fullServerUrl();
+    var url = makeUrl(urlPart);
+    var method = 'GET';
+    var timeout = service.maxOperationRetryTime;
+    var requestInfo = new RequestInfo(url, method, downloadUrlHandler(service, mappings), timeout);
+    requestInfo.errorHandler = objectErrorHandler(location);
+    return requestInfo;
+}
+function updateMetadata(service, location, metadata, mappings) {
+    var urlPart = location.fullServerUrl();
+    var url = makeUrl(urlPart);
+    var method = 'PATCH';
+    var body = toResourceString(metadata, mappings);
+    var headers = { 'Content-Type': 'application/json; charset=utf-8' };
+    var timeout = service.maxOperationRetryTime;
+    var requestInfo = new RequestInfo(url, method, metadataHandler(service, mappings), timeout);
+    requestInfo.headers = headers;
+    requestInfo.body = body;
+    requestInfo.errorHandler = objectErrorHandler(location);
+    return requestInfo;
+}
+function deleteObject(service, location) {
+    var urlPart = location.fullServerUrl();
+    var url = makeUrl(urlPart);
+    var method = 'DELETE';
+    var timeout = service.maxOperationRetryTime;
+    function handler(_xhr, _text) { }
+    var requestInfo = new RequestInfo(url, method, handler, timeout);
+    requestInfo.successCodes = [200, 204];
+    requestInfo.errorHandler = objectErrorHandler(location);
+    return requestInfo;
+}
+function determineContentType_(metadata, blob) {
+    return ((metadata && metadata['contentType']) ||
+        (blob && blob.type()) ||
+        'application/octet-stream');
+}
+function metadataForUpload_(location, blob, metadata) {
+    var metadataClone = Object.assign({}, metadata);
+    metadataClone['fullPath'] = location.path;
+    metadataClone['size'] = blob.size();
+    if (!metadataClone['contentType']) {
+        metadataClone['contentType'] = determineContentType_(null, blob);
+    }
+    return metadataClone;
+}
+function multipartUpload(service, location, mappings, blob, metadata) {
+    var urlPart = location.bucketOnlyServerUrl();
+    var headers = {
+        'X-Goog-Upload-Protocol': 'multipart'
+    };
+    function genBoundary() {
+        var str = '';
+        for (var i = 0; i < 2; i++) {
+            str = str + Math.random().toString().slice(2);
+        }
+        return str;
+    }
+    var boundary = genBoundary();
+    headers['Content-Type'] = 'multipart/related; boundary=' + boundary;
+    var metadata_ = metadataForUpload_(location, blob, metadata);
+    var metadataString = toResourceString(metadata_, mappings);
+    var preBlobPart = '--' +
+        boundary +
+        '\r\n' +
+        'Content-Type: application/json; charset=utf-8\r\n\r\n' +
+        metadataString +
+        '\r\n--' +
+        boundary +
+        '\r\n' +
+        'Content-Type: ' +
+        metadata_['contentType'] +
+        '\r\n\r\n';
+    var postBlobPart = '\r\n--' + boundary + '--';
+    var body = FbsBlob.getBlob(preBlobPart, blob, postBlobPart);
+    if (body === null) {
+        throw cannotSliceBlob();
+    }
+    var urlParams = { name: metadata_['fullPath'] };
+    var url = makeUrl(urlPart);
+    var method = 'POST';
+    var timeout = service.maxUploadRetryTime;
+    var requestInfo = new RequestInfo(url, method, metadataHandler(service, mappings), timeout);
+    requestInfo.urlParams = urlParams;
+    requestInfo.headers = headers;
+    requestInfo.body = body.uploadData();
+    requestInfo.errorHandler = sharedErrorHandler(location);
+    return requestInfo;
+}
+/**
+ * @param current The number of bytes that have been uploaded so far.
+ * @param total The total number of bytes in the upload.
+ * @param opt_finalized True if the server has finished the upload.
+ * @param opt_metadata The upload metadata, should
+ *     only be passed if opt_finalized is true.
+ * @struct
+ */
+var ResumableUploadStatus = /** @class */ (function () {
+    function ResumableUploadStatus(current, total, finalized, metadata) {
+        this.current = current;
+        this.total = total;
+        this.finalized = !!finalized;
+        this.metadata = metadata || null;
+    }
+    return ResumableUploadStatus;
+}());
+function checkResumeHeader_(xhr, allowed) {
+    var status = null;
+    try {
+        status = xhr.getResponseHeader('X-Goog-Upload-Status');
+    }
+    catch (e) {
+        handlerCheck(false);
+    }
+    var allowedStatus = allowed || ['active'];
+    handlerCheck(!!status && allowedStatus.indexOf(status) !== -1);
+    return status;
+}
+function createResumableUpload(service, location, mappings, blob, metadata) {
+    var urlPart = location.bucketOnlyServerUrl();
+    var metadataForUpload = metadataForUpload_(location, blob, metadata);
+    var urlParams = { name: metadataForUpload['fullPath'] };
+    var url = makeUrl(urlPart);
+    var method = 'POST';
+    var headers = {
+        'X-Goog-Upload-Protocol': 'resumable',
+        'X-Goog-Upload-Command': 'start',
+        'X-Goog-Upload-Header-Content-Length': blob.size(),
+        'X-Goog-Upload-Header-Content-Type': metadataForUpload['contentType'],
+        'Content-Type': 'application/json; charset=utf-8'
+    };
+    var body = toResourceString(metadataForUpload, mappings);
+    var timeout = service.maxUploadRetryTime;
+    function handler(xhr) {
+        checkResumeHeader_(xhr);
+        var url;
+        try {
+            url = xhr.getResponseHeader('X-Goog-Upload-URL');
+        }
+        catch (e) {
+            handlerCheck(false);
+        }
+        handlerCheck(isString(url));
+        return url;
+    }
+    var requestInfo = new RequestInfo(url, method, handler, timeout);
+    requestInfo.urlParams = urlParams;
+    requestInfo.headers = headers;
+    requestInfo.body = body;
+    requestInfo.errorHandler = sharedErrorHandler(location);
+    return requestInfo;
+}
+/**
+ * @param url From a call to fbs.requests.createResumableUpload.
+ */
+function getResumableUploadStatus(service, location, url, blob) {
+    var headers = { 'X-Goog-Upload-Command': 'query' };
+    function handler(xhr) {
+        var status = checkResumeHeader_(xhr, ['active', 'final']);
+        var sizeString = null;
+        try {
+            sizeString = xhr.getResponseHeader('X-Goog-Upload-Size-Received');
+        }
+        catch (e) {
+            handlerCheck(false);
+        }
+        if (!sizeString) {
+            // null or empty string
+            handlerCheck(false);
+        }
+        var size = Number(sizeString);
+        handlerCheck(!isNaN(size));
+        return new ResumableUploadStatus(size, blob.size(), status === 'final');
+    }
+    var method = 'POST';
+    var timeout = service.maxUploadRetryTime;
+    var requestInfo = new RequestInfo(url, method, handler, timeout);
+    requestInfo.headers = headers;
+    requestInfo.errorHandler = sharedErrorHandler(location);
+    return requestInfo;
+}
+/**
+ * Any uploads via the resumable upload API must transfer a number of bytes
+ * that is a multiple of this number.
+ */
+var resumableUploadChunkSize = 256 * 1024;
+/**
+ * @param url From a call to fbs.requests.createResumableUpload.
+ * @param chunkSize Number of bytes to upload.
+ * @param status The previous status.
+ *     If not passed or null, we start from the beginning.
+ * @throws fbs.Error If the upload is already complete, the passed in status
+ *     has a final size inconsistent with the blob, or the blob cannot be sliced
+ *     for upload.
+ */
+function continueResumableUpload(location, service, url, blob, chunkSize, mappings, status, progressCallback) {
+    // TODO(andysoto): standardize on internal asserts
+    // assert(!(opt_status && opt_status.finalized));
+    var status_ = new ResumableUploadStatus(0, 0);
+    if (status) {
+        status_.current = status.current;
+        status_.total = status.total;
+    }
+    else {
+        status_.current = 0;
+        status_.total = blob.size();
+    }
+    if (blob.size() !== status_.total) {
+        throw serverFileWrongSize();
+    }
+    var bytesLeft = status_.total - status_.current;
+    var bytesToUpload = bytesLeft;
+    if (chunkSize > 0) {
+        bytesToUpload = Math.min(bytesToUpload, chunkSize);
+    }
+    var startByte = status_.current;
+    var endByte = startByte + bytesToUpload;
+    var uploadCommand = bytesToUpload === bytesLeft ? 'upload, finalize' : 'upload';
+    var headers = {
+        'X-Goog-Upload-Command': uploadCommand,
+        'X-Goog-Upload-Offset': status_.current
+    };
+    var body = blob.slice(startByte, endByte);
+    if (body === null) {
+        throw cannotSliceBlob();
+    }
+    function handler(xhr, text) {
+        // TODO(andysoto): Verify the MD5 of each uploaded range:
+        // the 'x-range-md5' header comes back with status code 308 responses.
+        // We'll only be able to bail out though, because you can't re-upload a
+        // range that you previously uploaded.
+        var uploadStatus = checkResumeHeader_(xhr, ['active', 'final']);
+        var newCurrent = status_.current + bytesToUpload;
+        var size = blob.size();
+        var metadata;
+        if (uploadStatus === 'final') {
+            metadata = metadataHandler(service, mappings)(xhr, text);
+        }
+        else {
+            metadata = null;
+        }
+        return new ResumableUploadStatus(newCurrent, size, uploadStatus === 'final', metadata);
+    }
+    var method = 'POST';
+    var timeout = service.maxUploadRetryTime;
+    var requestInfo = new RequestInfo(url, method, handler, timeout);
+    requestInfo.headers = headers;
+    requestInfo.body = body.uploadData();
+    requestInfo.progressCallback = progressCallback || null;
+    requestInfo.errorHandler = sharedErrorHandler(location);
+    return requestInfo;
+}
+
+/**
+ * @license
+ * Copyright 2017 Google LLC
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+/**
+ * @struct
+ */
+var Observer = /** @class */ (function () {
+    function Observer(nextOrObserver, error, complete) {
+        var asFunctions = isFunction(nextOrObserver) ||
+            isDef(error) ||
+            isDef(complete);
+        if (asFunctions) {
+            this.next = nextOrObserver;
+            this.error = error || null;
+            this.complete = complete || null;
+        }
+        else {
+            var observer = nextOrObserver;
+            this.next = observer.next || null;
+            this.error = observer.error || null;
+            this.complete = observer.complete || null;
+        }
+    }
+    return Observer;
+}());
+
+var UploadTaskSnapshot = /** @class */ (function () {
+    function UploadTaskSnapshot(bytesTransferred, totalBytes, state, metadata, task, ref) {
+        this.bytesTransferred = bytesTransferred;
+        this.totalBytes = totalBytes;
+        this.state = state;
+        this.metadata = metadata;
+        this.task = task;
+        this.ref = ref;
+    }
+    return UploadTaskSnapshot;
+}());
+
+/**
+ * @license
+ * Copyright 2017 Google LLC
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+/**
+ * @param name Name of the function.
+ * @param specs Argument specs.
+ * @param passed The actual arguments passed to the function.
+ * @throws {fbs.Error} If the arguments are invalid.
+ */
+function validate(name, specs, passed) {
+    var minArgs = specs.length;
+    var maxArgs = specs.length;
+    for (var i = 0; i < specs.length; i++) {
+        if (specs[i].optional) {
+            minArgs = i;
+            break;
+        }
+    }
+    var validLength = minArgs <= passed.length && passed.length <= maxArgs;
+    if (!validLength) {
+        throw invalidArgumentCount(minArgs, maxArgs, name, passed.length);
+    }
+    for (var i = 0; i < passed.length; i++) {
+        try {
+            specs[i].validator(passed[i]);
+        }
+        catch (e) {
+            if (e instanceof Error) {
+                throw invalidArgument(i, name, e.message);
+            }
+            else {
+                throw invalidArgument(i, name, e);
+            }
+        }
+    }
+}
+/**
+ * @struct
+ */
+var ArgSpec = /** @class */ (function () {
+    function ArgSpec(validator, optional) {
+        var self = this;
+        this.validator = function (p) {
+            if (self.optional && !isJustDef(p)) {
+                return;
+            }
+            validator(p);
+        };
+        this.optional = !!optional;
+    }
+    return ArgSpec;
+}());
+function and_(v1, v2) {
+    return function (p) {
+        v1(p);
+        v2(p);
+    };
+}
+function stringSpec(validator, optional) {
+    function stringValidator(p) {
+        if (!isString(p)) {
+            throw 'Expected string.';
+        }
+    }
+    var chainedValidator;
+    if (validator) {
+        chainedValidator = and_(stringValidator, validator);
+    }
+    else {
+        chainedValidator = stringValidator;
+    }
+    return new ArgSpec(chainedValidator, optional);
+}
+function uploadDataSpec() {
+    function validator(p) {
+        var valid = p instanceof Uint8Array ||
+            p instanceof ArrayBuffer ||
+            (isNativeBlobDefined() && p instanceof Blob);
+        if (!valid) {
+            throw 'Expected Blob or File.';
+        }
+    }
+    return new ArgSpec(validator);
+}
+function metadataSpec(optional) {
+    return new ArgSpec(metadataValidator, optional);
+}
+function listOptionSpec(optional) {
+    return new ArgSpec(listOptionsValidator, optional);
+}
+function nonNegativeNumberSpec() {
+    function validator(p) {
+        var valid = isNumber(p) && p >= 0;
+        if (!valid) {
+            throw 'Expected a number 0 or greater.';
+        }
+    }
+    return new ArgSpec(validator);
+}
+function looseObjectSpec(validator, optional) {
+    function isLooseObjectValidator(p) {
+        var isLooseObject = p === null || (isDef(p) && p instanceof Object);
+        if (!isLooseObject) {
+            throw 'Expected an Object.';
+        }
+        if (validator !== undefined && validator !== null) {
+            validator(p);
+        }
+    }
+    return new ArgSpec(isLooseObjectValidator, optional);
+}
+function nullFunctionSpec(optional) {
+    function validator(p) {
+        var valid = p === null || isFunction(p);
+        if (!valid) {
+            throw 'Expected a Function.';
+        }
+    }
+    return new ArgSpec(validator, optional);
+}
+
+/**
+ * @license
+ * Copyright 2017 Google LLC
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+/**
+ * Returns a function that invokes f with its arguments asynchronously as a
+ * microtask, i.e. as soon as possible after the current script returns back
+ * into browser code.
+ */
+function async(f) {
+    return function () {
+        var argsToForward = [];
+        for (var _i = 0; _i < arguments.length; _i++) {
+            argsToForward[_i] = arguments[_i];
+        }
+        // eslint-disable-next-line @typescript-eslint/no-floating-promises
+        Promise.resolve().then(function () { return f.apply(void 0, argsToForward); });
+    };
+}
+
+/**
+ * @license
+ * Copyright 2017 Google LLC
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+/**
+ * Represents a blob being uploaded. Can be used to pause/resume/cancel the
+ * upload and manage callbacks for various events.
+ */
+var UploadTask = /** @class */ (function () {
+    /**
+     * @param ref The firebaseStorage.Reference object this task came
+     *     from, untyped to avoid cyclic dependencies.
+     * @param blob The blob to upload.
+     */
+    function UploadTask(ref, service, location, mappings, blob, metadata) {
+        var _this = this;
+        if (metadata === void 0) { metadata = null; }
+        this.transferred_ = 0;
+        this.needToFetchStatus_ = false;
+        this.needToFetchMetadata_ = false;
+        this.observers_ = [];
+        this.error_ = null;
+        this.uploadUrl_ = null;
+        this.request_ = null;
+        this.chunkMultiplier_ = 1;
+        this.resolve_ = null;
+        this.reject_ = null;
+        this.ref_ = ref;
+        this.service_ = service;
+        this.location_ = location;
+        this.blob_ = blob;
+        this.metadata_ = metadata;
+        this.mappings_ = mappings;
+        this.resumable_ = this.shouldDoResumable_(this.blob_);
+        this.state_ = InternalTaskState.RUNNING;
+        this.errorHandler_ = function (error) {
+            _this.request_ = null;
+            _this.chunkMultiplier_ = 1;
+            if (error.codeEquals(Code.CANCELED)) {
+                _this.needToFetchStatus_ = true;
+                _this.completeTransitions_();
+            }
+            else {
+                _this.error_ = error;
+                _this.transition_(InternalTaskState.ERROR);
+            }
+        };
+        this.metadataErrorHandler_ = function (error) {
+            _this.request_ = null;
+            if (error.codeEquals(Code.CANCELED)) {
+                _this.completeTransitions_();
+            }
+            else {
+                _this.error_ = error;
+                _this.transition_(InternalTaskState.ERROR);
+            }
+        };
+        this.promise_ = new Promise(function (resolve, reject) {
+            _this.resolve_ = resolve;
+            _this.reject_ = reject;
+            _this.start_();
+        });
+        // Prevent uncaught rejections on the internal promise from bubbling out
+        // to the top level with a dummy handler.
+        this.promise_.then(null, function () { });
+    }
+    UploadTask.prototype.makeProgressCallback_ = function () {
+        var _this = this;
+        var sizeBefore = this.transferred_;
+        return function (loaded) { return _this.updateProgress_(sizeBefore + loaded); };
+    };
+    UploadTask.prototype.shouldDoResumable_ = function (blob) {
+        return blob.size() > 256 * 1024;
+    };
+    UploadTask.prototype.start_ = function () {
+        if (this.state_ !== InternalTaskState.RUNNING) {
+            // This can happen if someone pauses us in a resume callback, for example.
+            return;
+        }
+        if (this.request_ !== null) {
+            return;
+        }
+        if (this.resumable_) {
+            if (this.uploadUrl_ === null) {
+                this.createResumable_();
+            }
+            else {
+                if (this.needToFetchStatus_) {
+                    this.fetchStatus_();
+                }
+                else {
+                    if (this.needToFetchMetadata_) {
+                        // Happens if we miss the metadata on upload completion.
+                        this.fetchMetadata_();
+                    }
+                    else {
+                        this.continueUpload_();
+                    }
+                }
+            }
+        }
+        else {
+            this.oneShotUpload_();
+        }
+    };
+    UploadTask.prototype.resolveToken_ = function (callback) {
+        var _this = this;
+        // eslint-disable-next-line @typescript-eslint/no-floating-promises
+        this.service_.getAuthToken().then(function (authToken) {
+            switch (_this.state_) {
+                case InternalTaskState.RUNNING:
+                    callback(authToken);
+                    break;
+                case InternalTaskState.CANCELING:
+                    _this.transition_(InternalTaskState.CANCELED);
+                    break;
+                case InternalTaskState.PAUSING:
+                    _this.transition_(InternalTaskState.PAUSED);
+                    break;
+            }
+        });
+    };
+    // TODO(andysoto): assert false
+    UploadTask.prototype.createResumable_ = function () {
+        var _this = this;
+        this.resolveToken_(function (authToken) {
+            var requestInfo = createResumableUpload(_this.service_, _this.location_, _this.mappings_, _this.blob_, _this.metadata_);
+            var createRequest = _this.service_.makeRequest(requestInfo, authToken);
+            _this.request_ = createRequest;
+            createRequest.getPromise().then(function (url) {
+                _this.request_ = null;
+                _this.uploadUrl_ = url;
+                _this.needToFetchStatus_ = false;
+                _this.completeTransitions_();
+            }, _this.errorHandler_);
+        });
+    };
+    UploadTask.prototype.fetchStatus_ = function () {
+        var _this = this;
+        // TODO(andysoto): assert(this.uploadUrl_ !== null);
+        var url = this.uploadUrl_;
+        this.resolveToken_(function (authToken) {
+            var requestInfo = getResumableUploadStatus(_this.service_, _this.location_, url, _this.blob_);
+            var statusRequest = _this.service_.makeRequest(requestInfo, authToken);
+            _this.request_ = statusRequest;
+            statusRequest.getPromise().then(function (status) {
+                status = status;
+                _this.request_ = null;
+                _this.updateProgress_(status.current);
+                _this.needToFetchStatus_ = false;
+                if (status.finalized) {
+                    _this.needToFetchMetadata_ = true;
+                }
+                _this.completeTransitions_();
+            }, _this.errorHandler_);
+        });
+    };
+    UploadTask.prototype.continueUpload_ = function () {
+        var _this = this;
+        var chunkSize = resumableUploadChunkSize * this.chunkMultiplier_;
+        var status = new ResumableUploadStatus(this.transferred_, this.blob_.size());
+        // TODO(andysoto): assert(this.uploadUrl_ !== null);
+        var url = this.uploadUrl_;
+        this.resolveToken_(function (authToken) {
+            var requestInfo;
+            try {
+                requestInfo = continueResumableUpload(_this.location_, _this.service_, url, _this.blob_, chunkSize, _this.mappings_, status, _this.makeProgressCallback_());
+            }
+            catch (e) {
+                _this.error_ = e;
+                _this.transition_(InternalTaskState.ERROR);
+                return;
+            }
+            var uploadRequest = _this.service_.makeRequest(requestInfo, authToken);
+            _this.request_ = uploadRequest;
+            uploadRequest
+                .getPromise()
+                .then(function (newStatus) {
+                _this.increaseMultiplier_();
+                _this.request_ = null;
+                _this.updateProgress_(newStatus.current);
+                if (newStatus.finalized) {
+                    _this.metadata_ = newStatus.metadata;
+                    _this.transition_(InternalTaskState.SUCCESS);
+                }
+                else {
+                    _this.completeTransitions_();
+                }
+            }, _this.errorHandler_);
+        });
+    };
+    UploadTask.prototype.increaseMultiplier_ = function () {
+        var currentSize = resumableUploadChunkSize * this.chunkMultiplier_;
+        // Max chunk size is 32M.
+        if (currentSize < 32 * 1024 * 1024) {
+            this.chunkMultiplier_ *= 2;
+        }
+    };
+    UploadTask.prototype.fetchMetadata_ = function () {
+        var _this = this;
+        this.resolveToken_(function (authToken) {
+            var requestInfo = getMetadata(_this.service_, _this.location_, _this.mappings_);
+            var metadataRequest = _this.service_.makeRequest(requestInfo, authToken);
+            _this.request_ = metadataRequest;
+            metadataRequest.getPromise().then(function (metadata) {
+                _this.request_ = null;
+                _this.metadata_ = metadata;
+                _this.transition_(InternalTaskState.SUCCESS);
+            }, _this.metadataErrorHandler_);
+        });
+    };
+    UploadTask.prototype.oneShotUpload_ = function () {
+        var _this = this;
+        this.resolveToken_(function (authToken) {
+            var requestInfo = multipartUpload(_this.service_, _this.location_, _this.mappings_, _this.blob_, _this.metadata_);
+            var multipartRequest = _this.service_.makeRequest(requestInfo, authToken);
+            _this.request_ = multipartRequest;
+            multipartRequest.getPromise().then(function (metadata) {
+                _this.request_ = null;
+                _this.metadata_ = metadata;
+                _this.updateProgress_(_this.blob_.size());
+                _this.transition_(InternalTaskState.SUCCESS);
+            }, _this.errorHandler_);
+        });
+    };
+    UploadTask.prototype.updateProgress_ = function (transferred) {
+        var old = this.transferred_;
+        this.transferred_ = transferred;
+        // A progress update can make the "transferred" value smaller (e.g. a
+        // partial upload not completed by server, after which the "transferred"
+        // value may reset to the value at the beginning of the request).
+        if (this.transferred_ !== old) {
+            this.notifyObservers_();
+        }
+    };
+    UploadTask.prototype.transition_ = function (state) {
+        if (this.state_ === state) {
+            return;
+        }
+        switch (state) {
+            case InternalTaskState.CANCELING:
+                // TODO(andysoto):
+                // assert(this.state_ === InternalTaskState.RUNNING ||
+                //        this.state_ === InternalTaskState.PAUSING);
+                this.state_ = state;
+                if (this.request_ !== null) {
+                    this.request_.cancel();
+                }
+                break;
+            case InternalTaskState.PAUSING:
+                // TODO(andysoto):
+                // assert(this.state_ === InternalTaskState.RUNNING);
+                this.state_ = state;
+                if (this.request_ !== null) {
+                    this.request_.cancel();
+                }
+                break;
+            case InternalTaskState.RUNNING:
+                // TODO(andysoto):
+                // assert(this.state_ === InternalTaskState.PAUSED ||
+                //        this.state_ === InternalTaskState.PAUSING);
+                var wasPaused = this.state_ === InternalTaskState.PAUSED;
+                this.state_ = state;
+                if (wasPaused) {
+                    this.notifyObservers_();
+                    this.start_();
+                }
+                break;
+            case InternalTaskState.PAUSED:
+                // TODO(andysoto):
+                // assert(this.state_ === InternalTaskState.PAUSING);
+                this.state_ = state;
+                this.notifyObservers_();
+                break;
+            case InternalTaskState.CANCELED:
+                // TODO(andysoto):
+                // assert(this.state_ === InternalTaskState.PAUSED ||
+                //        this.state_ === InternalTaskState.CANCELING);
+                this.error_ = canceled();
+                this.state_ = state;
+                this.notifyObservers_();
+                break;
+            case InternalTaskState.ERROR:
+                // TODO(andysoto):
+                // assert(this.state_ === InternalTaskState.RUNNING ||
+                //        this.state_ === InternalTaskState.PAUSING ||
+                //        this.state_ === InternalTaskState.CANCELING);
+                this.state_ = state;
+                this.notifyObservers_();
+                break;
+            case InternalTaskState.SUCCESS:
+                // TODO(andysoto):
+                // assert(this.state_ === InternalTaskState.RUNNING ||
+                //        this.state_ === InternalTaskState.PAUSING ||
+                //        this.state_ === InternalTaskState.CANCELING);
+                this.state_ = state;
+                this.notifyObservers_();
+                break;
+        }
+    };
+    UploadTask.prototype.completeTransitions_ = function () {
+        switch (this.state_) {
+            case InternalTaskState.PAUSING:
+                this.transition_(InternalTaskState.PAUSED);
+                break;
+            case InternalTaskState.CANCELING:
+                this.transition_(InternalTaskState.CANCELED);
+                break;
+            case InternalTaskState.RUNNING:
+                this.start_();
+                break;
+        }
+    };
+    Object.defineProperty(UploadTask.prototype, "snapshot", {
+        get: function () {
+            var externalState = taskStateFromInternalTaskState(this.state_);
+            return new UploadTaskSnapshot(this.transferred_, this.blob_.size(), externalState, this.metadata_, this, this.ref_);
+        },
+        enumerable: false,
+        configurable: true
+    });
+    /**
+     * Adds a callback for an event.
+     * @param type The type of event to listen for.
+     */
+    UploadTask.prototype.on = function (type, nextOrObserver, error, completed) {
+        function typeValidator() {
+            if (type !== TaskEvent.STATE_CHANGED) {
+                throw "Expected one of the event types: [" + TaskEvent.STATE_CHANGED + "].";
+            }
+        }
+        var nextOrObserverMessage = 'Expected a function or an Object with one of ' +
+            '`next`, `error`, `complete` properties.';
+        var nextValidator = nullFunctionSpec(true).validator;
+        var observerValidator = looseObjectSpec(null, true).validator;
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        function nextOrObserverValidator(p) {
+            try {
+                nextValidator(p);
+                return;
+            }
+            catch (e) { }
+            try {
+                observerValidator(p);
+                var anyDefined = isJustDef(p['next']) ||
+                    isJustDef(p['error']) ||
+                    isJustDef(p['complete']);
+                if (!anyDefined) {
+                    throw '';
+                }
+                return;
+            }
+            catch (e) {
+                throw nextOrObserverMessage;
+            }
+        }
+        var specs = [
+            stringSpec(typeValidator),
+            looseObjectSpec(nextOrObserverValidator, true),
+            nullFunctionSpec(true),
+            nullFunctionSpec(true)
+        ];
+        validate('on', specs, arguments);
+        var self = this;
+        function makeBinder(specs) {
+            function binder(nextOrObserver, error, complete) {
+                if (specs !== null) {
+                    validate('on', specs, arguments);
+                }
+                var observer = new Observer(nextOrObserver, error, completed);
+                self.addObserver_(observer);
+                return function () {
+                    self.removeObserver_(observer);
+                };
+            }
+            return binder;
+        }
+        function binderNextOrObserverValidator(p) {
+            if (p === null) {
+                throw nextOrObserverMessage;
+            }
+            nextOrObserverValidator(p);
+        }
+        var binderSpecs = [
+            looseObjectSpec(binderNextOrObserverValidator),
+            nullFunctionSpec(true),
+            nullFunctionSpec(true)
+        ];
+        var typeOnly = !(isJustDef(nextOrObserver) ||
+            isJustDef(error) ||
+            isJustDef(completed));
+        if (typeOnly) {
+            return makeBinder(binderSpecs);
+        }
+        else {
+            return makeBinder(null)(nextOrObserver, error, completed);
+        }
+    };
+    /**
+     * This object behaves like a Promise, and resolves with its snapshot data
+     * when the upload completes.
+     * @param onFulfilled The fulfillment callback. Promise chaining works as normal.
+     * @param onRejected The rejection callback.
+     */
+    UploadTask.prototype.then = function (onFulfilled, onRejected) {
+        // These casts are needed so that TypeScript can infer the types of the
+        // resulting Promise.
+        return this.promise_.then(onFulfilled, onRejected);
+    };
+    /**
+     * Equivalent to calling `then(null, onRejected)`.
+     */
+    UploadTask.prototype.catch = function (onRejected) {
+        return this.then(null, onRejected);
+    };
+    /**
+     * Adds the given observer.
+     */
+    UploadTask.prototype.addObserver_ = function (observer) {
+        this.observers_.push(observer);
+        this.notifyObserver_(observer);
+    };
+    /**
+     * Removes the given observer.
+     */
+    UploadTask.prototype.removeObserver_ = function (observer) {
+        var i = this.observers_.indexOf(observer);
+        if (i !== -1) {
+            this.observers_.splice(i, 1);
+        }
+    };
+    UploadTask.prototype.notifyObservers_ = function () {
+        var _this = this;
+        this.finishPromise_();
+        var observers = this.observers_.slice();
+        observers.forEach(function (observer) {
+            _this.notifyObserver_(observer);
+        });
+    };
+    UploadTask.prototype.finishPromise_ = function () {
+        if (this.resolve_ !== null) {
+            var triggered = true;
+            switch (taskStateFromInternalTaskState(this.state_)) {
+                case TaskState.SUCCESS:
+                    async(this.resolve_.bind(null, this.snapshot))();
+                    break;
+                case TaskState.CANCELED:
+                case TaskState.ERROR:
+                    var toCall = this.reject_;
+                    async(toCall.bind(null, this.error_))();
+                    break;
+                default:
+                    triggered = false;
+                    break;
+            }
+            if (triggered) {
+                this.resolve_ = null;
+                this.reject_ = null;
+            }
+        }
+    };
+    UploadTask.prototype.notifyObserver_ = function (observer) {
+        var externalState = taskStateFromInternalTaskState(this.state_);
+        switch (externalState) {
+            case TaskState.RUNNING:
+            case TaskState.PAUSED:
+                if (observer.next) {
+                    async(observer.next.bind(observer, this.snapshot))();
+                }
+                break;
+            case TaskState.SUCCESS:
+                if (observer.complete) {
+                    async(observer.complete.bind(observer))();
+                }
+                break;
+            case TaskState.CANCELED:
+            case TaskState.ERROR:
+                if (observer.error) {
+                    async(observer.error.bind(observer, this.error_))();
+                }
+                break;
+            default:
+                // TODO(andysoto): assert(false);
+                if (observer.error) {
+                    async(observer.error.bind(observer, this.error_))();
+                }
+        }
+    };
+    /**
+     * Resumes a paused task. Has no effect on a currently running or failed task.
+     * @return True if the operation took effect, false if ignored.
+     */
+    UploadTask.prototype.resume = function () {
+        validate('resume', [], arguments);
+        var valid = this.state_ === InternalTaskState.PAUSED ||
+            this.state_ === InternalTaskState.PAUSING;
+        if (valid) {
+            this.transition_(InternalTaskState.RUNNING);
+        }
+        return valid;
+    };
+    /**
+     * Pauses a currently running task. Has no effect on a paused or failed task.
+     * @return True if the operation took effect, false if ignored.
+     */
+    UploadTask.prototype.pause = function () {
+        validate('pause', [], arguments);
+        var valid = this.state_ === InternalTaskState.RUNNING;
+        if (valid) {
+            this.transition_(InternalTaskState.PAUSING);
+        }
+        return valid;
+    };
+    /**
+     * Cancels a currently running or paused task. Has no effect on a complete or
+     * failed task.
+     * @return True if the operation took effect, false if ignored.
+     */
+    UploadTask.prototype.cancel = function () {
+        validate('cancel', [], arguments);
+        var valid = this.state_ === InternalTaskState.RUNNING ||
+            this.state_ === InternalTaskState.PAUSING;
+        if (valid) {
+            this.transition_(InternalTaskState.CANCELING);
+        }
+        return valid;
+    };
+    return UploadTask;
+}());
+
+/**
+ * @license
+ * Copyright 2019 Google LLC
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+/**
+ * Provides methods to interact with a bucket in the Firebase Storage service.
+ * @param location An fbs.location, or the URL at
+ *     which to base this object, in one of the following forms:
+ *         gs://<bucket>/<object-path>
+ *         http[s]://firebasestorage.googleapis.com/
+ *                     <api-version>/b/<bucket>/o/<object-path>
+ *     Any query or fragment strings will be ignored in the http[s]
+ *     format. If no value is passed, the storage object will use a URL based on
+ *     the project ID of the base firebase.App instance.
+ */
+var Reference = /** @class */ (function () {
+    function Reference(service, location) {
+        this.service = service;
+        if (location instanceof Location) {
+            this.location = location;
+        }
+        else {
+            this.location = Location.makeFromUrl(location);
+        }
+    }
+    /**
+     * @return The URL for the bucket and path this object references,
+     *     in the form gs://<bucket>/<object-path>
+     * @override
+     */
+    Reference.prototype.toString = function () {
+        validate('toString', [], arguments);
+        return 'gs://' + this.location.bucket + '/' + this.location.path;
+    };
+    Reference.prototype.newRef = function (service, location) {
+        return new Reference(service, location);
+    };
+    Reference.prototype.mappings = function () {
+        return getMappings();
+    };
+    /**
+     * @return A reference to the object obtained by
+     *     appending childPath, removing any duplicate, beginning, or trailing
+     *     slashes.
+     */
+    Reference.prototype.child = function (childPath) {
+        validate('child', [stringSpec()], arguments);
+        var newPath = child(this.location.path, childPath);
+        var location = new Location(this.location.bucket, newPath);
+        return this.newRef(this.service, location);
+    };
+    Object.defineProperty(Reference.prototype, "parent", {
+        /**
+         * @return A reference to the parent of the
+         *     current object, or null if the current object is the root.
+         */
+        get: function () {
+            var newPath = parent(this.location.path);
+            if (newPath === null) {
+                return null;
+            }
+            var location = new Location(this.location.bucket, newPath);
+            return this.newRef(this.service, location);
+        },
+        enumerable: false,
+        configurable: true
+    });
+    Object.defineProperty(Reference.prototype, "root", {
+        /**
+         * @return An reference to the root of this
+         *     object's bucket.
+         */
+        get: function () {
+            var location = new Location(this.location.bucket, '');
+            return this.newRef(this.service, location);
+        },
+        enumerable: false,
+        configurable: true
+    });
+    Object.defineProperty(Reference.prototype, "bucket", {
+        get: function () {
+            return this.location.bucket;
+        },
+        enumerable: false,
+        configurable: true
+    });
+    Object.defineProperty(Reference.prototype, "fullPath", {
+        get: function () {
+            return this.location.path;
+        },
+        enumerable: false,
+        configurable: true
+    });
+    Object.defineProperty(Reference.prototype, "name", {
+        get: function () {
+            return lastComponent(this.location.path);
+        },
+        enumerable: false,
+        configurable: true
+    });
+    Object.defineProperty(Reference.prototype, "storage", {
+        get: function () {
+            return this.service;
+        },
+        enumerable: false,
+        configurable: true
+    });
+    /**
+     * Uploads a blob to this object's location.
+     * @param data The blob to upload.
+     * @return An UploadTask that lets you control and
+     *     observe the upload.
+     */
+    Reference.prototype.put = function (data, metadata) {
+        if (metadata === void 0) { metadata = null; }
+        validate('put', [uploadDataSpec(), metadataSpec(true)], arguments);
+        this.throwIfRoot_('put');
+        return new UploadTask(this, this.service, this.location, this.mappings(), new FbsBlob(data), metadata);
+    };
+    /**
+     * Uploads a string to this object's location.
+     * @param value The string to upload.
+     * @param format The format of the string to upload.
+     * @return An UploadTask that lets you control and
+     *     observe the upload.
+     */
+    Reference.prototype.putString = function (value, format, metadata) {
+        if (format === void 0) { format = StringFormat.RAW; }
+        validate('putString', [stringSpec(), stringSpec(formatValidator, true), metadataSpec(true)], arguments);
+        this.throwIfRoot_('putString');
+        var data = dataFromString(format, value);
+        var metadataClone = Object.assign({}, metadata);
+        if (!isDef(metadataClone['contentType']) &&
+            isDef(data.contentType)) {
+            metadataClone['contentType'] = data.contentType;
+        }
+        return new UploadTask(this, this.service, this.location, this.mappings(), new FbsBlob(data.data, true), metadataClone);
+    };
+    /**
+     * Deletes the object at this location.
+     * @return A promise that resolves if the deletion succeeds.
+     */
+    Reference.prototype.delete = function () {
+        var _this = this;
+        validate('delete', [], arguments);
+        this.throwIfRoot_('delete');
+        return this.service.getAuthToken().then(function (authToken) {
+            var requestInfo = deleteObject(_this.service, _this.location);
+            return _this.service.makeRequest(requestInfo, authToken).getPromise();
+        });
+    };
+    /**
+     * List all items (files) and prefixes (folders) under this storage reference.
+     *
+     * This is a helper method for calling list() repeatedly until there are
+     * no more results. The default pagination size is 1000.
+     *
+     * Note: The results may not be consistent if objects are changed while this
+     * operation is running.
+     *
+     * Warning: listAll may potentially consume too many resources if there are
+     * too many results.
+     *
+     * @return A Promise that resolves with all the items and prefixes under
+     *      the current storage reference. `prefixes` contains references to
+     *      sub-directories and `items` contains references to objects in this
+     *      folder. `nextPageToken` is never returned.
+     */
+    Reference.prototype.listAll = function () {
+        validate('listAll', [], arguments);
+        var accumulator = {
+            prefixes: [],
+            items: []
+        };
+        return this.listAllHelper(accumulator).then(function () { return accumulator; });
+    };
+    Reference.prototype.listAllHelper = function (accumulator, pageToken) {
+        return Object(tslib__WEBPACK_IMPORTED_MODULE_1__["__awaiter"])(this, void 0, void 0, function () {
+            var opt, nextPage;
+            var _a, _b;
+            return Object(tslib__WEBPACK_IMPORTED_MODULE_1__["__generator"])(this, function (_c) {
+                switch (_c.label) {
+                    case 0:
+                        opt = {
+                            // maxResults is 1000 by default.
+                            pageToken: pageToken
+                        };
+                        return [4 /*yield*/, this.list(opt)];
+                    case 1:
+                        nextPage = _c.sent();
+                        (_a = accumulator.prefixes).push.apply(_a, nextPage.prefixes);
+                        (_b = accumulator.items).push.apply(_b, nextPage.items);
+                        if (!(nextPage.nextPageToken != null)) return [3 /*break*/, 3];
+                        return [4 /*yield*/, this.listAllHelper(accumulator, nextPage.nextPageToken)];
+                    case 2:
+                        _c.sent();
+                        _c.label = 3;
+                    case 3: return [2 /*return*/];
+                }
+            });
+        });
+    };
+    /**
+     * List items (files) and prefixes (folders) under this storage reference.
+     *
+     * List API is only available for Firebase Rules Version 2.
+     *
+     * GCS is a key-blob store. Firebase Storage imposes the semantic of '/'
+     * delimited folder structure.
+     * Refer to GCS's List API if you want to learn more.
+     *
+     * To adhere to Firebase Rules's Semantics, Firebase Storage does not
+     * support objects whose paths end with "/" or contain two consecutive
+     * "/"s. Firebase Storage List API will filter these unsupported objects.
+     * list() may fail if there are too many unsupported objects in the bucket.
+     *
+     * @param options See ListOptions for details.
+     * @return A Promise that resolves with the items and prefixes.
+     *      `prefixes` contains references to sub-folders and `items`
+     *      contains references to objects in this folder. `nextPageToken`
+     *      can be used to get the rest of the results.
+     */
+    Reference.prototype.list = function (options) {
+        validate('list', [listOptionSpec(true)], arguments);
+        var self = this;
+        return this.service.getAuthToken().then(function (authToken) {
+            var op = options || {};
+            var requestInfo = list(self.service, self.location, 
+            /*delimiter= */ '/', op.pageToken, op.maxResults);
+            return self.service.makeRequest(requestInfo, authToken).getPromise();
+        });
+    };
+    /**
+     *     A promise that resolves with the metadata for this object. If this
+     *     object doesn't exist or metadata cannot be retreived, the promise is
+     *     rejected.
+     */
+    Reference.prototype.getMetadata = function () {
+        var _this = this;
+        validate('getMetadata', [], arguments);
+        this.throwIfRoot_('getMetadata');
+        return this.service.getAuthToken().then(function (authToken) {
+            var requestInfo = getMetadata(_this.service, _this.location, _this.mappings());
+            return _this.service.makeRequest(requestInfo, authToken).getPromise();
+        });
+    };
+    /**
+     * Updates the metadata for this object.
+     * @param metadata The new metadata for the object.
+     *     Only values that have been explicitly set will be changed. Explicitly
+     *     setting a value to null will remove the metadata.
+     * @return A promise that resolves
+     *     with the new metadata for this object.
+     *     @see firebaseStorage.Reference.prototype.getMetadata
+     */
+    Reference.prototype.updateMetadata = function (metadata) {
+        var _this = this;
+        validate('updateMetadata', [metadataSpec()], arguments);
+        this.throwIfRoot_('updateMetadata');
+        return this.service.getAuthToken().then(function (authToken) {
+            var requestInfo = updateMetadata(_this.service, _this.location, metadata, _this.mappings());
+            return _this.service.makeRequest(requestInfo, authToken).getPromise();
+        });
+    };
+    /**
+     * @return A promise that resolves with the download
+     *     URL for this object.
+     */
+    Reference.prototype.getDownloadURL = function () {
+        var _this = this;
+        validate('getDownloadURL', [], arguments);
+        this.throwIfRoot_('getDownloadURL');
+        return this.service.getAuthToken().then(function (authToken) {
+            var requestInfo = getDownloadUrl(_this.service, _this.location, _this.mappings());
+            return _this.service
+                .makeRequest(requestInfo, authToken)
+                .getPromise()
+                .then(function (url) {
+                if (url === null) {
+                    throw noDownloadURL();
+                }
+                return url;
+            });
+        });
+    };
+    Reference.prototype.throwIfRoot_ = function (name) {
+        if (this.location.path === '') {
+            throw invalidRootOperation(name);
+        }
+    };
+    return Reference;
+}());
+
+/**
+ * A request whose promise always fails.
+ * @struct
+ * @template T
+ */
+var FailRequest = /** @class */ (function () {
+    function FailRequest(error) {
+        this.promise_ = Promise.reject(error);
+    }
+    /** @inheritDoc */
+    FailRequest.prototype.getPromise = function () {
+        return this.promise_;
+    };
+    /** @inheritDoc */
+    FailRequest.prototype.cancel = function (_appDelete) {
+    };
+    return FailRequest;
+}());
+
+/**
+ * @license
+ * Copyright 2017 Google LLC
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+/**
+ * @param f May be invoked
+ *     before the function returns.
+ * @param callback Get all the arguments passed to the function
+ *     passed to f, including the initial boolean.
+ */
+function start(f, callback, timeout) {
+    // TODO(andysoto): make this code cleaner (probably refactor into an actual
+    // type instead of a bunch of functions with state shared in the closure)
+    var waitSeconds = 1;
+    // Would type this as "number" but that doesn't work for Node so ¯\_(ツ)_/¯
+    // TODO: find a way to exclude Node type definition for storage because storage only works in browser
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    var timeoutId = null;
+    var hitTimeout = false;
+    var cancelState = 0;
+    function canceled() {
+        return cancelState === 2;
+    }
+    var triggeredCallback = false;
+    // TODO: This disable can be removed and the 'ignoreRestArgs' option added to
+    // the no-explicit-any rule when ESlint releases it.
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    function triggerCallback() {
+        var args = [];
+        for (var _i = 0; _i < arguments.length; _i++) {
+            args[_i] = arguments[_i];
+        }
+        if (!triggeredCallback) {
+            triggeredCallback = true;
+            callback.apply(null, args);
+        }
+    }
+    function callWithDelay(millis) {
+        timeoutId = setTimeout(function () {
+            timeoutId = null;
+            f(handler, canceled());
+        }, millis);
+    }
+    // TODO: This disable can be removed and the 'ignoreRestArgs' option added to
+    // the no-explicit-any rule when ESlint releases it.
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    function handler(success) {
+        var args = [];
+        for (var _i = 1; _i < arguments.length; _i++) {
+            args[_i - 1] = arguments[_i];
+        }
+        if (triggeredCallback) {
+            return;
+        }
+        if (success) {
+            triggerCallback.call.apply(triggerCallback, Object(tslib__WEBPACK_IMPORTED_MODULE_1__["__spreadArrays"])([null, success], args));
+            return;
+        }
+        var mustStop = canceled() || hitTimeout;
+        if (mustStop) {
+            triggerCallback.call.apply(triggerCallback, Object(tslib__WEBPACK_IMPORTED_MODULE_1__["__spreadArrays"])([null, success], args));
+            return;
+        }
+        if (waitSeconds < 64) {
+            /* TODO(andysoto): don't back off so quickly if we know we're offline. */
+            waitSeconds *= 2;
+        }
+        var waitMillis;
+        if (cancelState === 1) {
+            cancelState = 2;
+            waitMillis = 0;
+        }
+        else {
+            waitMillis = (waitSeconds + Math.random()) * 1000;
+        }
+        callWithDelay(waitMillis);
+    }
+    var stopped = false;
+    function stop(wasTimeout) {
+        if (stopped) {
+            return;
+        }
+        stopped = true;
+        if (triggeredCallback) {
+            return;
+        }
+        if (timeoutId !== null) {
+            if (!wasTimeout) {
+                cancelState = 2;
+            }
+            clearTimeout(timeoutId);
+            callWithDelay(0);
+        }
+        else {
+            if (!wasTimeout) {
+                cancelState = 1;
+            }
+        }
+    }
+    callWithDelay(0);
+    setTimeout(function () {
+        hitTimeout = true;
+        stop(true);
+    }, timeout);
+    return stop;
+}
+/**
+ * Stops the retry loop from repeating.
+ * If the function is currently "in between" retries, it is invoked immediately
+ * with the second parameter as "true". Otherwise, it will be invoked once more
+ * after the current invocation finishes iff the current invocation would have
+ * triggered another retry.
+ */
+function stop(id) {
+    id(false);
+}
+
+/**
+ * @license
+ * Copyright 2017 Google LLC
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+/**
+ * @struct
+ * @template T
+ */
+var NetworkRequest = /** @class */ (function () {
+    function NetworkRequest(url, method, headers, body, successCodes, additionalRetryCodes, callback, errorCallback, timeout, progressCallback, pool) {
+        var _this = this;
+        this.pendingXhr_ = null;
+        this.backoffId_ = null;
+        this.resolve_ = null;
+        this.reject_ = null;
+        this.canceled_ = false;
+        this.appDelete_ = false;
+        this.url_ = url;
+        this.method_ = method;
+        this.headers_ = headers;
+        this.body_ = body;
+        this.successCodes_ = successCodes.slice();
+        this.additionalRetryCodes_ = additionalRetryCodes.slice();
+        this.callback_ = callback;
+        this.errorCallback_ = errorCallback;
+        this.progressCallback_ = progressCallback;
+        this.timeout_ = timeout;
+        this.pool_ = pool;
+        this.promise_ = new Promise(function (resolve, reject) {
+            _this.resolve_ = resolve;
+            _this.reject_ = reject;
+            _this.start_();
+        });
+    }
+    /**
+     * Actually starts the retry loop.
+     */
+    NetworkRequest.prototype.start_ = function () {
+        var self = this;
+        function doTheRequest(backoffCallback, canceled) {
+            if (canceled) {
+                backoffCallback(false, new RequestEndStatus(false, null, true));
+                return;
+            }
+            var xhr = self.pool_.createXhrIo();
+            self.pendingXhr_ = xhr;
+            function progressListener(progressEvent) {
+                var loaded = progressEvent.loaded;
+                var total = progressEvent.lengthComputable ? progressEvent.total : -1;
+                if (self.progressCallback_ !== null) {
+                    self.progressCallback_(loaded, total);
+                }
+            }
+            if (self.progressCallback_ !== null) {
+                xhr.addUploadProgressListener(progressListener);
+            }
+            // eslint-disable-next-line @typescript-eslint/no-floating-promises
+            xhr
+                .send(self.url_, self.method_, self.body_, self.headers_)
+                .then(function (xhr) {
+                if (self.progressCallback_ !== null) {
+                    xhr.removeUploadProgressListener(progressListener);
+                }
+                self.pendingXhr_ = null;
+                xhr = xhr;
+                var hitServer = xhr.getErrorCode() === ErrorCode.NO_ERROR;
+                var status = xhr.getStatus();
+                if (!hitServer || self.isRetryStatusCode_(status)) {
+                    var wasCanceled = xhr.getErrorCode() === ErrorCode.ABORT;
+                    backoffCallback(false, new RequestEndStatus(false, null, wasCanceled));
+                    return;
+                }
+                var successCode = self.successCodes_.indexOf(status) !== -1;
+                backoffCallback(true, new RequestEndStatus(successCode, xhr));
+            });
+        }
+        /**
+         * @param requestWentThrough True if the request eventually went
+         *     through, false if it hit the retry limit or was canceled.
+         */
+        function backoffDone(requestWentThrough, status) {
+            var resolve = self.resolve_;
+            var reject = self.reject_;
+            var xhr = status.xhr;
+            if (status.wasSuccessCode) {
+                try {
+                    var result = self.callback_(xhr, xhr.getResponseText());
+                    if (isJustDef(result)) {
+                        resolve(result);
+                    }
+                    else {
+                        resolve();
+                    }
+                }
+                catch (e) {
+                    reject(e);
+                }
+            }
+            else {
+                if (xhr !== null) {
+                    var err = unknown();
+                    err.setServerResponseProp(xhr.getResponseText());
+                    if (self.errorCallback_) {
+                        reject(self.errorCallback_(xhr, err));
+                    }
+                    else {
+                        reject(err);
+                    }
+                }
+                else {
+                    if (status.canceled) {
+                        var err = self.appDelete_ ? appDeleted() : canceled();
+                        reject(err);
+                    }
+                    else {
+                        var err = retryLimitExceeded();
+                        reject(err);
+                    }
+                }
+            }
+        }
+        if (this.canceled_) {
+            backoffDone(false, new RequestEndStatus(false, null, true));
+        }
+        else {
+            this.backoffId_ = start(doTheRequest, backoffDone, this.timeout_);
+        }
+    };
+    /** @inheritDoc */
+    NetworkRequest.prototype.getPromise = function () {
+        return this.promise_;
+    };
+    /** @inheritDoc */
+    NetworkRequest.prototype.cancel = function (appDelete) {
+        this.canceled_ = true;
+        this.appDelete_ = appDelete || false;
+        if (this.backoffId_ !== null) {
+            stop(this.backoffId_);
+        }
+        if (this.pendingXhr_ !== null) {
+            this.pendingXhr_.abort();
+        }
+    };
+    NetworkRequest.prototype.isRetryStatusCode_ = function (status) {
+        // The codes for which to retry came from this page:
+        // https://cloud.google.com/storage/docs/exponential-backoff
+        var isFiveHundredCode = status >= 500 && status < 600;
+        var extraRetryCodes = [
+            // Request Timeout: web server didn't receive full request in time.
+            408,
+            // Too Many Requests: you're getting rate-limited, basically.
+            429
+        ];
+        var isExtraRetryCode = extraRetryCodes.indexOf(status) !== -1;
+        var isRequestSpecificRetryCode = this.additionalRetryCodes_.indexOf(status) !== -1;
+        return isFiveHundredCode || isExtraRetryCode || isRequestSpecificRetryCode;
+    };
+    return NetworkRequest;
+}());
+/**
+ * A collection of information about the result of a network request.
+ * @param opt_canceled Defaults to false.
+ * @struct
+ */
+var RequestEndStatus = /** @class */ (function () {
+    function RequestEndStatus(wasSuccessCode, xhr, canceled) {
+        this.wasSuccessCode = wasSuccessCode;
+        this.xhr = xhr;
+        this.canceled = !!canceled;
+    }
+    return RequestEndStatus;
+}());
+function addAuthHeader_(headers, authToken) {
+    if (authToken !== null && authToken.length > 0) {
+        headers['Authorization'] = 'Firebase ' + authToken;
+    }
+}
+function addVersionHeader_(headers) {
+    var version = typeof _firebase_app__WEBPACK_IMPORTED_MODULE_0___default.a !== 'undefined' ? _firebase_app__WEBPACK_IMPORTED_MODULE_0___default.a.SDK_VERSION : 'AppManager';
+    headers['X-Firebase-Storage-Version'] = 'webjs/' + version;
+}
+function addGmpidHeader_(headers, appId) {
+    if (appId) {
+        headers['X-Firebase-GMPID'] = appId;
+    }
+}
+/**
+ * @template T
+ */
+function makeRequest(requestInfo, appId, authToken, pool) {
+    var queryPart = makeQueryString(requestInfo.urlParams);
+    var url = requestInfo.url + queryPart;
+    var headers = Object.assign({}, requestInfo.headers);
+    addGmpidHeader_(headers, appId);
+    addAuthHeader_(headers, authToken);
+    addVersionHeader_(headers);
+    return new NetworkRequest(url, requestInfo.method, headers, requestInfo.body, requestInfo.successCodes, requestInfo.additionalRetryCodes, requestInfo.handler, requestInfo.errorHandler, requestInfo.timeout, requestInfo.progressCallback, pool);
+}
+
+/**
+ * @license
+ * Copyright 2017 Google LLC
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+/**
+ * A service that provides firebaseStorage.Reference instances.
+ * @param opt_url gs:// url to a custom Storage Bucket
+ *
+ * @struct
+ */
+var StorageService = /** @class */ (function () {
+    function StorageService(app, authProvider, pool, url) {
+        var _a;
+        this.bucket_ = null;
+        this.appId_ = null;
+        this.deleted_ = false;
+        this.app_ = app;
+        this.authProvider_ = authProvider;
+        this.maxOperationRetryTime_ = DEFAULT_MAX_OPERATION_RETRY_TIME;
+        this.maxUploadRetryTime_ = DEFAULT_MAX_UPLOAD_RETRY_TIME;
+        this.requests_ = new Set();
+        this.pool_ = pool;
+        if (url != null) {
+            this.bucket_ = Location.makeFromBucketSpec(url);
+        }
+        else {
+            this.bucket_ = StorageService.extractBucket_((_a = this.app_) === null || _a === void 0 ? void 0 : _a.options);
+        }
+        this.internals_ = new ServiceInternals(this);
+    }
+    StorageService.extractBucket_ = function (config) {
+        var bucketString = config === null || config === void 0 ? void 0 : config[CONFIG_STORAGE_BUCKET_KEY];
+        if (bucketString == null) {
+            return null;
+        }
+        return Location.makeFromBucketSpec(bucketString);
+    };
+    StorageService.prototype.getAuthToken = function () {
+        return Object(tslib__WEBPACK_IMPORTED_MODULE_1__["__awaiter"])(this, void 0, void 0, function () {
+            var auth, tokenData;
+            return Object(tslib__WEBPACK_IMPORTED_MODULE_1__["__generator"])(this, function (_a) {
+                switch (_a.label) {
+                    case 0:
+                        auth = this.authProvider_.getImmediate({ optional: true });
+                        if (!auth) return [3 /*break*/, 2];
+                        return [4 /*yield*/, auth.getToken()];
+                    case 1:
+                        tokenData = _a.sent();
+                        if (tokenData !== null) {
+                            return [2 /*return*/, tokenData.accessToken];
+                        }
+                        _a.label = 2;
+                    case 2: return [2 /*return*/, null];
+                }
+            });
+        });
+    };
+    /**
+     * Stop running requests and prevent more from being created.
+     */
+    StorageService.prototype.deleteApp = function () {
+        this.deleted_ = true;
+        this.app_ = null;
+        this.requests_.forEach(function (request) { return request.cancel(); });
+        this.requests_.clear();
+    };
+    /**
+     * Returns a new firebaseStorage.Reference object referencing this StorageService
+     * at the given Location.
+     * @param loc The Location.
+     * @return A firebaseStorage.Reference.
+     */
+    StorageService.prototype.makeStorageReference = function (loc) {
+        return new Reference(this, loc);
+    };
+    StorageService.prototype.makeRequest = function (requestInfo, authToken) {
+        var _this = this;
+        if (!this.deleted_) {
+            var request_1 = makeRequest(requestInfo, this.appId_, authToken, this.pool_);
+            this.requests_.add(request_1);
+            // Request removes itself from set when complete.
+            request_1.getPromise().then(function () { return _this.requests_.delete(request_1); }, function () { return _this.requests_.delete(request_1); });
+            return request_1;
+        }
+        else {
+            return new FailRequest(appDeleted());
+        }
+    };
+    /**
+     * Returns a firebaseStorage.Reference for the given path in the default
+     * bucket.
+     */
+    StorageService.prototype.ref = function (path) {
+        function validator(path) {
+            if (typeof path !== 'string') {
+                throw 'Path is not a string.';
+            }
+            if (/^[A-Za-z]+:\/\//.test(path)) {
+                throw 'Expected child path but got a URL, use refFromURL instead.';
+            }
+        }
+        validate('ref', [stringSpec(validator, true)], arguments);
+        if (this.bucket_ == null) {
+            throw new Error('No Storage Bucket defined in Firebase Options.');
+        }
+        var ref = new Reference(this, this.bucket_);
+        if (path != null) {
+            return ref.child(path);
+        }
+        else {
+            return ref;
+        }
+    };
+    /**
+     * Returns a firebaseStorage.Reference object for the given absolute URL,
+     * which must be a gs:// or http[s]:// URL.
+     */
+    StorageService.prototype.refFromURL = function (url) {
+        function validator(p) {
+            if (typeof p !== 'string') {
+                throw 'Path is not a string.';
+            }
+            if (!/^[A-Za-z]+:\/\//.test(p)) {
+                throw 'Expected full URL but got a child path, use ref instead.';
+            }
+            try {
+                Location.makeFromUrl(p);
+            }
+            catch (e) {
+                throw 'Expected valid full URL but got an invalid one.';
+            }
+        }
+        validate('refFromURL', [stringSpec(validator, false)], arguments);
+        return new Reference(this, url);
+    };
+    Object.defineProperty(StorageService.prototype, "maxUploadRetryTime", {
+        get: function () {
+            return this.maxUploadRetryTime_;
+        },
+        enumerable: false,
+        configurable: true
+    });
+    StorageService.prototype.setMaxUploadRetryTime = function (time) {
+        validate('setMaxUploadRetryTime', [nonNegativeNumberSpec()], arguments);
+        this.maxUploadRetryTime_ = time;
+    };
+    Object.defineProperty(StorageService.prototype, "maxOperationRetryTime", {
+        get: function () {
+            return this.maxOperationRetryTime_;
+        },
+        enumerable: false,
+        configurable: true
+    });
+    StorageService.prototype.setMaxOperationRetryTime = function (time) {
+        validate('setMaxOperationRetryTime', [nonNegativeNumberSpec()], arguments);
+        this.maxOperationRetryTime_ = time;
+    };
+    Object.defineProperty(StorageService.prototype, "app", {
+        get: function () {
+            return this.app_;
+        },
+        enumerable: false,
+        configurable: true
+    });
+    Object.defineProperty(StorageService.prototype, "INTERNAL", {
+        get: function () {
+            return this.internals_;
+        },
+        enumerable: false,
+        configurable: true
+    });
+    return StorageService;
+}());
+/**
+ * @struct
+ */
+var ServiceInternals = /** @class */ (function () {
+    function ServiceInternals(service) {
+        this.service_ = service;
+    }
+    /**
+     * Called when the associated app is deleted.
+     */
+    ServiceInternals.prototype.delete = function () {
+        this.service_.deleteApp();
+        return Promise.resolve();
+    };
+    return ServiceInternals;
+}());
+
+var name = "@firebase/storage";
+var version = "0.3.41";
+
+/**
+ * @license
+ * Copyright 2017 Google LLC
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+/**
+ * Type constant for Firebase Storage.
+ */
+var STORAGE_TYPE = 'storage';
+function factory(container, url) {
+    // Dependencies
+    var app = container.getProvider('app').getImmediate();
+    var authProvider = container.getProvider('auth-internal');
+    return new StorageService(app, authProvider, new XhrIoPool(), url);
+}
+function registerStorage(instance) {
+    var namespaceExports = {
+        // no-inline
+        TaskState: TaskState,
+        TaskEvent: TaskEvent,
+        StringFormat: StringFormat,
+        Storage: StorageService,
+        Reference: Reference
+    };
+    instance.INTERNAL.registerComponent(new _firebase_component__WEBPACK_IMPORTED_MODULE_2__["Component"](STORAGE_TYPE, factory, "PUBLIC" /* PUBLIC */)
+        .setServiceProps(namespaceExports)
+        .setMultipleInstances(true));
+    instance.registerVersion(name, version);
+}
+registerStorage(_firebase_app__WEBPACK_IMPORTED_MODULE_0___default.a);
+
+
+//# sourceMappingURL=index.esm.js.map
+
+
+/***/ }),
+
+/***/ "./node_modules/@firebase/storage/node_modules/tslib/tslib.es6.js":
+/*!************************************************************************!*\
+  !*** ./node_modules/@firebase/storage/node_modules/tslib/tslib.es6.js ***!
+  \************************************************************************/
+/*! exports provided: __extends, __assign, __rest, __decorate, __param, __metadata, __awaiter, __generator, __createBinding, __exportStar, __values, __read, __spread, __spreadArrays, __await, __asyncGenerator, __asyncDelegator, __asyncValues, __makeTemplateObject, __importStar, __importDefault, __classPrivateFieldGet, __classPrivateFieldSet */
+/***/ (function(module, __webpack_exports__, __webpack_require__) {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "__extends", function() { return __extends; });
+/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "__assign", function() { return __assign; });
+/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "__rest", function() { return __rest; });
+/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "__decorate", function() { return __decorate; });
+/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "__param", function() { return __param; });
+/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "__metadata", function() { return __metadata; });
+/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "__awaiter", function() { return __awaiter; });
+/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "__generator", function() { return __generator; });
+/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "__createBinding", function() { return __createBinding; });
+/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "__exportStar", function() { return __exportStar; });
+/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "__values", function() { return __values; });
+/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "__read", function() { return __read; });
+/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "__spread", function() { return __spread; });
+/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "__spreadArrays", function() { return __spreadArrays; });
+/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "__await", function() { return __await; });
+/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "__asyncGenerator", function() { return __asyncGenerator; });
+/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "__asyncDelegator", function() { return __asyncDelegator; });
+/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "__asyncValues", function() { return __asyncValues; });
+/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "__makeTemplateObject", function() { return __makeTemplateObject; });
+/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "__importStar", function() { return __importStar; });
+/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "__importDefault", function() { return __importDefault; });
+/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "__classPrivateFieldGet", function() { return __classPrivateFieldGet; });
+/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "__classPrivateFieldSet", function() { return __classPrivateFieldSet; });
+/*! *****************************************************************************
+Copyright (c) Microsoft Corporation.
+
+Permission to use, copy, modify, and/or distribute this software for any
+purpose with or without fee is hereby granted.
+
+THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES WITH
+REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF MERCHANTABILITY
+AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR ANY SPECIAL, DIRECT,
+INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES WHATSOEVER RESULTING FROM
+LOSS OF USE, DATA OR PROFITS, WHETHER IN AN ACTION OF CONTRACT, NEGLIGENCE OR
+OTHER TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR
+PERFORMANCE OF THIS SOFTWARE.
+***************************************************************************** */
+/* global Reflect, Promise */
+
+var extendStatics = function(d, b) {
+    extendStatics = Object.setPrototypeOf ||
+        ({ __proto__: [] } instanceof Array && function (d, b) { d.__proto__ = b; }) ||
+        function (d, b) { for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p]; };
+    return extendStatics(d, b);
+};
+
+function __extends(d, b) {
+    extendStatics(d, b);
+    function __() { this.constructor = d; }
+    d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
+}
+
+var __assign = function() {
+    __assign = Object.assign || function __assign(t) {
+        for (var s, i = 1, n = arguments.length; i < n; i++) {
+            s = arguments[i];
+            for (var p in s) if (Object.prototype.hasOwnProperty.call(s, p)) t[p] = s[p];
+        }
+        return t;
+    }
+    return __assign.apply(this, arguments);
+}
+
+function __rest(s, e) {
+    var t = {};
+    for (var p in s) if (Object.prototype.hasOwnProperty.call(s, p) && e.indexOf(p) < 0)
+        t[p] = s[p];
+    if (s != null && typeof Object.getOwnPropertySymbols === "function")
+        for (var i = 0, p = Object.getOwnPropertySymbols(s); i < p.length; i++) {
+            if (e.indexOf(p[i]) < 0 && Object.prototype.propertyIsEnumerable.call(s, p[i]))
+                t[p[i]] = s[p[i]];
+        }
+    return t;
+}
+
+function __decorate(decorators, target, key, desc) {
+    var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
+    if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
+    else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
+    return c > 3 && r && Object.defineProperty(target, key, r), r;
+}
+
+function __param(paramIndex, decorator) {
+    return function (target, key) { decorator(target, key, paramIndex); }
+}
+
+function __metadata(metadataKey, metadataValue) {
+    if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(metadataKey, metadataValue);
+}
+
+function __awaiter(thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+}
+
+function __generator(thisArg, body) {
+    var _ = { label: 0, sent: function() { if (t[0] & 1) throw t[1]; return t[1]; }, trys: [], ops: [] }, f, y, t, g;
+    return g = { next: verb(0), "throw": verb(1), "return": verb(2) }, typeof Symbol === "function" && (g[Symbol.iterator] = function() { return this; }), g;
+    function verb(n) { return function (v) { return step([n, v]); }; }
+    function step(op) {
+        if (f) throw new TypeError("Generator is already executing.");
+        while (_) try {
+            if (f = 1, y && (t = op[0] & 2 ? y["return"] : op[0] ? y["throw"] || ((t = y["return"]) && t.call(y), 0) : y.next) && !(t = t.call(y, op[1])).done) return t;
+            if (y = 0, t) op = [op[0] & 2, t.value];
+            switch (op[0]) {
+                case 0: case 1: t = op; break;
+                case 4: _.label++; return { value: op[1], done: false };
+                case 5: _.label++; y = op[1]; op = [0]; continue;
+                case 7: op = _.ops.pop(); _.trys.pop(); continue;
+                default:
+                    if (!(t = _.trys, t = t.length > 0 && t[t.length - 1]) && (op[0] === 6 || op[0] === 2)) { _ = 0; continue; }
+                    if (op[0] === 3 && (!t || (op[1] > t[0] && op[1] < t[3]))) { _.label = op[1]; break; }
+                    if (op[0] === 6 && _.label < t[1]) { _.label = t[1]; t = op; break; }
+                    if (t && _.label < t[2]) { _.label = t[2]; _.ops.push(op); break; }
+                    if (t[2]) _.ops.pop();
+                    _.trys.pop(); continue;
+            }
+            op = body.call(thisArg, _);
+        } catch (e) { op = [6, e]; y = 0; } finally { f = t = 0; }
+        if (op[0] & 5) throw op[1]; return { value: op[0] ? op[1] : void 0, done: true };
+    }
+}
+
+function __createBinding(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}
+
+function __exportStar(m, exports) {
+    for (var p in m) if (p !== "default" && !exports.hasOwnProperty(p)) exports[p] = m[p];
+}
+
+function __values(o) {
+    var s = typeof Symbol === "function" && Symbol.iterator, m = s && o[s], i = 0;
+    if (m) return m.call(o);
+    if (o && typeof o.length === "number") return {
+        next: function () {
+            if (o && i >= o.length) o = void 0;
+            return { value: o && o[i++], done: !o };
+        }
+    };
+    throw new TypeError(s ? "Object is not iterable." : "Symbol.iterator is not defined.");
+}
+
+function __read(o, n) {
+    var m = typeof Symbol === "function" && o[Symbol.iterator];
+    if (!m) return o;
+    var i = m.call(o), r, ar = [], e;
+    try {
+        while ((n === void 0 || n-- > 0) && !(r = i.next()).done) ar.push(r.value);
+    }
+    catch (error) { e = { error: error }; }
+    finally {
+        try {
+            if (r && !r.done && (m = i["return"])) m.call(i);
+        }
+        finally { if (e) throw e.error; }
+    }
+    return ar;
+}
+
+function __spread() {
+    for (var ar = [], i = 0; i < arguments.length; i++)
+        ar = ar.concat(__read(arguments[i]));
+    return ar;
+}
+
+function __spreadArrays() {
+    for (var s = 0, i = 0, il = arguments.length; i < il; i++) s += arguments[i].length;
+    for (var r = Array(s), k = 0, i = 0; i < il; i++)
+        for (var a = arguments[i], j = 0, jl = a.length; j < jl; j++, k++)
+            r[k] = a[j];
+    return r;
+};
+
+function __await(v) {
+    return this instanceof __await ? (this.v = v, this) : new __await(v);
+}
+
+function __asyncGenerator(thisArg, _arguments, generator) {
+    if (!Symbol.asyncIterator) throw new TypeError("Symbol.asyncIterator is not defined.");
+    var g = generator.apply(thisArg, _arguments || []), i, q = [];
+    return i = {}, verb("next"), verb("throw"), verb("return"), i[Symbol.asyncIterator] = function () { return this; }, i;
+    function verb(n) { if (g[n]) i[n] = function (v) { return new Promise(function (a, b) { q.push([n, v, a, b]) > 1 || resume(n, v); }); }; }
+    function resume(n, v) { try { step(g[n](v)); } catch (e) { settle(q[0][3], e); } }
+    function step(r) { r.value instanceof __await ? Promise.resolve(r.value.v).then(fulfill, reject) : settle(q[0][2], r); }
+    function fulfill(value) { resume("next", value); }
+    function reject(value) { resume("throw", value); }
+    function settle(f, v) { if (f(v), q.shift(), q.length) resume(q[0][0], q[0][1]); }
+}
+
+function __asyncDelegator(o) {
+    var i, p;
+    return i = {}, verb("next"), verb("throw", function (e) { throw e; }), verb("return"), i[Symbol.iterator] = function () { return this; }, i;
+    function verb(n, f) { i[n] = o[n] ? function (v) { return (p = !p) ? { value: __await(o[n](v)), done: n === "return" } : f ? f(v) : v; } : f; }
+}
+
+function __asyncValues(o) {
+    if (!Symbol.asyncIterator) throw new TypeError("Symbol.asyncIterator is not defined.");
+    var m = o[Symbol.asyncIterator], i;
+    return m ? m.call(o) : (o = typeof __values === "function" ? __values(o) : o[Symbol.iterator](), i = {}, verb("next"), verb("throw"), verb("return"), i[Symbol.asyncIterator] = function () { return this; }, i);
+    function verb(n) { i[n] = o[n] && function (v) { return new Promise(function (resolve, reject) { v = o[n](v), settle(resolve, reject, v.done, v.value); }); }; }
+    function settle(resolve, reject, d, v) { Promise.resolve(v).then(function(v) { resolve({ value: v, done: d }); }, reject); }
+}
+
+function __makeTemplateObject(cooked, raw) {
+    if (Object.defineProperty) { Object.defineProperty(cooked, "raw", { value: raw }); } else { cooked.raw = raw; }
+    return cooked;
+};
+
+function __importStar(mod) {
+    if (mod && mod.__esModule) return mod;
+    var result = {};
+    if (mod != null) for (var k in mod) if (Object.hasOwnProperty.call(mod, k)) result[k] = mod[k];
+    result.default = mod;
+    return result;
+}
+
+function __importDefault(mod) {
+    return (mod && mod.__esModule) ? mod : { default: mod };
+}
+
+function __classPrivateFieldGet(receiver, privateMap) {
+    if (!privateMap.has(receiver)) {
+        throw new TypeError("attempted to get private field on non-instance");
+    }
+    return privateMap.get(receiver);
+}
+
+function __classPrivateFieldSet(receiver, privateMap, value) {
+    if (!privateMap.has(receiver)) {
+        throw new TypeError("attempted to set private field on non-instance");
+    }
+    privateMap.set(receiver, value);
+    return value;
+}
+
+
+/***/ }),
+
+/***/ "./node_modules/@firebase/util/dist/index.cjs.js":
+/*!*******************************************************!*\
+  !*** ./node_modules/@firebase/util/dist/index.cjs.js ***!
+  \*******************************************************/
+/*! no static exports found */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+
+Object.defineProperty(exports, '__esModule', { value: true });
+
+var tslib = __webpack_require__(/*! tslib */ "./node_modules/@firebase/storage/node_modules/tslib/tslib.es6.js");
+
+/**
+ * @license
+ * Copyright 2017 Google LLC
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+/**
+ * @fileoverview Firebase constants.  Some of these (@defines) can be overridden at compile-time.
+ */
+var CONSTANTS = {
+    /**
+     * @define {boolean} Whether this is the client Node.js SDK.
+     */
+    NODE_CLIENT: false,
+    /**
+     * @define {boolean} Whether this is the Admin Node.js SDK.
+     */
+    NODE_ADMIN: false,
+    /**
+     * Firebase SDK Version
+     */
+    SDK_VERSION: '${JSCORE_VERSION}'
+};
+
+/**
+ * @license
+ * Copyright 2017 Google LLC
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+/**
+ * Throws an error if the provided assertion is falsy
+ */
+var assert = function (assertion, message) {
+    if (!assertion) {
+        throw assertionError(message);
+    }
+};
+/**
+ * Returns an Error object suitable for throwing.
+ */
+var assertionError = function (message) {
+    return new Error('Firebase Database (' +
+        CONSTANTS.SDK_VERSION +
+        ') INTERNAL ASSERT FAILED: ' +
+        message);
+};
+
+/**
+ * @license
+ * Copyright 2017 Google LLC
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+var stringToByteArray = function (str) {
+    // TODO(user): Use native implementations if/when available
+    var out = [];
+    var p = 0;
+    for (var i = 0; i < str.length; i++) {
+        var c = str.charCodeAt(i);
+        if (c < 128) {
+            out[p++] = c;
+        }
+        else if (c < 2048) {
+            out[p++] = (c >> 6) | 192;
+            out[p++] = (c & 63) | 128;
+        }
+        else if ((c & 0xfc00) === 0xd800 &&
+            i + 1 < str.length &&
+            (str.charCodeAt(i + 1) & 0xfc00) === 0xdc00) {
+            // Surrogate Pair
+            c = 0x10000 + ((c & 0x03ff) << 10) + (str.charCodeAt(++i) & 0x03ff);
+            out[p++] = (c >> 18) | 240;
+            out[p++] = ((c >> 12) & 63) | 128;
+            out[p++] = ((c >> 6) & 63) | 128;
+            out[p++] = (c & 63) | 128;
+        }
+        else {
+            out[p++] = (c >> 12) | 224;
+            out[p++] = ((c >> 6) & 63) | 128;
+            out[p++] = (c & 63) | 128;
+        }
+    }
+    return out;
+};
+/**
+ * Turns an array of numbers into the string given by the concatenation of the
+ * characters to which the numbers correspond.
+ * @param bytes Array of numbers representing characters.
+ * @return Stringification of the array.
+ */
+var byteArrayToString = function (bytes) {
+    // TODO(user): Use native implementations if/when available
+    var out = [];
+    var pos = 0, c = 0;
+    while (pos < bytes.length) {
+        var c1 = bytes[pos++];
+        if (c1 < 128) {
+            out[c++] = String.fromCharCode(c1);
+        }
+        else if (c1 > 191 && c1 < 224) {
+            var c2 = bytes[pos++];
+            out[c++] = String.fromCharCode(((c1 & 31) << 6) | (c2 & 63));
+        }
+        else if (c1 > 239 && c1 < 365) {
+            // Surrogate Pair
+            var c2 = bytes[pos++];
+            var c3 = bytes[pos++];
+            var c4 = bytes[pos++];
+            var u = (((c1 & 7) << 18) | ((c2 & 63) << 12) | ((c3 & 63) << 6) | (c4 & 63)) -
+                0x10000;
+            out[c++] = String.fromCharCode(0xd800 + (u >> 10));
+            out[c++] = String.fromCharCode(0xdc00 + (u & 1023));
+        }
+        else {
+            var c2 = bytes[pos++];
+            var c3 = bytes[pos++];
+            out[c++] = String.fromCharCode(((c1 & 15) << 12) | ((c2 & 63) << 6) | (c3 & 63));
+        }
+    }
+    return out.join('');
+};
+// We define it as an object literal instead of a class because a class compiled down to es5 can't
+// be treeshaked. https://github.com/rollup/rollup/issues/1691
+// Static lookup maps, lazily populated by init_()
+var base64 = {
+    /**
+     * Maps bytes to characters.
+     */
+    byteToCharMap_: null,
+    /**
+     * Maps characters to bytes.
+     */
+    charToByteMap_: null,
+    /**
+     * Maps bytes to websafe characters.
+     * @private
+     */
+    byteToCharMapWebSafe_: null,
+    /**
+     * Maps websafe characters to bytes.
+     * @private
+     */
+    charToByteMapWebSafe_: null,
+    /**
+     * Our default alphabet, shared between
+     * ENCODED_VALS and ENCODED_VALS_WEBSAFE
+     */
+    ENCODED_VALS_BASE: 'ABCDEFGHIJKLMNOPQRSTUVWXYZ' + 'abcdefghijklmnopqrstuvwxyz' + '0123456789',
+    /**
+     * Our default alphabet. Value 64 (=) is special; it means "nothing."
+     */
+    get ENCODED_VALS() {
+        return this.ENCODED_VALS_BASE + '+/=';
+    },
+    /**
+     * Our websafe alphabet.
+     */
+    get ENCODED_VALS_WEBSAFE() {
+        return this.ENCODED_VALS_BASE + '-_.';
+    },
+    /**
+     * Whether this browser supports the atob and btoa functions. This extension
+     * started at Mozilla but is now implemented by many browsers. We use the
+     * ASSUME_* variables to avoid pulling in the full useragent detection library
+     * but still allowing the standard per-browser compilations.
+     *
+     */
+    HAS_NATIVE_SUPPORT: typeof atob === 'function',
+    /**
+     * Base64-encode an array of bytes.
+     *
+     * @param input An array of bytes (numbers with
+     *     value in [0, 255]) to encode.
+     * @param webSafe Boolean indicating we should use the
+     *     alternative alphabet.
+     * @return The base64 encoded string.
+     */
+    encodeByteArray: function (input, webSafe) {
+        if (!Array.isArray(input)) {
+            throw Error('encodeByteArray takes an array as a parameter');
+        }
+        this.init_();
+        var byteToCharMap = webSafe
+            ? this.byteToCharMapWebSafe_
+            : this.byteToCharMap_;
+        var output = [];
+        for (var i = 0; i < input.length; i += 3) {
+            var byte1 = input[i];
+            var haveByte2 = i + 1 < input.length;
+            var byte2 = haveByte2 ? input[i + 1] : 0;
+            var haveByte3 = i + 2 < input.length;
+            var byte3 = haveByte3 ? input[i + 2] : 0;
+            var outByte1 = byte1 >> 2;
+            var outByte2 = ((byte1 & 0x03) << 4) | (byte2 >> 4);
+            var outByte3 = ((byte2 & 0x0f) << 2) | (byte3 >> 6);
+            var outByte4 = byte3 & 0x3f;
+            if (!haveByte3) {
+                outByte4 = 64;
+                if (!haveByte2) {
+                    outByte3 = 64;
+                }
+            }
+            output.push(byteToCharMap[outByte1], byteToCharMap[outByte2], byteToCharMap[outByte3], byteToCharMap[outByte4]);
+        }
+        return output.join('');
+    },
+    /**
+     * Base64-encode a string.
+     *
+     * @param input A string to encode.
+     * @param webSafe If true, we should use the
+     *     alternative alphabet.
+     * @return The base64 encoded string.
+     */
+    encodeString: function (input, webSafe) {
+        // Shortcut for Mozilla browsers that implement
+        // a native base64 encoder in the form of "btoa/atob"
+        if (this.HAS_NATIVE_SUPPORT && !webSafe) {
+            return btoa(input);
+        }
+        return this.encodeByteArray(stringToByteArray(input), webSafe);
+    },
+    /**
+     * Base64-decode a string.
+     *
+     * @param input to decode.
+     * @param webSafe True if we should use the
+     *     alternative alphabet.
+     * @return string representing the decoded value.
+     */
+    decodeString: function (input, webSafe) {
+        // Shortcut for Mozilla browsers that implement
+        // a native base64 encoder in the form of "btoa/atob"
+        if (this.HAS_NATIVE_SUPPORT && !webSafe) {
+            return atob(input);
+        }
+        return byteArrayToString(this.decodeStringToByteArray(input, webSafe));
+    },
+    /**
+     * Base64-decode a string.
+     *
+     * In base-64 decoding, groups of four characters are converted into three
+     * bytes.  If the encoder did not apply padding, the input length may not
+     * be a multiple of 4.
+     *
+     * In this case, the last group will have fewer than 4 characters, and
+     * padding will be inferred.  If the group has one or two characters, it decodes
+     * to one byte.  If the group has three characters, it decodes to two bytes.
+     *
+     * @param input Input to decode.
+     * @param webSafe True if we should use the web-safe alphabet.
+     * @return bytes representing the decoded value.
+     */
+    decodeStringToByteArray: function (input, webSafe) {
+        this.init_();
+        var charToByteMap = webSafe
+            ? this.charToByteMapWebSafe_
+            : this.charToByteMap_;
+        var output = [];
+        for (var i = 0; i < input.length;) {
+            var byte1 = charToByteMap[input.charAt(i++)];
+            var haveByte2 = i < input.length;
+            var byte2 = haveByte2 ? charToByteMap[input.charAt(i)] : 0;
+            ++i;
+            var haveByte3 = i < input.length;
+            var byte3 = haveByte3 ? charToByteMap[input.charAt(i)] : 64;
+            ++i;
+            var haveByte4 = i < input.length;
+            var byte4 = haveByte4 ? charToByteMap[input.charAt(i)] : 64;
+            ++i;
+            if (byte1 == null || byte2 == null || byte3 == null || byte4 == null) {
+                throw Error();
+            }
+            var outByte1 = (byte1 << 2) | (byte2 >> 4);
+            output.push(outByte1);
+            if (byte3 !== 64) {
+                var outByte2 = ((byte2 << 4) & 0xf0) | (byte3 >> 2);
+                output.push(outByte2);
+                if (byte4 !== 64) {
+                    var outByte3 = ((byte3 << 6) & 0xc0) | byte4;
+                    output.push(outByte3);
+                }
+            }
+        }
+        return output;
+    },
+    /**
+     * Lazy static initialization function. Called before
+     * accessing any of the static map variables.
+     * @private
+     */
+    init_: function () {
+        if (!this.byteToCharMap_) {
+            this.byteToCharMap_ = {};
+            this.charToByteMap_ = {};
+            this.byteToCharMapWebSafe_ = {};
+            this.charToByteMapWebSafe_ = {};
+            // We want quick mappings back and forth, so we precompute two maps.
+            for (var i = 0; i < this.ENCODED_VALS.length; i++) {
+                this.byteToCharMap_[i] = this.ENCODED_VALS.charAt(i);
+                this.charToByteMap_[this.byteToCharMap_[i]] = i;
+                this.byteToCharMapWebSafe_[i] = this.ENCODED_VALS_WEBSAFE.charAt(i);
+                this.charToByteMapWebSafe_[this.byteToCharMapWebSafe_[i]] = i;
+                // Be forgiving when decoding and correctly decode both encodings.
+                if (i >= this.ENCODED_VALS_BASE.length) {
+                    this.charToByteMap_[this.ENCODED_VALS_WEBSAFE.charAt(i)] = i;
+                    this.charToByteMapWebSafe_[this.ENCODED_VALS.charAt(i)] = i;
+                }
+            }
+        }
+    }
+};
+/**
+ * URL-safe base64 encoding
+ */
+var base64Encode = function (str) {
+    var utf8Bytes = stringToByteArray(str);
+    return base64.encodeByteArray(utf8Bytes, true);
+};
+/**
+ * URL-safe base64 decoding
+ *
+ * NOTE: DO NOT use the global atob() function - it does NOT support the
+ * base64Url variant encoding.
+ *
+ * @param str To be decoded
+ * @return Decoded result, if possible
+ */
+var base64Decode = function (str) {
+    try {
+        return base64.decodeString(str, true);
+    }
+    catch (e) {
+        console.error('base64Decode failed: ', e);
+    }
+    return null;
+};
+
+/**
+ * @license
+ * Copyright 2017 Google LLC
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+/**
+ * Do a deep-copy of basic JavaScript Objects or Arrays.
+ */
+function deepCopy(value) {
+    return deepExtend(undefined, value);
+}
+/**
+ * Copy properties from source to target (recursively allows extension
+ * of Objects and Arrays).  Scalar values in the target are over-written.
+ * If target is undefined, an object of the appropriate type will be created
+ * (and returned).
+ *
+ * We recursively copy all child properties of plain Objects in the source- so
+ * that namespace- like dictionaries are merged.
+ *
+ * Note that the target can be a function, in which case the properties in
+ * the source Object are copied onto it as static properties of the Function.
+ */
+function deepExtend(target, source) {
+    if (!(source instanceof Object)) {
+        return source;
+    }
+    switch (source.constructor) {
+        case Date:
+            // Treat Dates like scalars; if the target date object had any child
+            // properties - they will be lost!
+            var dateValue = source;
+            return new Date(dateValue.getTime());
+        case Object:
+            if (target === undefined) {
+                target = {};
+            }
+            break;
+        case Array:
+            // Always copy the array source and overwrite the target.
+            target = [];
+            break;
+        default:
+            // Not a plain Object - treat it as a scalar.
+            return source;
+    }
+    for (var prop in source) {
+        if (!source.hasOwnProperty(prop)) {
+            continue;
+        }
+        target[prop] = deepExtend(target[prop], source[prop]);
+    }
+    return target;
+}
+
+/**
+ * @license
+ * Copyright 2017 Google LLC
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+var Deferred = /** @class */ (function () {
+    function Deferred() {
+        var _this = this;
+        this.reject = function () { };
+        this.resolve = function () { };
+        this.promise = new Promise(function (resolve, reject) {
+            _this.resolve = resolve;
+            _this.reject = reject;
+        });
+    }
+    /**
+     * Our API internals are not promiseified and cannot because our callback APIs have subtle expectations around
+     * invoking promises inline, which Promises are forbidden to do. This method accepts an optional node-style callback
+     * and returns a node-style callback which will resolve or reject the Deferred's promise.
+     */
+    Deferred.prototype.wrapCallback = function (callback) {
+        var _this = this;
+        return function (error, value) {
+            if (error) {
+                _this.reject(error);
+            }
+            else {
+                _this.resolve(value);
+            }
+            if (typeof callback === 'function') {
+                // Attaching noop handler just in case developer wasn't expecting
+                // promises
+                _this.promise.catch(function () { });
+                // Some of our callbacks don't expect a value and our own tests
+                // assert that the parameter length is 1
+                if (callback.length === 1) {
+                    callback(error);
+                }
+                else {
+                    callback(error, value);
+                }
+            }
+        };
+    };
+    return Deferred;
+}());
+
+/**
+ * @license
+ * Copyright 2017 Google LLC
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+/**
+ * Returns navigator.userAgent string or '' if it's not defined.
+ * @return user agent string
+ */
+function getUA() {
+    if (typeof navigator !== 'undefined' &&
+        typeof navigator['userAgent'] === 'string') {
+        return navigator['userAgent'];
+    }
+    else {
+        return '';
+    }
+}
+/**
+ * Detect Cordova / PhoneGap / Ionic frameworks on a mobile device.
+ *
+ * Deliberately does not rely on checking `file://` URLs (as this fails PhoneGap
+ * in the Ripple emulator) nor Cordova `onDeviceReady`, which would normally
+ * wait for a callback.
+ */
+function isMobileCordova() {
+    return (typeof window !== 'undefined' &&
+        // @ts-ignore Setting up an broadly applicable index signature for Window
+        // just to deal with this case would probably be a bad idea.
+        !!(window['cordova'] || window['phonegap'] || window['PhoneGap']) &&
+        /ios|iphone|ipod|ipad|android|blackberry|iemobile/i.test(getUA()));
+}
+/**
+ * Detect Node.js.
+ *
+ * @return true if Node.js environment is detected.
+ */
+// Node detection logic from: https://github.com/iliakan/detect-node/
+function isNode() {
+    try {
+        return (Object.prototype.toString.call(global.process) === '[object process]');
+    }
+    catch (e) {
+        return false;
+    }
+}
+/**
+ * Detect Browser Environment
+ */
+function isBrowser() {
+    return typeof self === 'object' && self.self === self;
+}
+function isBrowserExtension() {
+    var runtime = typeof chrome === 'object'
+        ? chrome.runtime
+        : typeof browser === 'object'
+            ? browser.runtime
+            : undefined;
+    return typeof runtime === 'object' && runtime.id !== undefined;
+}
+/**
+ * Detect React Native.
+ *
+ * @return true if ReactNative environment is detected.
+ */
+function isReactNative() {
+    return (typeof navigator === 'object' && navigator['product'] === 'ReactNative');
+}
+/** Detects Electron apps. */
+function isElectron() {
+    return getUA().indexOf('Electron/') >= 0;
+}
+/** Detects Internet Explorer. */
+function isIE() {
+    var ua = getUA();
+    return ua.indexOf('MSIE ') >= 0 || ua.indexOf('Trident/') >= 0;
+}
+/** Detects Universal Windows Platform apps. */
+function isUWP() {
+    return getUA().indexOf('MSAppHost/') >= 0;
+}
+/**
+ * Detect whether the current SDK build is the Node version.
+ *
+ * @return true if it's the Node SDK build.
+ */
+function isNodeSdk() {
+    return CONSTANTS.NODE_CLIENT === true || CONSTANTS.NODE_ADMIN === true;
+}
+/** Returns true if we are running in Safari. */
+function isSafari() {
+    return (!isNode() &&
+        navigator.userAgent.includes('Safari') &&
+        !navigator.userAgent.includes('Chrome'));
+}
+/**
+ * This method checks if indexedDB is supported by current browser
+ * @return true if indexedDB is supported by current browser
+ */
+function isIndexedDBAvailable() {
+    if (!('indexedDB' in window) || indexedDB === null) {
+        return false;
+    }
+    return true;
+}
+/**
+ * This method validates browser context for indexedDB by opening a dummy indexedDB database and reject
+ * if errors occur during the database open operation.
+ */
+function validateIndexedDBOpenable() {
+    return new Promise(function (resolve, reject) {
+        try {
+            var preExist_1 = true;
+            var DB_CHECK_NAME_1 = 'validate-browser-context-for-indexeddb-analytics-module';
+            var request_1 = window.indexedDB.open(DB_CHECK_NAME_1);
+            request_1.onsuccess = function () {
+                request_1.result.close();
+                // delete database only when it doesn't pre-exist
+                if (!preExist_1) {
+                    window.indexedDB.deleteDatabase(DB_CHECK_NAME_1);
+                }
+                resolve(true);
+            };
+            request_1.onupgradeneeded = function () {
+                preExist_1 = false;
+            };
+            request_1.onerror = function () {
+                var _a;
+                reject(((_a = request_1.error) === null || _a === void 0 ? void 0 : _a.message) || '');
+            };
+        }
+        catch (error) {
+            reject(error);
+        }
+    });
+}
+/**
+ *
+ * This method checks whether cookie is enabled within current browser
+ * @return true if cookie is enabled within current browser
+ */
+function areCookiesEnabled() {
+    if (!navigator || !navigator.cookieEnabled) {
+        return false;
+    }
+    return true;
+}
+
+/**
+ * @license
+ * Copyright 2017 Google LLC
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+var ERROR_NAME = 'FirebaseError';
+// Based on code from:
+// https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Error#Custom_Error_Types
+var FirebaseError = /** @class */ (function (_super) {
+    tslib.__extends(FirebaseError, _super);
+    function FirebaseError(code, message) {
+        var _this = _super.call(this, message) || this;
+        _this.code = code;
+        _this.name = ERROR_NAME;
+        // Fix For ES5
+        // https://github.com/Microsoft/TypeScript-wiki/blob/master/Breaking-Changes.md#extending-built-ins-like-error-array-and-map-may-no-longer-work
+        Object.setPrototypeOf(_this, FirebaseError.prototype);
+        // Maintains proper stack trace for where our error was thrown.
+        // Only available on V8.
+        if (Error.captureStackTrace) {
+            Error.captureStackTrace(_this, ErrorFactory.prototype.create);
+        }
+        return _this;
+    }
+    return FirebaseError;
+}(Error));
+var ErrorFactory = /** @class */ (function () {
+    function ErrorFactory(service, serviceName, errors) {
+        this.service = service;
+        this.serviceName = serviceName;
+        this.errors = errors;
+    }
+    ErrorFactory.prototype.create = function (code) {
+        var data = [];
+        for (var _i = 1; _i < arguments.length; _i++) {
+            data[_i - 1] = arguments[_i];
+        }
+        var customData = data[0] || {};
+        var fullCode = this.service + "/" + code;
+        var template = this.errors[code];
+        var message = template ? replaceTemplate(template, customData) : 'Error';
+        // Service Name: Error message (service/code).
+        var fullMessage = this.serviceName + ": " + message + " (" + fullCode + ").";
+        var error = new FirebaseError(fullCode, fullMessage);
+        // Keys with an underscore at the end of their name are not included in
+        // error.data for some reason.
+        // TODO: Replace with Object.entries when lib is updated to es2017.
+        for (var _a = 0, _b = Object.keys(customData); _a < _b.length; _a++) {
+            var key = _b[_a];
+            if (key.slice(-1) !== '_') {
+                if (key in error) {
+                    console.warn("Overwriting FirebaseError base field \"" + key + "\" can cause unexpected behavior.");
+                }
+                error[key] = customData[key];
+            }
+        }
+        return error;
+    };
+    return ErrorFactory;
+}());
+function replaceTemplate(template, data) {
+    return template.replace(PATTERN, function (_, key) {
+        var value = data[key];
+        return value != null ? String(value) : "<" + key + "?>";
+    });
+}
+var PATTERN = /\{\$([^}]+)}/g;
+
+/**
+ * @license
+ * Copyright 2017 Google LLC
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+/**
+ * Evaluates a JSON string into a javascript object.
+ *
+ * @param {string} str A string containing JSON.
+ * @return {*} The javascript object representing the specified JSON.
+ */
+function jsonEval(str) {
+    return JSON.parse(str);
+}
+/**
+ * Returns JSON representing a javascript object.
+ * @param {*} data Javascript object to be stringified.
+ * @return {string} The JSON contents of the object.
+ */
+function stringify(data) {
+    return JSON.stringify(data);
+}
+
+/**
+ * @license
+ * Copyright 2017 Google LLC
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+/**
+ * Decodes a Firebase auth. token into constituent parts.
+ *
+ * Notes:
+ * - May return with invalid / incomplete claims if there's no native base64 decoding support.
+ * - Doesn't check if the token is actually valid.
+ */
+var decode = function (token) {
+    var header = {}, claims = {}, data = {}, signature = '';
+    try {
+        var parts = token.split('.');
+        header = jsonEval(base64Decode(parts[0]) || '');
+        claims = jsonEval(base64Decode(parts[1]) || '');
+        signature = parts[2];
+        data = claims['d'] || {};
+        delete claims['d'];
+    }
+    catch (e) { }
+    return {
+        header: header,
+        claims: claims,
+        data: data,
+        signature: signature
+    };
+};
+/**
+ * Decodes a Firebase auth. token and checks the validity of its time-based claims. Will return true if the
+ * token is within the time window authorized by the 'nbf' (not-before) and 'iat' (issued-at) claims.
+ *
+ * Notes:
+ * - May return a false negative if there's no native base64 decoding support.
+ * - Doesn't check if the token is actually valid.
+ */
+var isValidTimestamp = function (token) {
+    var claims = decode(token).claims;
+    var now = Math.floor(new Date().getTime() / 1000);
+    var validSince = 0, validUntil = 0;
+    if (typeof claims === 'object') {
+        if (claims.hasOwnProperty('nbf')) {
+            validSince = claims['nbf'];
+        }
+        else if (claims.hasOwnProperty('iat')) {
+            validSince = claims['iat'];
+        }
+        if (claims.hasOwnProperty('exp')) {
+            validUntil = claims['exp'];
+        }
+        else {
+            // token will expire after 24h by default
+            validUntil = validSince + 86400;
+        }
+    }
+    return (!!now &&
+        !!validSince &&
+        !!validUntil &&
+        now >= validSince &&
+        now <= validUntil);
+};
+/**
+ * Decodes a Firebase auth. token and returns its issued at time if valid, null otherwise.
+ *
+ * Notes:
+ * - May return null if there's no native base64 decoding support.
+ * - Doesn't check if the token is actually valid.
+ */
+var issuedAtTime = function (token) {
+    var claims = decode(token).claims;
+    if (typeof claims === 'object' && claims.hasOwnProperty('iat')) {
+        return claims['iat'];
+    }
+    return null;
+};
+/**
+ * Decodes a Firebase auth. token and checks the validity of its format. Expects a valid issued-at time.
+ *
+ * Notes:
+ * - May return a false negative if there's no native base64 decoding support.
+ * - Doesn't check if the token is actually valid.
+ */
+var isValidFormat = function (token) {
+    var decoded = decode(token), claims = decoded.claims;
+    return !!claims && typeof claims === 'object' && claims.hasOwnProperty('iat');
+};
+/**
+ * Attempts to peer into an auth token and determine if it's an admin auth token by looking at the claims portion.
+ *
+ * Notes:
+ * - May return a false negative if there's no native base64 decoding support.
+ * - Doesn't check if the token is actually valid.
+ */
+var isAdmin = function (token) {
+    var claims = decode(token).claims;
+    return typeof claims === 'object' && claims['admin'] === true;
+};
+
+/**
+ * @license
+ * Copyright 2017 Google LLC
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+function contains(obj, key) {
+    return Object.prototype.hasOwnProperty.call(obj, key);
+}
+function safeGet(obj, key) {
+    if (Object.prototype.hasOwnProperty.call(obj, key)) {
+        return obj[key];
+    }
+    else {
+        return undefined;
+    }
+}
+function isEmpty(obj) {
+    for (var key in obj) {
+        if (Object.prototype.hasOwnProperty.call(obj, key)) {
+            return false;
+        }
+    }
+    return true;
+}
+function map(obj, fn, contextObj) {
+    var res = {};
+    for (var key in obj) {
+        if (Object.prototype.hasOwnProperty.call(obj, key)) {
+            res[key] = fn.call(contextObj, obj[key], key, obj);
+        }
+    }
+    return res;
+}
+
+/**
+ * @license
+ * Copyright 2017 Google LLC
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+/**
+ * Returns a querystring-formatted string (e.g. &arg=val&arg2=val2) from a
+ * params object (e.g. {arg: 'val', arg2: 'val2'})
+ * Note: You must prepend it with ? when adding it to a URL.
+ */
+function querystring(querystringParams) {
+    var params = [];
+    var _loop_1 = function (key, value) {
+        if (Array.isArray(value)) {
+            value.forEach(function (arrayVal) {
+                params.push(encodeURIComponent(key) + '=' + encodeURIComponent(arrayVal));
+            });
+        }
+        else {
+            params.push(encodeURIComponent(key) + '=' + encodeURIComponent(value));
+        }
+    };
+    for (var _i = 0, _a = Object.entries(querystringParams); _i < _a.length; _i++) {
+        var _b = _a[_i], key = _b[0], value = _b[1];
+        _loop_1(key, value);
+    }
+    return params.length ? '&' + params.join('&') : '';
+}
+/**
+ * Decodes a querystring (e.g. ?arg=val&arg2=val2) into a params object
+ * (e.g. {arg: 'val', arg2: 'val2'})
+ */
+function querystringDecode(querystring) {
+    var obj = {};
+    var tokens = querystring.replace(/^\?/, '').split('&');
+    tokens.forEach(function (token) {
+        if (token) {
+            var key = token.split('=');
+            obj[key[0]] = key[1];
+        }
+    });
+    return obj;
+}
+
+/**
+ * @license
+ * Copyright 2017 Google LLC
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+/**
+ * @fileoverview SHA-1 cryptographic hash.
+ * Variable names follow the notation in FIPS PUB 180-3:
+ * http://csrc.nist.gov/publications/fips/fips180-3/fips180-3_final.pdf.
+ *
+ * Usage:
+ *   var sha1 = new sha1();
+ *   sha1.update(bytes);
+ *   var hash = sha1.digest();
+ *
+ * Performance:
+ *   Chrome 23:   ~400 Mbit/s
+ *   Firefox 16:  ~250 Mbit/s
+ *
+ */
+/**
+ * SHA-1 cryptographic hash constructor.
+ *
+ * The properties declared here are discussed in the above algorithm document.
+ * @constructor
+ * @final
+ * @struct
+ */
+var Sha1 = /** @class */ (function () {
+    function Sha1() {
+        /**
+         * Holds the previous values of accumulated variables a-e in the compress_
+         * function.
+         * @private
+         */
+        this.chain_ = [];
+        /**
+         * A buffer holding the partially computed hash result.
+         * @private
+         */
+        this.buf_ = [];
+        /**
+         * An array of 80 bytes, each a part of the message to be hashed.  Referred to
+         * as the message schedule in the docs.
+         * @private
+         */
+        this.W_ = [];
+        /**
+         * Contains data needed to pad messages less than 64 bytes.
+         * @private
+         */
+        this.pad_ = [];
+        /**
+         * @private {number}
+         */
+        this.inbuf_ = 0;
+        /**
+         * @private {number}
+         */
+        this.total_ = 0;
+        this.blockSize = 512 / 8;
+        this.pad_[0] = 128;
+        for (var i = 1; i < this.blockSize; ++i) {
+            this.pad_[i] = 0;
+        }
+        this.reset();
+    }
+    Sha1.prototype.reset = function () {
+        this.chain_[0] = 0x67452301;
+        this.chain_[1] = 0xefcdab89;
+        this.chain_[2] = 0x98badcfe;
+        this.chain_[3] = 0x10325476;
+        this.chain_[4] = 0xc3d2e1f0;
+        this.inbuf_ = 0;
+        this.total_ = 0;
+    };
+    /**
+     * Internal compress helper function.
+     * @param buf Block to compress.
+     * @param offset Offset of the block in the buffer.
+     * @private
+     */
+    Sha1.prototype.compress_ = function (buf, offset) {
+        if (!offset) {
+            offset = 0;
+        }
+        var W = this.W_;
+        // get 16 big endian words
+        if (typeof buf === 'string') {
+            for (var i = 0; i < 16; i++) {
+                // TODO(user): [bug 8140122] Recent versions of Safari for Mac OS and iOS
+                // have a bug that turns the post-increment ++ operator into pre-increment
+                // during JIT compilation.  We have code that depends heavily on SHA-1 for
+                // correctness and which is affected by this bug, so I've removed all uses
+                // of post-increment ++ in which the result value is used.  We can revert
+                // this change once the Safari bug
+                // (https://bugs.webkit.org/show_bug.cgi?id=109036) has been fixed and
+                // most clients have been updated.
+                W[i] =
+                    (buf.charCodeAt(offset) << 24) |
+                        (buf.charCodeAt(offset + 1) << 16) |
+                        (buf.charCodeAt(offset + 2) << 8) |
+                        buf.charCodeAt(offset + 3);
+                offset += 4;
+            }
+        }
+        else {
+            for (var i = 0; i < 16; i++) {
+                W[i] =
+                    (buf[offset] << 24) |
+                        (buf[offset + 1] << 16) |
+                        (buf[offset + 2] << 8) |
+                        buf[offset + 3];
+                offset += 4;
+            }
+        }
+        // expand to 80 words
+        for (var i = 16; i < 80; i++) {
+            var t = W[i - 3] ^ W[i - 8] ^ W[i - 14] ^ W[i - 16];
+            W[i] = ((t << 1) | (t >>> 31)) & 0xffffffff;
+        }
+        var a = this.chain_[0];
+        var b = this.chain_[1];
+        var c = this.chain_[2];
+        var d = this.chain_[3];
+        var e = this.chain_[4];
+        var f, k;
+        // TODO(user): Try to unroll this loop to speed up the computation.
+        for (var i = 0; i < 80; i++) {
+            if (i < 40) {
+                if (i < 20) {
+                    f = d ^ (b & (c ^ d));
+                    k = 0x5a827999;
+                }
+                else {
+                    f = b ^ c ^ d;
+                    k = 0x6ed9eba1;
+                }
+            }
+            else {
+                if (i < 60) {
+                    f = (b & c) | (d & (b | c));
+                    k = 0x8f1bbcdc;
+                }
+                else {
+                    f = b ^ c ^ d;
+                    k = 0xca62c1d6;
+                }
+            }
+            var t = (((a << 5) | (a >>> 27)) + f + e + k + W[i]) & 0xffffffff;
+            e = d;
+            d = c;
+            c = ((b << 30) | (b >>> 2)) & 0xffffffff;
+            b = a;
+            a = t;
+        }
+        this.chain_[0] = (this.chain_[0] + a) & 0xffffffff;
+        this.chain_[1] = (this.chain_[1] + b) & 0xffffffff;
+        this.chain_[2] = (this.chain_[2] + c) & 0xffffffff;
+        this.chain_[3] = (this.chain_[3] + d) & 0xffffffff;
+        this.chain_[4] = (this.chain_[4] + e) & 0xffffffff;
+    };
+    Sha1.prototype.update = function (bytes, length) {
+        // TODO(johnlenz): tighten the function signature and remove this check
+        if (bytes == null) {
+            return;
+        }
+        if (length === undefined) {
+            length = bytes.length;
+        }
+        var lengthMinusBlock = length - this.blockSize;
+        var n = 0;
+        // Using local instead of member variables gives ~5% speedup on Firefox 16.
+        var buf = this.buf_;
+        var inbuf = this.inbuf_;
+        // The outer while loop should execute at most twice.
+        while (n < length) {
+            // When we have no data in the block to top up, we can directly process the
+            // input buffer (assuming it contains sufficient data). This gives ~25%
+            // speedup on Chrome 23 and ~15% speedup on Firefox 16, but requires that
+            // the data is provided in large chunks (or in multiples of 64 bytes).
+            if (inbuf === 0) {
+                while (n <= lengthMinusBlock) {
+                    this.compress_(bytes, n);
+                    n += this.blockSize;
+                }
+            }
+            if (typeof bytes === 'string') {
+                while (n < length) {
+                    buf[inbuf] = bytes.charCodeAt(n);
+                    ++inbuf;
+                    ++n;
+                    if (inbuf === this.blockSize) {
+                        this.compress_(buf);
+                        inbuf = 0;
+                        // Jump to the outer loop so we use the full-block optimization.
+                        break;
+                    }
+                }
+            }
+            else {
+                while (n < length) {
+                    buf[inbuf] = bytes[n];
+                    ++inbuf;
+                    ++n;
+                    if (inbuf === this.blockSize) {
+                        this.compress_(buf);
+                        inbuf = 0;
+                        // Jump to the outer loop so we use the full-block optimization.
+                        break;
+                    }
+                }
+            }
+        }
+        this.inbuf_ = inbuf;
+        this.total_ += length;
+    };
+    /** @override */
+    Sha1.prototype.digest = function () {
+        var digest = [];
+        var totalBits = this.total_ * 8;
+        // Add pad 0x80 0x00*.
+        if (this.inbuf_ < 56) {
+            this.update(this.pad_, 56 - this.inbuf_);
+        }
+        else {
+            this.update(this.pad_, this.blockSize - (this.inbuf_ - 56));
+        }
+        // Add # bits.
+        for (var i = this.blockSize - 1; i >= 56; i--) {
+            this.buf_[i] = totalBits & 255;
+            totalBits /= 256; // Don't use bit-shifting here!
+        }
+        this.compress_(this.buf_);
+        var n = 0;
+        for (var i = 0; i < 5; i++) {
+            for (var j = 24; j >= 0; j -= 8) {
+                digest[n] = (this.chain_[i] >> j) & 255;
+                ++n;
+            }
+        }
+        return digest;
+    };
+    return Sha1;
+}());
+
+/**
+ * Helper to make a Subscribe function (just like Promise helps make a
+ * Thenable).
+ *
+ * @param executor Function which can make calls to a single Observer
+ *     as a proxy.
+ * @param onNoObservers Callback when count of Observers goes to zero.
+ */
+function createSubscribe(executor, onNoObservers) {
+    var proxy = new ObserverProxy(executor, onNoObservers);
+    return proxy.subscribe.bind(proxy);
+}
+/**
+ * Implement fan-out for any number of Observers attached via a subscribe
+ * function.
+ */
+var ObserverProxy = /** @class */ (function () {
+    /**
+     * @param executor Function which can make calls to a single Observer
+     *     as a proxy.
+     * @param onNoObservers Callback when count of Observers goes to zero.
+     */
+    function ObserverProxy(executor, onNoObservers) {
+        var _this = this;
+        this.observers = [];
+        this.unsubscribes = [];
+        this.observerCount = 0;
+        // Micro-task scheduling by calling task.then().
+        this.task = Promise.resolve();
+        this.finalized = false;
+        this.onNoObservers = onNoObservers;
+        // Call the executor asynchronously so subscribers that are called
+        // synchronously after the creation of the subscribe function
+        // can still receive the very first value generated in the executor.
+        this.task
+            .then(function () {
+            executor(_this);
+        })
+            .catch(function (e) {
+            _this.error(e);
+        });
+    }
+    ObserverProxy.prototype.next = function (value) {
+        this.forEachObserver(function (observer) {
+            observer.next(value);
+        });
+    };
+    ObserverProxy.prototype.error = function (error) {
+        this.forEachObserver(function (observer) {
+            observer.error(error);
+        });
+        this.close(error);
+    };
+    ObserverProxy.prototype.complete = function () {
+        this.forEachObserver(function (observer) {
+            observer.complete();
+        });
+        this.close();
+    };
+    /**
+     * Subscribe function that can be used to add an Observer to the fan-out list.
+     *
+     * - We require that no event is sent to a subscriber sychronously to their
+     *   call to subscribe().
+     */
+    ObserverProxy.prototype.subscribe = function (nextOrObserver, error, complete) {
+        var _this = this;
+        var observer;
+        if (nextOrObserver === undefined &&
+            error === undefined &&
+            complete === undefined) {
+            throw new Error('Missing Observer.');
+        }
+        // Assemble an Observer object when passed as callback functions.
+        if (implementsAnyMethods(nextOrObserver, [
+            'next',
+            'error',
+            'complete'
+        ])) {
+            observer = nextOrObserver;
+        }
+        else {
+            observer = {
+                next: nextOrObserver,
+                error: error,
+                complete: complete
+            };
+        }
+        if (observer.next === undefined) {
+            observer.next = noop;
+        }
+        if (observer.error === undefined) {
+            observer.error = noop;
+        }
+        if (observer.complete === undefined) {
+            observer.complete = noop;
+        }
+        var unsub = this.unsubscribeOne.bind(this, this.observers.length);
+        // Attempt to subscribe to a terminated Observable - we
+        // just respond to the Observer with the final error or complete
+        // event.
+        if (this.finalized) {
+            // eslint-disable-next-line @typescript-eslint/no-floating-promises
+            this.task.then(function () {
+                try {
+                    if (_this.finalError) {
+                        observer.error(_this.finalError);
+                    }
+                    else {
+                        observer.complete();
+                    }
+                }
+                catch (e) {
+                    // nothing
+                }
+                return;
+            });
+        }
+        this.observers.push(observer);
+        return unsub;
+    };
+    // Unsubscribe is synchronous - we guarantee that no events are sent to
+    // any unsubscribed Observer.
+    ObserverProxy.prototype.unsubscribeOne = function (i) {
+        if (this.observers === undefined || this.observers[i] === undefined) {
+            return;
+        }
+        delete this.observers[i];
+        this.observerCount -= 1;
+        if (this.observerCount === 0 && this.onNoObservers !== undefined) {
+            this.onNoObservers(this);
+        }
+    };
+    ObserverProxy.prototype.forEachObserver = function (fn) {
+        if (this.finalized) {
+            // Already closed by previous event....just eat the additional values.
+            return;
+        }
+        // Since sendOne calls asynchronously - there is no chance that
+        // this.observers will become undefined.
+        for (var i = 0; i < this.observers.length; i++) {
+            this.sendOne(i, fn);
+        }
+    };
+    // Call the Observer via one of it's callback function. We are careful to
+    // confirm that the observe has not been unsubscribed since this asynchronous
+    // function had been queued.
+    ObserverProxy.prototype.sendOne = function (i, fn) {
+        var _this = this;
+        // Execute the callback asynchronously
+        // eslint-disable-next-line @typescript-eslint/no-floating-promises
+        this.task.then(function () {
+            if (_this.observers !== undefined && _this.observers[i] !== undefined) {
+                try {
+                    fn(_this.observers[i]);
+                }
+                catch (e) {
+                    // Ignore exceptions raised in Observers or missing methods of an
+                    // Observer.
+                    // Log error to console. b/31404806
+                    if (typeof console !== 'undefined' && console.error) {
+                        console.error(e);
+                    }
+                }
+            }
+        });
+    };
+    ObserverProxy.prototype.close = function (err) {
+        var _this = this;
+        if (this.finalized) {
+            return;
+        }
+        this.finalized = true;
+        if (err !== undefined) {
+            this.finalError = err;
+        }
+        // Proxy is no longer needed - garbage collect references
+        // eslint-disable-next-line @typescript-eslint/no-floating-promises
+        this.task.then(function () {
+            _this.observers = undefined;
+            _this.onNoObservers = undefined;
+        });
+    };
+    return ObserverProxy;
+}());
+/** Turn synchronous function into one called asynchronously. */
+function async(fn, onError) {
+    return function () {
+        var args = [];
+        for (var _i = 0; _i < arguments.length; _i++) {
+            args[_i] = arguments[_i];
+        }
+        Promise.resolve(true)
+            .then(function () {
+            fn.apply(void 0, args);
+        })
+            .catch(function (error) {
+            if (onError) {
+                onError(error);
+            }
+        });
+    };
+}
+/**
+ * Return true if the object passed in implements any of the named methods.
+ */
+function implementsAnyMethods(obj, methods) {
+    if (typeof obj !== 'object' || obj === null) {
+        return false;
+    }
+    for (var _i = 0, methods_1 = methods; _i < methods_1.length; _i++) {
+        var method = methods_1[_i];
+        if (method in obj && typeof obj[method] === 'function') {
+            return true;
+        }
+    }
+    return false;
+}
+function noop() {
+    // do nothing
+}
+
+/**
+ * @license
+ * Copyright 2017 Google LLC
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+/**
+ * Check to make sure the appropriate number of arguments are provided for a public function.
+ * Throws an error if it fails.
+ *
+ * @param fnName The function name
+ * @param minCount The minimum number of arguments to allow for the function call
+ * @param maxCount The maximum number of argument to allow for the function call
+ * @param argCount The actual number of arguments provided.
+ */
+var validateArgCount = function (fnName, minCount, maxCount, argCount) {
+    var argError;
+    if (argCount < minCount) {
+        argError = 'at least ' + minCount;
+    }
+    else if (argCount > maxCount) {
+        argError = maxCount === 0 ? 'none' : 'no more than ' + maxCount;
+    }
+    if (argError) {
+        var error = fnName +
+            ' failed: Was called with ' +
+            argCount +
+            (argCount === 1 ? ' argument.' : ' arguments.') +
+            ' Expects ' +
+            argError +
+            '.';
+        throw new Error(error);
+    }
+};
+/**
+ * Generates a string to prefix an error message about failed argument validation
+ *
+ * @param fnName The function name
+ * @param argumentNumber The index of the argument
+ * @param optional Whether or not the argument is optional
+ * @return The prefix to add to the error thrown for validation.
+ */
+function errorPrefix(fnName, argumentNumber, optional) {
+    var argName = '';
+    switch (argumentNumber) {
+        case 1:
+            argName = optional ? 'first' : 'First';
+            break;
+        case 2:
+            argName = optional ? 'second' : 'Second';
+            break;
+        case 3:
+            argName = optional ? 'third' : 'Third';
+            break;
+        case 4:
+            argName = optional ? 'fourth' : 'Fourth';
+            break;
+        default:
+            throw new Error('errorPrefix called with argumentNumber > 4.  Need to update it?');
+    }
+    var error = fnName + ' failed: ';
+    error += argName + ' argument ';
+    return error;
+}
+/**
+ * @param fnName
+ * @param argumentNumber
+ * @param namespace
+ * @param optional
+ */
+function validateNamespace(fnName, argumentNumber, namespace, optional) {
+    if (optional && !namespace) {
+        return;
+    }
+    if (typeof namespace !== 'string') {
+        //TODO: I should do more validation here. We only allow certain chars in namespaces.
+        throw new Error(errorPrefix(fnName, argumentNumber, optional) +
+            'must be a valid firebase namespace.');
+    }
+}
+function validateCallback(fnName, argumentNumber, callback, optional) {
+    if (optional && !callback) {
+        return;
+    }
+    if (typeof callback !== 'function') {
+        throw new Error(errorPrefix(fnName, argumentNumber, optional) +
+            'must be a valid function.');
+    }
+}
+function validateContextObject(fnName, argumentNumber, context, optional) {
+    if (optional && !context) {
+        return;
+    }
+    if (typeof context !== 'object' || context === null) {
+        throw new Error(errorPrefix(fnName, argumentNumber, optional) +
+            'must be a valid context object.');
+    }
+}
+
+/**
+ * @license
+ * Copyright 2017 Google LLC
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+// Code originally came from goog.crypt.stringToUtf8ByteArray, but for some reason they
+// automatically replaced '\r\n' with '\n', and they didn't handle surrogate pairs,
+// so it's been modified.
+// Note that not all Unicode characters appear as single characters in JavaScript strings.
+// fromCharCode returns the UTF-16 encoding of a character - so some Unicode characters
+// use 2 characters in Javascript.  All 4-byte UTF-8 characters begin with a first
+// character in the range 0xD800 - 0xDBFF (the first character of a so-called surrogate
+// pair).
+// See http://www.ecma-international.org/ecma-262/5.1/#sec-15.1.3
+/**
+ * @param {string} str
+ * @return {Array}
+ */
+var stringToByteArray$1 = function (str) {
+    var out = [];
+    var p = 0;
+    for (var i = 0; i < str.length; i++) {
+        var c = str.charCodeAt(i);
+        // Is this the lead surrogate in a surrogate pair?
+        if (c >= 0xd800 && c <= 0xdbff) {
+            var high = c - 0xd800; // the high 10 bits.
+            i++;
+            assert(i < str.length, 'Surrogate pair missing trail surrogate.');
+            var low = str.charCodeAt(i) - 0xdc00; // the low 10 bits.
+            c = 0x10000 + (high << 10) + low;
+        }
+        if (c < 128) {
+            out[p++] = c;
+        }
+        else if (c < 2048) {
+            out[p++] = (c >> 6) | 192;
+            out[p++] = (c & 63) | 128;
+        }
+        else if (c < 65536) {
+            out[p++] = (c >> 12) | 224;
+            out[p++] = ((c >> 6) & 63) | 128;
+            out[p++] = (c & 63) | 128;
+        }
+        else {
+            out[p++] = (c >> 18) | 240;
+            out[p++] = ((c >> 12) & 63) | 128;
+            out[p++] = ((c >> 6) & 63) | 128;
+            out[p++] = (c & 63) | 128;
+        }
+    }
+    return out;
+};
+/**
+ * Calculate length without actually converting; useful for doing cheaper validation.
+ * @param {string} str
+ * @return {number}
+ */
+var stringLength = function (str) {
+    var p = 0;
+    for (var i = 0; i < str.length; i++) {
+        var c = str.charCodeAt(i);
+        if (c < 128) {
+            p++;
+        }
+        else if (c < 2048) {
+            p += 2;
+        }
+        else if (c >= 0xd800 && c <= 0xdbff) {
+            // Lead surrogate of a surrogate pair.  The pair together will take 4 bytes to represent.
+            p += 4;
+            i++; // skip trail surrogate.
+        }
+        else {
+            p += 3;
+        }
+    }
+    return p;
+};
+
+exports.CONSTANTS = CONSTANTS;
+exports.Deferred = Deferred;
+exports.ErrorFactory = ErrorFactory;
+exports.FirebaseError = FirebaseError;
+exports.Sha1 = Sha1;
+exports.areCookiesEnabled = areCookiesEnabled;
+exports.assert = assert;
+exports.assertionError = assertionError;
+exports.async = async;
+exports.base64 = base64;
+exports.base64Decode = base64Decode;
+exports.base64Encode = base64Encode;
+exports.contains = contains;
+exports.createSubscribe = createSubscribe;
+exports.decode = decode;
+exports.deepCopy = deepCopy;
+exports.deepExtend = deepExtend;
+exports.errorPrefix = errorPrefix;
+exports.getUA = getUA;
+exports.isAdmin = isAdmin;
+exports.isBrowser = isBrowser;
+exports.isBrowserExtension = isBrowserExtension;
+exports.isElectron = isElectron;
+exports.isEmpty = isEmpty;
+exports.isIE = isIE;
+exports.isIndexedDBAvailable = isIndexedDBAvailable;
+exports.isMobileCordova = isMobileCordova;
+exports.isNode = isNode;
+exports.isNodeSdk = isNodeSdk;
+exports.isReactNative = isReactNative;
+exports.isSafari = isSafari;
+exports.isUWP = isUWP;
+exports.isValidFormat = isValidFormat;
+exports.isValidTimestamp = isValidTimestamp;
+exports.issuedAtTime = issuedAtTime;
+exports.jsonEval = jsonEval;
+exports.map = map;
+exports.querystring = querystring;
+exports.querystringDecode = querystringDecode;
+exports.safeGet = safeGet;
+exports.stringLength = stringLength;
+exports.stringToByteArray = stringToByteArray$1;
+exports.stringify = stringify;
+exports.validateArgCount = validateArgCount;
+exports.validateCallback = validateCallback;
+exports.validateContextObject = validateContextObject;
+exports.validateIndexedDBOpenable = validateIndexedDBOpenable;
+exports.validateNamespace = validateNamespace;
+//# sourceMappingURL=index.cjs.js.map
+
+
+/***/ }),
+
 /***/ "./node_modules/angular-in-memory-web-api/__ivy_ngcc__/backend.service.js":
 /*!********************************************************************************!*\
   !*** ./node_modules/angular-in-memory-web-api/__ivy_ngcc__/backend.service.js ***!
@@ -64014,6 +78817,99 @@ function removeTrailingSlash(path) {
 }
 
 //# sourceMappingURL=interfaces.js.map
+
+/***/ }),
+
+/***/ "./node_modules/angularfire2/index.js":
+/*!********************************************!*\
+  !*** ./node_modules/angularfire2/index.js ***!
+  \********************************************/
+/*! no static exports found */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+function __export(m) {
+    for (var p in m) if (!exports.hasOwnProperty(p)) exports[p] = m[p];
+}
+Object.defineProperty(exports, "__esModule", { value: true });
+__export(__webpack_require__(/*! @angular/fire */ "./node_modules/@angular/fire/__ivy_ngcc__/es2015/index.js"));
+//# sourceMappingURL=data:application/json;base64,eyJ2ZXJzaW9uIjozLCJmaWxlIjoiaW5kZXguanMiLCJzb3VyY2VSb290IjoiIiwic291cmNlcyI6WyIuLi8uLi93cmFwcGVyL3NyYy9pbmRleC50cyJdLCJuYW1lcyI6W10sIm1hcHBpbmdzIjoiOzs7OztBQUFBLG1DQUE4QiJ9
+
+/***/ }),
+
+/***/ "./node_modules/angularfire2/storage/index.js":
+/*!****************************************************!*\
+  !*** ./node_modules/angularfire2/storage/index.js ***!
+  \****************************************************/
+/*! no static exports found */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+function __export(m) {
+    for (var p in m) if (!exports.hasOwnProperty(p)) exports[p] = m[p];
+}
+Object.defineProperty(exports, "__esModule", { value: true });
+__export(__webpack_require__(/*! @angular/fire/storage */ "./node_modules/@angular/fire/__ivy_ngcc__/storage/es2015/index.js"));
+//# sourceMappingURL=data:application/json;base64,eyJ2ZXJzaW9uIjozLCJmaWxlIjoiaW5kZXguanMiLCJzb3VyY2VSb290IjoiIiwic291cmNlcyI6WyIuLi8uLi8uLi93cmFwcGVyL3NyYy9zdG9yYWdlL2luZGV4LnRzIl0sIm5hbWVzIjpbXSwibWFwcGluZ3MiOiI7Ozs7O0FBQUEsMkNBQXNDIn0=
+
+/***/ }),
+
+/***/ "./node_modules/firebase/app/dist/index.cjs.js":
+/*!*****************************************************!*\
+  !*** ./node_modules/firebase/app/dist/index.cjs.js ***!
+  \*****************************************************/
+/*! no static exports found */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+
+function _interopDefault (ex) { return (ex && (typeof ex === 'object') && 'default' in ex) ? ex['default'] : ex; }
+
+var firebase = _interopDefault(__webpack_require__(/*! @firebase/app */ "./node_modules/@firebase/app/dist/index.cjs.js"));
+
+var name = "firebase";
+var version = "7.17.1";
+
+/**
+ * @license
+ * Copyright 2018 Google LLC
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+firebase.registerVersion(name, version, 'app');
+
+module.exports = firebase;
+//# sourceMappingURL=index.cjs.js.map
+
+
+/***/ }),
+
+/***/ "./node_modules/firebase/storage/dist/index.esm.js":
+/*!*********************************************************!*\
+  !*** ./node_modules/firebase/storage/dist/index.esm.js ***!
+  \*********************************************************/
+/*! no exports provided */
+/***/ (function(module, __webpack_exports__, __webpack_require__) {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony import */ var _firebase_storage__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! @firebase/storage */ "./node_modules/@firebase/storage/dist/index.esm.js");
+
+//# sourceMappingURL=index.esm.js.map
+
 
 /***/ }),
 
