@@ -43,4 +43,9 @@ export class ItemsComponent implements OnInit {
   refreshFavorites(){
     this.favoritesService.favorites ? this.favorites = this.favoritesService.favorites : false;
   }
+  isFavorite(item){
+    let index = this.favorites.findIndex((i:Item)=>{
+      return i.id === item.id;
+    });
+  }
 }

@@ -1,4 +1,5 @@
 import { NgModule } from '@angular/core';
+import { CommonModule } from '@angular/common';
 
 import { MatGridListModule } from '@angular/material/grid-list';
 import { MatCardModule } from '@angular/material/card';
@@ -15,6 +16,7 @@ import { CartComponent } from './components/cart/cart.component';
     CartComponent,
   ],
   imports: [
+    CommonModule,
     MatGridListModule,
     MatCardModule,
     MatIconModule,

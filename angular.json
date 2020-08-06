@@ -44,6 +44,7 @@
               "@firebase/functions",
               "@firebase/performance",
               "@firebase/remote-config",
+              "@firebase/component",
               "angularfire2",
               "angularfire2/firestore",
               "angularfire2/storage"
