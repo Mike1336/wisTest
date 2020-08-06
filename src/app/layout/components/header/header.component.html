@@ -1,0 +1,38 @@
+<mat-toolbar>
+    <a routerLink="/">
+    <span>Phone-Shop</span>
+    </a>
+    <span class="example-spacer"></span>
+    <div id='pages'>
+      <button mat-icon-button [matMenuTriggerFor]="shortFav" class="example-icon favorite-icon" aria-label="Example icon-button with heart icon">
+        <mat-icon>favorite</mat-icon>
+      </button>
+      <mat-menu #shortFav="matMenu">
+        <!-- <button mat-menu-item>
+          <span>Redial</span>
+        </button> -->
+        <button mat-menu-item>
+          <a routerLink="/favorites">
+          <mat-icon>favorite</mat-icon>
+          <span>Link to the page</span>
+          </a>
+        </button>
+      </mat-menu>
+    
+      <button mat-icon-button [matMenuTriggerFor]="shortCart" class="example-icon" aria-label="Example icon-button with share icon">
+        <mat-icon>shopping_cart</mat-icon>
+      </button>
+      <mat-menu #shortCart="matMenu">
+        <!-- <button mat-menu-item>
+          <mat-icon>dialpad</mat-icon>
+          <span>Redial</span>
+        </button> -->
+        <button mat-menu-item>
+          <a routerLink="/cart">
+          <mat-icon>shopping_cart</mat-icon>
+          <span>Link to the page</span>
+        </a>
+        </button>
+      </mat-menu>
+    </div>
+  </mat-toolbar>

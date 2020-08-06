@@ -1,51 +1,33 @@
-import { BrowserModule } from '@angular/platform-browser';
 import { NgModule } from '@angular/core';
+import { CoreModule } from "./core/core.module";
+import { BrowserModule } from '@angular/platform-browser';
+
 import { AppRoutingModule } from './app-routing.module';
-import { AppComponent } from './app.component';
-import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
-import { HttpClientModule }    from '@angular/common/http';
-import { RouterModule } from '@angular/router';
-import { AngularFirestore } from 'angularfire2/firestore';
-import { AngularFireModule } from 'angularfire2';
-import { AngularFireStorageModule } from 'angularfire2/storage';
-import { MatGridListModule } from '@angular/material/grid-list';
-import { MatCardModule } from '@angular/material/card';
-import { MatIconModule } from '@angular/material/icon';
-import { MatToolbarModule } from '@angular/material/toolbar';
-import { MatButtonModule } from '@angular/material/button';
-import { MatMenuModule } from '@angular/material/menu';
-import { environment } from '../environments/environment';
-import { ItemsComponent } from './items/items.component';
-import { HeaderComponent } from './header/header.component';
-import { CartComponent } from './cart/cart.component';
-import { FavoritesComponent } from './favorites/favorites.component';
+import { ItemsRoutingModule } from './items/items-routing.module';
+import { ItemsModule } from "./items/items.module";
+import { LayoutModule } from './layout/header.module';
+import { CartModule } from './cart/cart.module';
+import { FavoritesModule } from './favorites/favorites.module';
+
+import { AppComponent } from "./app.component";
 
 
 
 @NgModule({
   declarations: [
-    AppComponent,
-    ItemsComponent,
-    HeaderComponent,
-    CartComponent,
-    FavoritesComponent
+    AppComponent
   ],
   imports: [
     BrowserModule,
     AppRoutingModule,
-    BrowserAnimationsModule,
-    HttpClientModule,
-    MatGridListModule,
-    MatCardModule,
-    MatIconModule,
-    MatToolbarModule,
-    MatButtonModule,
-    MatMenuModule,
-    RouterModule,
-    AngularFireStorageModule,
-    AngularFireModule.initializeApp(environment.firebase),
+    ItemsRoutingModule,
+    CoreModule,
+    ItemsModule,
+    LayoutModule,
+    CartModule,
+    FavoritesModule
   ],
-  providers: [AngularFirestore],
+  providers: [],
   bootstrap: [AppComponent]
 })
 export class AppModule { }

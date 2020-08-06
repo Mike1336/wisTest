@@ -1,0 +1,6 @@
+<h1 id="cartHeader" *ngIf="cart; else emptyCart">Cart items:</h1>
+<ng-template #emptyCart><h1>Cart is empty</h1></ng-template>
+<mat-card>
+    <img mat-card-image src="assets/xs.jpg" alt="Photo of a Shiba Inu">
+    Simple card
+</mat-card>
