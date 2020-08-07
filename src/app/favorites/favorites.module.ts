@@ -6,6 +6,8 @@ import { MatCardModule } from '@angular/material/card';
 import { MatIconModule } from '@angular/material/icon';
 import { MatButtonModule } from '@angular/material/button';
 import { MatMenuModule } from '@angular/material/menu';
+import { MatDialogModule } from '@angular/material/dialog';
+
 
 import { FavoritesComponent } from './components/favorites/favorites.component';
 import { FavoritesRoutingModule } from './favorites-routing.module';
@@ -23,6 +25,7 @@ import { FavoritesRoutingModule } from './favorites-routing.module';
     MatIconModule,
     MatButtonModule,
     MatMenuModule,
+    MatDialogModule,
     FavoritesRoutingModule
   ],
 })

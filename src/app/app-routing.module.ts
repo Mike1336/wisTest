@@ -18,7 +18,11 @@ const routes: Routes = [
       {
         path: 'cart',
         loadChildren: () => import  ('../app/cart/cart.module').then(m => m.CartModule)
-      }
+      },
+      {
+        path: 'favorites',
+        loadChildren: () => import  ('../app/favorites/favorites.module').then(m => m.FavoritesModule)
+      },
     ],
     
   },      

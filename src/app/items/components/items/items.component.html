@@ -2,7 +2,7 @@
       <ng-container *ngFor="let i of items">
         <mat-card class="example-card fixwidth">
           <mat-card-header>
-            <button mat-icon-button [ngClass]="{'favorite': favorites.includes(i)}" class="example-icon favorite-icon favright" (click)="addToFavotire(i)" aria-label="Example icon-button with heart icon">
+            <button mat-icon-button [ngClass]="{'favorite': checkFavorite(i)}" class="example-icon favorite-icon favright" (click)="addToFavotire(i)" aria-label="Example icon-button with heart icon">
               <mat-icon>favorite</mat-icon>
             </button>
             <mat-card-title>{{i.name}}</mat-card-title>

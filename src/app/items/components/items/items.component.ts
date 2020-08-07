@@ -19,7 +19,7 @@ export class ItemsComponent implements OnInit {
 
   ngOnInit(): void {
     this.getItems();
-    this.refreshFavorites()
+    this.refreshFavorites();
   }
   getItems(): void {
     this.itemsService.getItems()
@@ -41,12 +41,12 @@ export class ItemsComponent implements OnInit {
     console.log(this.favorites)
   }
   refreshFavorites(){
-    this.favoritesService.favorites ? this.favorites = this.favoritesService.favorites : false;
+    this.favoritesService.favorites.length > 0 ? this.favorites = this.favoritesService.favorites : false;
   }
-  isFavorite(item){
-    let index = this.favorites.findIndex((i:Item)=>{
-      console.log(i.id === item.id);
+  checkFavorite(item:Item): boolean{
+    const index= this.favoritesService.favorites.findIndex((i:Item)=>{
       return i.id === item.id;
     });
+    return index >=0
   }
 }
