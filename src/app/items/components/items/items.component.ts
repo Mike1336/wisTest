@@ -45,6 +45,7 @@ export class ItemsComponent implements OnInit {
   }
   isFavorite(item){
     let index = this.favorites.findIndex((i:Item)=>{
+      console.log(i.id === item.id);
       return i.id === item.id;
     });
   }

@@ -20,16 +20,9 @@ import { AppComponent } from "./app.component";
     AppComponent
   ],
   imports: [
-    BrowserModule,
     AppRoutingModule,
-    ItemsRoutingModule,
     CoreModule,
-    ItemsModule,
     LayoutModule,
-    CartModule,
-    FavoritesModule,
-    CartRoutingModule,
-    FavoritesRoutingModule
   ],
   providers: [],
   bootstrap: [AppComponent]

@@ -8,6 +8,7 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatMenuModule } from '@angular/material/menu';
 
 import { FavoritesComponent } from './components/favorites/favorites.component';
+import { FavoritesRoutingModule } from './favorites-routing.module';
 
 
 
@@ -22,6 +23,7 @@ import { FavoritesComponent } from './components/favorites/favorites.component';
     MatIconModule,
     MatButtonModule,
     MatMenuModule,
+    FavoritesRoutingModule
   ],
 })
 export class FavoritesModule { }

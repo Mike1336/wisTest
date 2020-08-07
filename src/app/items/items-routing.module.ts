@@ -4,10 +4,11 @@ import { ItemsComponent } from './components/items/items.component';
 
 
 const routes: Routes = [      
-    { path: '', component: ItemsComponent },
+    { path: '', pathMatch: 'full', component: ItemsComponent },
     { path: 'items', component: ItemsComponent },
-    { path: 'items/:itemId', component: ItemsComponent }
+    // { path: 'items/:itemId', component: ItemsComponent }
     ];
+    
     
     @NgModule({
       imports: [RouterModule.forChild(routes)],
