@@ -1,5 +1,6 @@
 import { Injectable } from '@angular/core';
 import { Item } from '../../items/interfaces/item';
+import { Observable } from 'rxjs';
 // import { Subject } from 'rxjs';
 
 
@@ -13,10 +14,16 @@ export class FavoritesService {
 
   constructor() { }
 
-  add(item:Item){
+  add(item:Item): number{
       const index = this.favorites.findIndex((i:Item)=>{
          return i.id === item.id;
        });
-       (index >=0) ? this.favorites.splice(index,1) : this.favorites.push(item);
+       if(index >=0){
+         this.favorites.splice(index,1)
+        } else { 
+          this.favorites.push(item);
+          
+        }
+        return index;
     }
 }

@@ -30,15 +30,22 @@ export class ItemsComponent implements OnInit {
     
   }
   addToFavotire(item:Item){
-    console.log(item)
-    this.favoritesService.add(item);
+    let index = this.favoritesService.add(item);
     this.refreshFavorites();
-    this._snackBar.open(`${item.name} was added to your favorites`, 'OK', {
-      duration: 2000,
-    });
+    if (index >= 0) {
+      this._snackBar.open(`${item.name} was deleted from your favorites`, 'OK', {
+        duration: 2000,
+      });
+    } else {
+      this._snackBar.open(`${item.name} was added to your favorites`, 'OK', {
+        duration: 2000,
+      });
+    }
   }
   refreshFavorites(){
-    this.favoritesService.favorites.length > 0 ? this.favorites = this.favoritesService.favorites : false;
+    if (this.favoritesService.favorites.length > 0) {
+      this.favorites = this.favoritesService.favorites
+    }
   }
   checkFavorite(item:Item): boolean{
     const index= this.favoritesService.favorites.findIndex((i:Item)=>{
