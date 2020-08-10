@@ -7,15 +7,18 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatButtonModule } from '@angular/material/button';
 import { MatMenuModule } from '@angular/material/menu';
 import { MatSnackBarModule } from "@angular/material/snack-bar";
+import { MatDialogModule } from '@angular/material/dialog';
 
 import { ItemsComponent } from './components/items/items.component';
 import { ItemsRoutingModule } from './items-routing.module';
+import { ModalComponent } from './components/modal/modal.component';
 
 
 
 @NgModule({
   declarations: [
     ItemsComponent,
+    ModalComponent,
   ],
   imports: [
     CommonModule,
@@ -25,6 +28,7 @@ import { ItemsRoutingModule } from './items-routing.module';
     MatButtonModule,
     MatMenuModule,
     MatSnackBarModule,
+    MatDialogModule,
     ItemsRoutingModule
   ],
 })

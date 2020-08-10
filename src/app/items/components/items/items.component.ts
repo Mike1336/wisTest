@@ -3,6 +3,8 @@ import { MatSnackBar } from '@angular/material/snack-bar';
 import { Item } from '../../interfaces/item';
 import { ItemsService } from '../../services/items.service';
 import { FavoritesService } from '../../../favorites/services/favorites.service';
+import { ModalComponent } from '../modal/modal.component';
+import { MatDialog } from '@angular/material/dialog';
 
 
 
@@ -16,7 +18,7 @@ export class ItemsComponent implements OnInit {
   items:Item[];
   cart = [];
   favorites: Item[]=[];
-  constructor(private itemsService:ItemsService, private favoritesService: FavoritesService, private _snackBar: MatSnackBar) { }
+  constructor(private itemsService:ItemsService, private favoritesService: FavoritesService, private _snackBar: MatSnackBar, public dialog: MatDialog) { }
 
   ngOnInit(): void {
     this.getItems();
@@ -47,10 +49,20 @@ export class ItemsComponent implements OnInit {
       this.favorites = this.favoritesService.favorites
     }
   }
-  checkFavorite(item:Item): boolean{
+  checkFavorite(item:Item): boolean{ //для отображения иконки избранных товаров
     const index= this.favoritesService.favorites.findIndex((i:Item)=>{
       return i.id === item.id;
     });
     return index >=0
+  }
+  openDialog(item:Item) {
+    this.dialog.open(ModalComponent, { //отправление данных в компонент модалки после открытия
+      data:{
+        id: item.id,
+        img: item.img,
+        name: item.name,
+        price: item.price
+        }
+    });
   }
 }

@@ -8,10 +8,6 @@ import { MAT_DIALOG_DATA } from '@angular/material/dialog';
 })
 export class ModalComponent implements OnInit {
 
-
-  public phoneName: string = '';
-  public phoneId: number =0;
-
   constructor(@Inject(MAT_DIALOG_DATA) public data: {
     id: number,
     name: string

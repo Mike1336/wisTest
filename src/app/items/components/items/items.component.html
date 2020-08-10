@@ -5,11 +5,11 @@
             <button mat-icon-button [ngClass]="{'favorite': checkFavorite(i)}" class="example-icon favorite-icon favright" (click)="addToFavotire(i)" aria-label="Example icon-button with heart icon">
               <mat-icon>favorite</mat-icon>
             </button>
-            <mat-card-title>{{i.name}}</mat-card-title>
-            <mat-card-subtitle><strong>{{i.price}} ₽</strong></mat-card-subtitle>
+            <mat-card-title (click)="openDialog(i)">{{i.name}}</mat-card-title>
+            <mat-card-subtitle (click)="openDialog(i)"><strong>{{i.price}} ₽</strong></mat-card-subtitle>
           </mat-card-header>
-          <img mat-card-image src={{i.img}} alt="Photo of a Shiba Inu">
-          <mat-card-content>
+          <img (click)="openDialog(i)" mat-card-image src={{i.img}} alt="Photo of a Shiba Inu">
+          <mat-card-content (click)="openDialog(i)">
             <p>
               The Shiba Inu is the smallest of the six original and distinct spitz breeds of dog from Japan.
               A small, agile dog that copes very well with mountainous terrain, the Shiba Inu was originally

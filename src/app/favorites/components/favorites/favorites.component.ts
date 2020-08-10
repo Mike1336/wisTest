@@ -21,14 +21,13 @@ export class FavoritesComponent implements OnInit {
     this.list = this.favoritesService.favorites;
   }
   openDialog(item:Item) {
-    let confirmModal = this.dialog.open(ModalComponent, {
+    let confirmModal = this.dialog.open(ModalComponent, { //отправление данных в компонент модалки после открытия
       data: {
         id: item.id, 
         name: item.name
       }
     });
-    confirmModal.afterClosed().subscribe(result => {
-      console.log(result);
+    confirmModal.afterClosed().subscribe(result => { //получение данных после закрытия
       this.delFromFavorites(result.id, result.name);
     });
   }
@@ -40,8 +39,5 @@ export class FavoritesComponent implements OnInit {
     this._snackBar.open(`${name} was deleted from your favorites`, 'OK', {
       duration: 2000,
     });
-  }
-  hello(){
-    console.log('hello');
   }
 }
