@@ -6,6 +6,15 @@ a{
     text-decoration: none;
     color: #202020;
 }
-.link{
-    border-top: 1px solid black;
+
+#shortFav{
+    img{
+        height: 40px;
+    }  
+    div{
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+    }
+  
 }

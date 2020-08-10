@@ -9,10 +9,10 @@ import { AngularFirestore} from 'angularfire2/firestore';
   providedIn: 'root'
 })
 export class ItemsService {
-  public items: Observable<any[]>;
+  public items: Observable<Item[]>;
 
   constructor(public afs: AngularFirestore) { 
-    this.items = this.afs.collection('phones').valueChanges();
+    this.items = this.afs.collection<Item>('phones').valueChanges();
   }
 
   getItems(): Observable<Item[]> {

@@ -8,9 +8,20 @@
         <mat-icon>favorite</mat-icon>
       </button>
       <mat-menu #shortFav="matMenu">
-        <!-- <button mat-menu-item>
-          <span>Redial</span>
-        </button> -->
+        <div id="shortFav" *ngIf="list.length > 0; else emptyFav">
+          <div *ngFor="let item of list">
+            <img src="{{item.img}}">
+            <span>{{item.name}}</span>
+            <button mat-icon-button (click)="delFromFavorites(item)">
+              <mat-icon>delete</mat-icon>
+            </button> 
+          </div>
+        </div>
+      <ng-template #emptyFav>
+        <button mat-menu-item >
+          <span>Favorites list is empty :(</span>
+        </button>
+      </ng-template>  
         <button mat-menu-item>
           <a routerLink="/favorites">
           <mat-icon>favorite</mat-icon>
