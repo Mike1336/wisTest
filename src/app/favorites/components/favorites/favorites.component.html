@@ -10,7 +10,7 @@
 <div id="favorites">
     <mat-card *ngFor="let item of list">
         <mat-card-header>
-            <button mat-icon-button  class="example-icon favorite-icon" (click)="delFromFavorites(item)" >
+            <button mat-icon-button  class="example-icon favorite-icon" (click)="openDialog(item)" >
                 <mat-icon>delete_sweep</mat-icon>
               </button>
               </mat-card-header>

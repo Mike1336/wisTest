@@ -1,8 +1,9 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, ViewChild } from '@angular/core';
 import { FavoritesService } from '../../services/favorites.service';
 import { MatDialog } from '@angular/material/dialog';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { Item } from 'src/app/items/interfaces/item';
+import { ModalComponent } from "../modal/modal.component";
 
 @Component({
   selector: 'app-favorites',
@@ -12,20 +13,35 @@ import { Item } from 'src/app/items/interfaces/item';
 export class FavoritesComponent implements OnInit {
 
   list: Item[] = [];
-  
   constructor(private favoritesService: FavoritesService, public dialog: MatDialog, private _snackBar: MatSnackBar) { }
-
+  
+  @ViewChild(ModalComponent) confirm: ModalComponent;
+  
   ngOnInit(): void {
     this.list = this.favoritesService.favorites;
   }
-  delFromFavorites(item:Item){
+  openDialog(item:Item) {
+    let confirmModal = this.dialog.open(ModalComponent, {
+      data: {
+        id: item.id, 
+        name: item.name
+      }
+    });
+    confirmModal.afterClosed().subscribe(result => {
+      console.log(result);
+      this.delFromFavorites(result.id, result.name);
+    });
+  }
+  delFromFavorites(id: number, name: string){
         const index = this.favoritesService.favorites.findIndex((i) => {
-      return i.id === item.id;
+      return i.id === id;
     });
     this.favoritesService.favorites.splice(index,1);
-    this._snackBar.open(`${item.name} was deleted from your favorites`, 'OK', {
+    this._snackBar.open(`${name} was deleted from your favorites`, 'OK', {
       duration: 2000,
     });
   }
-
+  hello(){
+    console.log('hello');
+  }
 }
