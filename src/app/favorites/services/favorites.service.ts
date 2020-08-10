@@ -18,6 +18,5 @@ export class FavoritesService {
          return i.id === item.id;
        });
        (index >=0) ? this.favorites.splice(index,1) : this.favorites.push(item);
-      console.log(this.favorites)
     }
 }

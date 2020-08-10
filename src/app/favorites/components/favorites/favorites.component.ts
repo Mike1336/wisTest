@@ -1,6 +1,7 @@
 import { Component, OnInit } from '@angular/core';
 import { FavoritesService } from '../../services/favorites.service';
-import {MatDialog} from '@angular/material/dialog';
+import { MatDialog } from '@angular/material/dialog';
+import { MatSnackBar } from '@angular/material/snack-bar';
 import { Item } from 'src/app/items/interfaces/item';
 
 @Component({
@@ -12,7 +13,7 @@ export class FavoritesComponent implements OnInit {
 
   list: Item[] = [];
   
-  constructor(private favoritesService: FavoritesService, public dialog: MatDialog) { }
+  constructor(private favoritesService: FavoritesService, public dialog: MatDialog, private _snackBar: MatSnackBar) { }
 
   ngOnInit(): void {
     this.list = this.favoritesService.favorites;
@@ -22,6 +23,9 @@ export class FavoritesComponent implements OnInit {
       return i.id === item.id;
     });
     this.favoritesService.favorites.splice(index,1);
+    this._snackBar.open(`${item.name} was deleted from your favorites`, 'OK', {
+      duration: 2000,
+    });
   }
 
 }

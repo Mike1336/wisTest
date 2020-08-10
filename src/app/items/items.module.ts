@@ -6,6 +6,7 @@ import { MatCardModule } from '@angular/material/card';
 import { MatIconModule } from '@angular/material/icon';
 import { MatButtonModule } from '@angular/material/button';
 import { MatMenuModule } from '@angular/material/menu';
+import { MatSnackBarModule } from "@angular/material/snack-bar";
 
 import { ItemsComponent } from './components/items/items.component';
 import { ItemsRoutingModule } from './items-routing.module';
@@ -23,7 +24,7 @@ import { ItemsRoutingModule } from './items-routing.module';
     MatIconModule,
     MatButtonModule,
     MatMenuModule,
-
+    MatSnackBarModule,
     ItemsRoutingModule
   ],
 })

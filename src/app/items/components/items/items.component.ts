@@ -1,4 +1,5 @@
 import { Component, OnInit } from '@angular/core';
+import { MatSnackBar } from '@angular/material/snack-bar';
 import { Item } from '../../interfaces/item';
 import { ItemsService } from '../../services/items.service';
 import { FavoritesService } from '../../../favorites/services/favorites.service';
@@ -15,7 +16,7 @@ export class ItemsComponent implements OnInit {
   items:Item[];
   cart = [];
   favorites: Item[]=[];
-  constructor(private itemsService:ItemsService, private favoritesService: FavoritesService) { }
+  constructor(private itemsService:ItemsService, private favoritesService: FavoritesService, private _snackBar: MatSnackBar) { }
 
   ngOnInit(): void {
     this.getItems();
@@ -26,19 +27,15 @@ export class ItemsComponent implements OnInit {
     .subscribe(items => this.items = items);
   }
   addToCart(item:Item){
-    console.log(item);
-    for (const i of this.cart) {
-      if(item != i){
-        this.cart.push(item);
-        break;
-      }
-    }
+    
   }
   addToFavotire(item:Item){
     console.log(item)
     this.favoritesService.add(item);
     this.refreshFavorites();
-    console.log(this.favorites)
+    this._snackBar.open(`${item.name} was added to your favorites`, 'OK', {
+      duration: 2000,
+    });
   }
   refreshFavorites(){
     this.favoritesService.favorites.length > 0 ? this.favorites = this.favoritesService.favorites : false;
