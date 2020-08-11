@@ -53,7 +53,7 @@ export class ItemsComponent implements OnInit {
     const index= this.favoritesService.favorites.findIndex((i:Item)=>{
       return i.id === item.id;
     });
-    return index >=0
+    return index >=0 // true if is favorite
   }
   openDialog(item:Item) {
     this.dialog.open(ModalComponent, { //отправление данных в компонент модалки после открытия

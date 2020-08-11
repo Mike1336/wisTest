@@ -10,10 +10,13 @@
 <div id="favorites">
     <mat-card *ngFor="let item of list">
         <mat-card-header>
-            <button mat-icon-button  class="example-icon favorite-icon" (click)="openDialog(item)" >
-                <mat-icon>delete_sweep</mat-icon>
-              </button>
-              </mat-card-header>
+          <button mat-icon-button  class="example-icon cart">
+            <mat-icon>add_shopping_cart</mat-icon>
+          </button>
+          <button mat-icon-button  class="example-icon favorite-icon" (click)="openDialog(item)" >
+            <mat-icon>delete_sweep</mat-icon>
+          </button>
+        </mat-card-header>
         <img src="{{item.img}}">
         <p><strong>{{item.name}}</strong></p>
         <p>{{item.price}} ₽</p>

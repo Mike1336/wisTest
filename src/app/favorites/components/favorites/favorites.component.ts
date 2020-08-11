@@ -28,7 +28,9 @@ export class FavoritesComponent implements OnInit {
       }
     });
     confirmModal.afterClosed().subscribe(result => { //получение данных после закрытия
-      this.delFromFavorites(result.id, result.name);
+      if(result){
+        this.delFromFavorites(result.id, result.name);
+      }
     });
   }
   delFromFavorites(id: number, name: string){
