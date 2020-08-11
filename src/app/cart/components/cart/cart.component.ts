@@ -1,4 +1,7 @@
 import { Component, OnInit } from '@angular/core';
+import { CartService } from "../../services/cart.service";
+import { MatSnackBar } from '@angular/material/snack-bar';
+import { Item } from 'src/app/items/interfaces/item';
 
 @Component({
   selector: 'app-cart',
@@ -7,12 +10,12 @@ import { Component, OnInit } from '@angular/core';
 })
 export class CartComponent implements OnInit {
   
-  public cart:[];
+  public list: Item[] = [];
 
-  constructor() { }
+  constructor(public cartService: CartService, private _snackBar: MatSnackBar) { }
 
   ngOnInit(): void {
-    console.log(this.cart);
+    
   }
 
 }

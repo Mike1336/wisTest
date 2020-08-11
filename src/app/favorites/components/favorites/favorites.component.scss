@@ -1,19 +1,9 @@
-@mixin pos-center {
-    margin-left: 50%;
-    transform: translateX(-50%);
-}
-@mixin pos-left {
-    margin-left: 0 !important;
-    margin-right: auto !important;
-}
-@mixin pos-right {
-    margin-left: auto;
-    margin-right: 0;
-}
+@import '../../../../styles.scss';
 
 h1{
     color: white;
     text-align: center;
+    margin: 16px 0;
 }
 #favorites{
     display: flex;
@@ -29,6 +19,9 @@ h1{
         button{
             @include pos-right;
         }
+        .addCart{
+            @include pos-left;
+        }        
     }
     img{
         width: auto;
@@ -42,7 +35,4 @@ h1{
         background-color: #f5f5f5;
         @include pos-center;
     }
-}
-.cart{
-    @include pos-left;
 }

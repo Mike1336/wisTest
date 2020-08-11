@@ -10,9 +10,14 @@
 <div id="favorites">
     <mat-card *ngFor="let item of list">
         <mat-card-header>
-          <button mat-icon-button  class="example-icon cart">
-            <mat-icon>add_shopping_cart</mat-icon>
+          <button mat-icon-button *ngIf="checkItemForCart(item); else notInCart" class="example-icon addCart" (click)="addToCart(item)">
+            <mat-icon color="warn">remove_shopping_cart</mat-icon>
           </button>
+          <ng-template #notInCart>
+            <button mat-icon-button  class="example-icon addCart" (click)="addToCart(item)">
+              <mat-icon>add_shopping_cart</mat-icon>
+            </button>
+          </ng-template>
           <button mat-icon-button  class="example-icon favorite-icon" (click)="openDialog(item)" >
             <mat-icon>delete_sweep</mat-icon>
           </button>

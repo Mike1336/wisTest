@@ -8,7 +8,7 @@ export class CartService {
   
   list:Item[] = [];
 
-  add(item:Item){
+  add(item:Item): number{
     const index = this.list.findIndex((i:Item)=>{
        return i.id === item.id;
      });
@@ -17,14 +17,12 @@ export class CartService {
       } else {
         this.list.push(item);
       }
+    return index;
   }
-
-  getItems() {
-    return this.list;
-  }
-
-  clearCart() {
-    this.list = [];
-    return this.list;
+  check(item:Item): boolean{
+    const inCart= this.list.some((i:Item)=>{
+      return i.id === item.id;
+    });
+    return inCart; // true if its in cart
   }
 }

@@ -1,5 +1,12 @@
-<h1 id="cartHeader" *ngIf="cart; else emptyCart">Cart items:</h1>
-<ng-template #emptyCart><h1>Cart is empty</h1></ng-template>
+<h1 id="cartHeader" *ngIf="list.length > 0; else emptyCart">Cart items:</h1>
+<ng-template #emptyCart>
+    <h1>Cart is empty</h1>
+    <div class="button-container">
+        <button routerLink = '/' mat-fab color="primary" aria-label="Example icon button with a delete icon">
+          <mat-icon>add</mat-icon>
+        </button>
+      </div>
+</ng-template>
 <mat-card>
     <img mat-card-image src="assets/xs.jpg" alt="Photo of a Shiba Inu">
     Simple card

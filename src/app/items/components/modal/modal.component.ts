@@ -4,6 +4,7 @@ import { MatDialog } from '@angular/material/dialog';
 import { Item } from '../../interfaces/item';
 import { FavoritesService } from 'src/app/favorites/services/favorites.service';
 import { MatSnackBar } from '@angular/material/snack-bar';
+import { CartService } from 'src/app/cart/services/cart.service';
 
 
 @Component({
@@ -13,7 +14,7 @@ import { MatSnackBar } from '@angular/material/snack-bar';
 })
 export class ModalComponent implements OnInit {
 
-  constructor(@Inject(MAT_DIALOG_DATA) public data: Item, private favoritesService: FavoritesService, private _snackBar: MatSnackBar) {}
+  constructor(@Inject(MAT_DIALOG_DATA) public data: Item, private favoritesService: FavoritesService, private cartService: CartService, private _snackBar: MatSnackBar) {}
 
   ngOnInit(): void {
   }
@@ -30,8 +31,26 @@ export class ModalComponent implements OnInit {
       });
     }
   }
+  addToCart(item:Item){
+    let index = this.cartService.add(item);
+    if (index >= 0) {
+      this._snackBar.open(`${item.name} successfully deleted from your cart`, 'OK', {
+        duration: 2000,
+      });
+    } else {
+      this._snackBar.open(`${item.name} successfully added to your cart`, 'OK', {
+        duration: 2000,
+      });
+    }
+  }
   checkFavorite(item:Item): boolean{ //для отображения иконки избранных товаров
-    const index= this.favoritesService.favorites.findIndex((i:Item)=>{
+    const index= this.favoritesService.list.findIndex((i:Item)=>{
+      return i.id === item.id;
+    });
+    return index >=0
+  }
+  checkCart(item:Item): boolean{ //для отображения иконки избранных товаров
+    const index= this.cartService.list.findIndex((i:Item)=>{
       return i.id === item.id;
     });
     return index >=0

@@ -7,8 +7,10 @@
     width: 25%;
     margin-top: 40px;
 }
-#add{
-    width: 100%;
+mat-card-actions{
+    button{
+        width: 100%;
+    }
 }
 .mat-card{
     img{

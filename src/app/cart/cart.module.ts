@@ -6,6 +6,7 @@ import { MatCardModule } from '@angular/material/card';
 import { MatIconModule } from '@angular/material/icon';
 import { MatButtonModule } from '@angular/material/button';
 import { MatMenuModule } from '@angular/material/menu';
+import { MatSnackBarModule } from "@angular/material/snack-bar";
 import { CartComponent } from './components/cart/cart.component';
 import { CartRoutingModule } from './cart-routing.module';
 
@@ -22,6 +23,7 @@ import { CartRoutingModule } from './cart-routing.module';
     MatIconModule,
     MatButtonModule,
     MatMenuModule,
+    MatSnackBarModule,
     CartRoutingModule
   ],
 })

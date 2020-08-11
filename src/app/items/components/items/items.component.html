@@ -2,7 +2,7 @@
       <ng-container *ngFor="let i of items">
         <mat-card class="example-card fixwidth">
           <mat-card-header>
-            <button mat-icon-button [ngClass]="{'favorite': checkFavorite(i)}" class="example-icon favorite-icon favright" (click)="addToFavotire(i)" aria-label="Example icon-button with heart icon">
+            <button mat-icon-button [ngClass]="{'favorite': checkItemForFavorite(i)}" class="example-icon favorite-icon favright" (click)="addToFavotire(i)" aria-label="Example icon-button with heart icon">
               <mat-icon>favorite</mat-icon>
             </button>
             <mat-card-title (click)="openDialog(i)">{{i.name}}</mat-card-title>
@@ -12,7 +12,10 @@
           <mat-card-content (click)="openDialog(i)">
           </mat-card-content>
           <mat-card-actions>
-            <button mat-button id="add" (click)="addToCart(i)">ADD TO CART</button>
+            <button mat-stroked-button color="warn" *ngIf="checkItemForCart(i); else isNotInCart" (click)="addToCart(i)">DELETE FROM CART</button>
+            <ng-template #isNotInCart>
+              <button mat-button (click)="addToCart(i)">ADD TO CART</button>
+            </ng-template>
           </mat-card-actions>
         </mat-card>
       </ng-container>

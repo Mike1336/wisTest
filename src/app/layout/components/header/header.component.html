@@ -5,14 +5,14 @@
     <span class="example-spacer"></span>
     <div id='pages'>
       <button mat-icon-button [matMenuTriggerFor]="shortFav" class="example-icon favorite-icon" aria-label="Example icon-button with heart icon">
-        <mat-icon *ngIf="list.length > 0; else simpleIcon" matBadge="{{list.length}}" matBadgeColor="warn">favorite</mat-icon>
-          <ng-template #simpleIcon>
+        <mat-icon *ngIf="favList.length > 0; else simpleFavIcon" matBadge="{{favList.length}}" matBadgeColor="warn">favorite</mat-icon>
+          <ng-template #simpleFavIcon>
             <mat-icon>favorite</mat-icon>
           </ng-template>
       </button>
       <mat-menu #shortFav="matMenu">
-        <div id="shortFav" *ngIf="list.length > 0; else emptyFav">
-          <div *ngFor="let item of list">
+        <div id="shortFav" *ngIf="favList.length > 0; else emptyFav">
+          <div *ngFor="let item of favList">
             <img src="{{item.img}}">
             <span>{{item.name}}</span>
             <button mat-icon-button (click)="delFromFavorites(item)">
@@ -34,8 +34,12 @@
       </mat-menu>
     
       <button mat-icon-button [matMenuTriggerFor]="shortCart" class="example-icon" aria-label="Example icon-button with share icon">
-        <mat-icon>shopping_cart</mat-icon>
+        <mat-icon *ngIf="cartList.length > 0; else simpleCartIcon" matBadge="{{cartList.length}}" matBadgeColor="warn">shopping_cart</mat-icon>
+        <ng-template #simpleCartIcon>
+          <mat-icon>shopping_cart</mat-icon>
+        </ng-template>
       </button>
+      
       <mat-menu #shortCart="matMenu">
         <!-- <button mat-menu-item>
           <mat-icon>dialpad</mat-icon>
