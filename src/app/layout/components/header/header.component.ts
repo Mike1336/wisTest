@@ -12,22 +12,28 @@ import { CartService } from 'src/app/cart/services/cart.service';
 export class HeaderComponent implements OnInit {
 
   favList:Item[] = [];
-  cartList: Item[] = [];
+  cartList = [];
+  totalPrice: number = 0;
 
   constructor(private favoritesService: FavoritesService, private cartService: CartService, private _snackBar: MatSnackBar) { }
 
   ngOnInit(): void {
     this.favList = this.favoritesService.list;
     this.cartList = this.cartService.list;
-  }
-
-  delFromFavorites(item:Item){
-    const index = this.favoritesService.list.findIndex((i) => {
-      return i.id === item.id;
-  });
-    this.favoritesService.list.splice(index,1);
+    }
+    updateTotalPrice(){
+      this.cartService.updateTotalPrice();
+   }  
+   delFromFavorites(item:Item){
+    this.favoritesService.update(item);
     this._snackBar.open(`${item.name} was deleted from your favorites`, 'OK', {
       duration: 2000,
     });
-}
+  }
+  delFromCart(item:Item){
+    this.cartService.update(item);
+    this._snackBar.open(`${item.name} successfully deleted from your cart`, 'OK', {
+      duration: 2000,
+    });
+  }
 }

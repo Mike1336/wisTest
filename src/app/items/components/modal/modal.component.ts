@@ -20,7 +20,7 @@ export class ModalComponent implements OnInit {
   }
 
   addToFavotire(item:Item){
-    let index = this.favoritesService.add(item);
+    let index = this.favoritesService.update(item);
     if (index >= 0) {
       this._snackBar.open(`${item.name} was deleted from your favorites`, 'OK', {
         duration: 2000,
@@ -32,7 +32,7 @@ export class ModalComponent implements OnInit {
     }
   }
   addToCart(item:Item){
-    let index = this.cartService.add(item);
+    let index = this.cartService.update(item);
     if (index >= 0) {
       this._snackBar.open(`${item.name} successfully deleted from your cart`, 'OK', {
         duration: 2000,

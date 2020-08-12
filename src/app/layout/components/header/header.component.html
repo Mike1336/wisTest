@@ -11,7 +11,7 @@
           </ng-template>
       </button>
       <mat-menu #shortFav="matMenu">
-        <div id="shortFav" *ngIf="favList.length > 0; else emptyFav">
+        <div class="shortMenu" *ngIf="favList.length > 0; else emptyFav">
           <div *ngFor="let item of favList">
             <img src="{{item.img}}">
             <span>{{item.name}}</span>
@@ -41,10 +41,27 @@
       </button>
       
       <mat-menu #shortCart="matMenu">
-        <!-- <button mat-menu-item>
-          <mat-icon>dialpad</mat-icon>
-          <span>Redial</span>
-        </button> -->
+        <div class="shortMenu" *ngIf="cartList.length > 0; else emptyCart">
+          <div *ngFor="let item of cartList" >
+            <img src="{{item.img}}">
+            <span>{{item.name}}</span>
+            <div>
+              <mat-form-field class="example-full-width" >
+                <mat-label>Quantity</mat-label>
+                <input type="number" matInput  [(ngModel)]="item.quantity" (ngModelChange)="updateTotalPrice()">
+              </mat-form-field>
+              <button mat-icon-button (click)="delFromCart(item)">
+                <mat-icon>delete</mat-icon>
+              </button> 
+            </div>
+          </div>
+          <span><strong>Total price: {{cartService.totalPrice}} ₽</strong></span>
+        </div>
+        <ng-template #emptyCart>
+          <button mat-menu-item >
+            <span>Cart is empty :(</span>
+          </button>
+        </ng-template>    
         <button mat-menu-item>
           <a routerLink="cart">
           <mat-icon>shopping_cart</mat-icon>

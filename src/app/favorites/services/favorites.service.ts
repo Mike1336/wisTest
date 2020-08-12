@@ -14,7 +14,7 @@ export class FavoritesService {
 
   constructor() { }
 
-  add(item:Item): number{
+  update(item:Item): number{
       const index = this.list.findIndex((i:Item)=>{
          return i.id === item.id;
        });

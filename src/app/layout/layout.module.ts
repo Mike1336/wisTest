@@ -1,14 +1,15 @@
 import { NgModule } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
 import { MatIconModule } from '@angular/material/icon';
 import { MatToolbarModule } from '@angular/material/toolbar';
 import { MatButtonModule } from '@angular/material/button';
 import { MatMenuModule } from '@angular/material/menu';
 import { MatSnackBarModule } from "@angular/material/snack-bar";
 import { MatBadgeModule } from '@angular/material/badge';
-
-import { HeaderComponent } from './components/header/header.component';
+import { MatInputModule } from '@angular/material/input';
 import { RouterModule } from '@angular/router';
+import { HeaderComponent } from './components/header/header.component';
 
 @NgModule({
   declarations: [
@@ -16,13 +17,15 @@ import { RouterModule } from '@angular/router';
   ],
   imports: [
     CommonModule,
+    FormsModule,
     MatIconModule,
     RouterModule,
     MatToolbarModule,
     MatButtonModule,
     MatMenuModule,
     MatSnackBarModule,
-    MatBadgeModule
+    MatBadgeModule,
+    MatInputModule
   ],
   exports:[
     HeaderComponent

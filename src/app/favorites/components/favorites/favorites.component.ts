@@ -42,7 +42,7 @@ export class FavoritesComponent implements OnInit {
     });
   }
   addToCart(item:Item){
-    let index  = this.cartService.add(item);
+    let index  = this.cartService.update(item);
     if (index >= 0) {
       this._snackBar.open(`${item.name} successfully deleted from your cart`, 'OK', {
         duration: 2000,
