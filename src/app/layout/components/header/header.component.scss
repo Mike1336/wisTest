@@ -14,10 +14,13 @@ a{
         display: flex;
         align-items: center;
         justify-content: space-between;
-        margin: 16px 0;
+        margin: 5px 0;
     }
     span{
         margin: 0 5px;
+    }
+    h4{
+        text-align: center;
     }
     mat-form-field{
         margin: 0 10px;

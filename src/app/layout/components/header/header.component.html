@@ -13,7 +13,7 @@
       <mat-menu #shortFav="matMenu">
         <div class="shortMenu" *ngIf="favList.length > 0; else emptyFav">
           <div *ngFor="let item of favList">
-            <img src="{{item.img}}">
+            <img [src]="item.img">
             <span>{{item.name}}</span>
             <button mat-icon-button (click)="delFromFavorites(item)">
               <mat-icon>delete</mat-icon>
@@ -55,7 +55,7 @@
               </button> 
             </div>
           </div>
-          <span><strong>Total price: {{cartService.totalPrice}} ₽</strong></span>
+          <h4><strong>Total price: {{cartService.totalPrice}} ₽</strong></h4>
         </div>
         <ng-template #emptyCart>
           <button mat-menu-item >

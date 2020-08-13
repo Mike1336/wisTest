@@ -1,8 +1,10 @@
 import { Component, OnInit } from '@angular/core';
-import { FavoritesService } from '../../../favorites/services/favorites.service';
-import { Item } from 'src/app/items/interfaces/item';
+
 import { MatSnackBar } from '@angular/material/snack-bar';
-import { CartService } from 'src/app/cart/services/cart.service';
+
+import { FavoritesService } from '../../../favorites/services/favorites.service';
+import { CartService } from '../../../cart/services/cart.service';
+import { Item } from '../../../items/interfaces/item';
 
 @Component({
   selector: 'app-header',
@@ -11,26 +13,32 @@ import { CartService } from 'src/app/cart/services/cart.service';
 })
 export class HeaderComponent implements OnInit {
 
-  favList:Item[] = [];
-  cartList = [];
-  totalPrice: number = 0;
+  public favList: Item[] = [];
+  public cartList = [];
+  public totalPrice: number = 0;
 
-  constructor(private favoritesService: FavoritesService, private cartService: CartService, private _snackBar: MatSnackBar) { }
+  constructor(
+    private favoritesService: FavoritesService,
+    private cartService: CartService,
+    private _snackBar: MatSnackBar,
+  ) { }
 
-  ngOnInit(): void {
+  public ngOnInit(): void {
     this.favList = this.favoritesService.list;
     this.cartList = this.cartService.list;
-    }
-    updateTotalPrice(){
-      this.cartService.updateTotalPrice();
-   }  
-   delFromFavorites(item:Item){
+  }
+
+  public updateTotalPrice(): void {
+    this.cartService.updateTotalPrice();
+  }
+
+  public delFromFavorites(item: Item): void {
     this.favoritesService.update(item);
     this._snackBar.open(`${item.name} was deleted from your favorites`, 'OK', {
       duration: 2000,
     });
   }
-  delFromCart(item:Item){
+  public delFromCart(item: Item): void {
     this.cartService.update(item);
     this._snackBar.open(`${item.name} successfully deleted from your cart`, 'OK', {
       duration: 2000,

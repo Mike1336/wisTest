@@ -1,10 +1,12 @@
 import { Component, OnInit } from '@angular/core';
-import { FavoritesService } from '../../services/favorites.service';
-import { CartService } from 'src/app/cart/services/cart.service';
+
 import { MatDialog } from '@angular/material/dialog';
 import { MatSnackBar } from '@angular/material/snack-bar';
-import { Item } from 'src/app/items/interfaces/item';
-import { ModalComponent } from "../modal/modal.component";
+
+import { FavoritesService } from '../../services/favorites.service';
+import { CartService } from '../../../cart/services/cart.service';
+import { Item } from '../../../items/interfaces/item';
+import { ModalComponent } from '../modal/modal.component';
 
 @Component({
   selector: 'app-favorites',
@@ -13,26 +15,30 @@ import { ModalComponent } from "../modal/modal.component";
 })
 export class FavoritesComponent implements OnInit {
 
-  list: Item[] = [];
-  constructor(private favoritesService: FavoritesService, public cartService: CartService, public dialog: MatDialog, private _snackBar: MatSnackBar) { }
-    
-  ngOnInit(): void {
+  public list: Item[] = [];
+  constructor(
+    private favoritesService: FavoritesService,
+    public cartService: CartService,
+    public dialog: MatDialog,
+    private _snackBar: MatSnackBar) { }
+
+  public ngOnInit(): void {
     this.list = this.favoritesService.list;
   }
-  openDialog(item:Item) {
-    let confirmModal = this.dialog.open(ModalComponent, { //отправление данных в компонент модалки после открытия
+  public openDialog(item: Item): void {
+    const confirmModal = this.dialog.open(ModalComponent, { // отправление данных в компонент модалки после открытия
       data: {
-        id: item.id, 
-        name: item.name
+        id: item.id,
+        name: item.name,
       }
     });
-    confirmModal.afterClosed().subscribe(result => { //получение данных после закрытия
+    confirmModal.afterClosed().subscribe((result) => { // получение данных после закрытия
       if(result){
         this.delFromFavorites(result.id, result.name);
       }
     });
   }
-  delFromFavorites(id: number, name: string){
+  public delFromFavorites(id: number, name: string): void {
     const index = this.favoritesService.list.findIndex((i) => {
       return i.id === id;
     });
@@ -41,8 +47,8 @@ export class FavoritesComponent implements OnInit {
       duration: 2000,
     });
   }
-  addToCart(item:Item){
-    let index  = this.cartService.update(item);
+  public addToCart(item: Item): void{
+    const index  = this.cartService.update(item);
     if (index >= 0) {
       this._snackBar.open(`${item.name} successfully deleted from your cart`, 'OK', {
         duration: 2000,
@@ -53,7 +59,7 @@ export class FavoritesComponent implements OnInit {
       });
     }
   }
-  checkItemForCart(item:Item): boolean{ //для отображения иконки товаров из корзины
+  public checkItemForCart(item: Item): boolean{ // для отображения иконки товаров из корзины
     return this.cartService.check(item);
   }
 }

@@ -1,14 +1,16 @@
 import { NgModule } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { RouterModule } from '@angular/router';
+
 import { MatIconModule } from '@angular/material/icon';
 import { MatToolbarModule } from '@angular/material/toolbar';
 import { MatButtonModule } from '@angular/material/button';
 import { MatMenuModule } from '@angular/material/menu';
-import { MatSnackBarModule } from "@angular/material/snack-bar";
+import { MatSnackBarModule } from '@angular/material/snack-bar';
 import { MatBadgeModule } from '@angular/material/badge';
 import { MatInputModule } from '@angular/material/input';
-import { RouterModule } from '@angular/router';
+
 import { HeaderComponent } from './components/header/header.component';
 
 @NgModule({
@@ -25,10 +27,10 @@ import { HeaderComponent } from './components/header/header.component';
     MatMenuModule,
     MatSnackBarModule,
     MatBadgeModule,
-    MatInputModule
+    MatInputModule,
   ],
   exports:[
-    HeaderComponent
+    HeaderComponent,
   ]
 })
 export class LayoutModule { }

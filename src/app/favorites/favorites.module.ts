@@ -7,7 +7,7 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatButtonModule } from '@angular/material/button';
 import { MatMenuModule } from '@angular/material/menu';
 import { MatDialogModule } from '@angular/material/dialog';
-import { MatSnackBarModule } from "@angular/material/snack-bar";
+import { MatSnackBarModule } from '@angular/material/snack-bar';
 
 
 import { FavoritesComponent } from './components/favorites/favorites.component';
@@ -15,11 +15,10 @@ import { FavoritesRoutingModule } from './favorites-routing.module';
 import { ModalComponent } from './components/modal/modal.component';
 
 
-
 @NgModule({
   declarations: [
     FavoritesComponent,
-    ModalComponent
+    ModalComponent,
   ],
   imports: [
     CommonModule,
@@ -30,7 +29,7 @@ import { ModalComponent } from './components/modal/modal.component';
     MatMenuModule,
     MatDialogModule,
     MatSnackBarModule,
-    FavoritesRoutingModule
+    FavoritesRoutingModule,
   ],
 })
 export class FavoritesModule { }

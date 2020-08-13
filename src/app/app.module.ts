@@ -1,19 +1,19 @@
 import { NgModule } from '@angular/core';
-import { CoreModule } from "./core/core.module";
+
 
 import { AppRoutingModule } from './app-routing.module';
-import { ItemsModule } from "./items/items.module";
+import { CoreModule } from './core/core.module';
+import { ItemsModule } from './items/items.module';
 import { LayoutModule } from './layout/layout.module';
 import { CartModule } from './cart/cart.module';
 import { FavoritesModule } from './favorites/favorites.module';
-
-import { AppComponent } from "./app.component";
+import { AppComponent } from './app.component';
 
 
 
 @NgModule({
   declarations: [
-    AppComponent
+    AppComponent,
   ],
   imports: [
     AppRoutingModule,
@@ -21,9 +21,9 @@ import { AppComponent } from "./app.component";
     LayoutModule,
     ItemsModule,
     CartModule,
-    FavoritesModule
+    FavoritesModule,
   ],
   providers: [],
-  bootstrap: [AppComponent]
+  bootstrap: [AppComponent],
 })
 export class AppModule { }
