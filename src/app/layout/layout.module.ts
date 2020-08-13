@@ -29,8 +29,8 @@ import { HeaderComponent } from './components/header/header.component';
     MatBadgeModule,
     MatInputModule,
   ],
-  exports:[
+  exports: [
     HeaderComponent,
-  ]
+  ],
 })
 export class LayoutModule { }

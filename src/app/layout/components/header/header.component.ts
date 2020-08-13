@@ -1,6 +1,8 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, OnDestroy } from '@angular/core';
 
 import { MatSnackBar } from '@angular/material/snack-bar';
+
+import { Subscription, Subject } from 'rxjs';
 
 import { FavoritesService } from '../../../favorites/services/favorites.service';
 import { CartService } from '../../../cart/services/cart.service';
@@ -9,13 +11,16 @@ import { Item } from '../../../items/interfaces/item';
 @Component({
   selector: 'app-header',
   templateUrl: './header.component.html',
-  styleUrls: ['./header.component.scss']
+  styleUrls: ['./header.component.scss'],
 })
-export class HeaderComponent implements OnInit {
+export class HeaderComponent implements OnInit, OnDestroy {
 
   public favList: Item[] = [];
-  public cartList = [];
+  public cartList: any[] = [];
   public totalPrice: number = 0;
+  public favObs$: Subscription;
+  public cartObs$: Subscription;
+  public tpriceObs$: Subscription;
 
   constructor(
     private favoritesService: FavoritesService,
@@ -24,8 +29,23 @@ export class HeaderComponent implements OnInit {
   ) { }
 
   public ngOnInit(): void {
-    this.favList = this.favoritesService.list;
-    this.cartList = this.cartService.list;
+    this.favObs$ = this.favoritesService.getList()
+      .subscribe((favList) => {
+        this.favList = favList;
+      });
+    this.cartObs$ = this.cartService.getList()
+      .subscribe((cartList) => {
+        this.cartList = cartList;
+      });
+    this.tpriceObs$ = this.cartService.getTotalPrice()
+      .subscribe((totalPrice) => {
+        this.totalPrice = totalPrice;
+      });
+  }
+  public ngOnDestroy(): void {
+    this.favObs$.unsubscribe();
+    this.cartObs$.unsubscribe();
+    this.tpriceObs$.unsubscribe();
   }
 
   public updateTotalPrice(): void {
@@ -44,4 +64,5 @@ export class HeaderComponent implements OnInit {
       duration: 2000,
     });
   }
+
 }

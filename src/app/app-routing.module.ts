@@ -13,27 +13,26 @@ const routes: Routes = [
       },
       {
         path: 'items',
-        loadChildren: () => import('../app/items/items.module').then(m => m.ItemsModule)
+        loadChildren: () => import('../app/items/items.module').then((m) => m.ItemsModule),
       },
       {
         path: 'cart',
-        loadChildren: () => import  ('../app/cart/cart.module').then(m => m.CartModule)
+        loadChildren: () => import('../app/cart/cart.module').then((m) => m.CartModule),
       },
       {
         path: 'favorites',
-        loadChildren: () => import  ('../app/favorites/favorites.module').then(m => m.FavoritesModule)
+        loadChildren: () => import('../app/favorites/favorites.module').then((m) => m.FavoritesModule),
       },
     ],
-    
   },
   {
     path: '**',
-    redirectTo: 'items'
-}      
+    redirectTo: 'items',
+  },
 ];
 
 @NgModule({
   imports: [RouterModule.forRoot(routes)],
-  exports: [RouterModule]
+  exports: [RouterModule],
 })
 export class AppRoutingModule { }
