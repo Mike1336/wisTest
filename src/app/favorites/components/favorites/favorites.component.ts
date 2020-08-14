@@ -9,7 +9,6 @@ import { Item } from '../../../items/interfaces/item';
 import { ModalComponent } from '../modal/modal.component';
 
 @Component({
-  selector: 'app-favorites',
   templateUrl: './favorites.component.html',
   styleUrls: ['./favorites.component.scss']
 })

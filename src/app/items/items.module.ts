@@ -14,7 +14,6 @@ import { ItemsRoutingModule } from './items-routing.module';
 import { ModalComponent } from './components/modal/modal.component';
 
 
-
 @NgModule({
   declarations: [
     ItemsComponent,
@@ -32,4 +31,6 @@ import { ModalComponent } from './components/modal/modal.component';
     ItemsRoutingModule,
   ],
 })
-export class ItemsModule { }
+export class ItemsModule {
+
+}

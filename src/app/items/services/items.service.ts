@@ -11,6 +11,7 @@ import { Item } from '../interfaces/item';
   providedIn: 'root',
 })
 export class ItemsService {
+
   public items$: Observable<Item[]>;
 
   constructor(public afs: AngularFirestore) {

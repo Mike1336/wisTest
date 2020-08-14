@@ -1,26 +1,33 @@
 import { Component, OnInit, Inject } from '@angular/core';
-import { MAT_DIALOG_DATA } from '@angular/material/dialog';
-import { MatDialog } from '@angular/material/dialog';
-import { Item } from '../../interfaces/item';
-import { FavoritesService } from 'src/app/favorites/services/favorites.service';
+
 import { MatSnackBar } from '@angular/material/snack-bar';
-import { CartService } from 'src/app/cart/services/cart.service';
+import { MAT_DIALOG_DATA } from '@angular/material/dialog';
+
+import { FavoritesService } from '../../../favorites/services/favorites.service';
+import { CartService } from '../../../cart/services/cart.service';
+import { Item } from '../../interfaces/item';
 
 
 @Component({
   selector: 'app-modal',
   templateUrl: './modal.component.html',
-  styleUrls: ['./modal.component.scss']
+  styleUrls: ['./modal.component.scss'],
 })
 export class ModalComponent implements OnInit {
 
-  constructor(@Inject(MAT_DIALOG_DATA) public data: Item, private favoritesService: FavoritesService, private cartService: CartService, private _snackBar: MatSnackBar) {}
+  constructor(
+    @Inject(MAT_DIALOG_DATA)
+    public data: Item,
+    private favoritesService: FavoritesService,
+    private cartService: CartService,
+    private _snackBar: MatSnackBar,
+  ) {}
 
-  ngOnInit(): void {
+  public ngOnInit(): void {
   }
 
-  addToFavotire(item:Item){
-    let index = this.favoritesService.update(item);
+  public addToFavotire(item: Item): void {
+    const index = this.favoritesService.update(item);
     if (index >= 0) {
       this._snackBar.open(`${item.name} was deleted from your favorites`, 'OK', {
         duration: 2000,
@@ -31,8 +38,8 @@ export class ModalComponent implements OnInit {
       });
     }
   }
-  addToCart(item:Item){
-    let index = this.cartService.update(item);
+  public addToCart(item: Item): void {
+    const index = this.cartService.update(item);
     if (index >= 0) {
       this._snackBar.open(`${item.name} successfully deleted from your cart`, 'OK', {
         duration: 2000,
@@ -43,16 +50,19 @@ export class ModalComponent implements OnInit {
       });
     }
   }
-  checkFavorite(item:Item): boolean{ //для отображения иконки избранных товаров
-    const index= this.favoritesService.list.findIndex((i:Item)=>{
+  public checkFavorite(item: Item): boolean { // для отображения иконки избранных товаров
+    const index = this.favoritesService.list.findIndex((i: Item) => {
       return i.id === item.id;
     });
-    return index >=0
+
+    return index >= 0;
   }
-  checkCart(item:Item): boolean{ //для отображения иконки избранных товаров
-    const index= this.cartService.list.findIndex((i:Item)=>{
+  public checkCart(item: Item): boolean { // для отображения иконки избранных товаров
+    const index = this.cartService.list.findIndex((i: Item) => {
       return i.id === item.id;
     });
-    return index >=0
+
+    return index >= 0;
   }
+
 }

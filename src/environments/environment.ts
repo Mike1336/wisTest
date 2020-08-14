@@ -6,10 +6,10 @@ export const environment = {
   production: false,
   firebase: {
     apiKey: 'AIzaSyBfY5iOkrcNOkhOfaQQUBJsS52VpXJr3oA',
-    authDomain:'myfirstproject-2211.firebaseapp.com',
+    authDomain: 'myfirstproject-2211.firebaseapp.com',
     projectId: 'myfirstproject-2211',
-    storageBucket: 'myfirstproject-2211.appspot.com'
-  }
+    storageBucket: 'myfirstproject-2211.appspot.com',
+  },
 };
 
 /*

@@ -33,4 +33,6 @@ import { HeaderComponent } from './components/header/header.component';
     HeaderComponent,
   ],
 })
-export class LayoutModule { }
+export class LayoutModule {
+
+}
