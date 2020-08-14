@@ -9,6 +9,7 @@ a{
 .shortMenu{
     img{
         height: 40px;
+        cursor: pointer;
     }  
     div{
         display: flex;
@@ -18,6 +19,7 @@ a{
     }
     span{
         margin: 0 5px;
+        cursor: pointer;
     }
     h4{
         text-align: center;

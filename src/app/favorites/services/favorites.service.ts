@@ -11,6 +11,7 @@ import { Item } from '../../items/interfaces/item';
 export class FavoritesService {
 
   public list: Item[] = [];
+
   private ilist$ = new BehaviorSubject(this.list);
 
   constructor() { }
@@ -25,8 +26,10 @@ export class FavoritesService {
     });
     if (index >= 0) {
       this.list.splice(index, 1);
+      this.ilist$.next(this.list);
     } else {
       this.list.push(item);
+      this.ilist$.next(this.list);
     }
 
     return index;

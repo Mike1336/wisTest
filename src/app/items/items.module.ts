@@ -11,13 +11,10 @@ import { MatDialogModule } from '@angular/material/dialog';
 
 import { ItemsComponent } from './components/items/items.component';
 import { ItemsRoutingModule } from './items-routing.module';
-import { ModalComponent } from './components/modal/modal.component';
-
 
 @NgModule({
   declarations: [
     ItemsComponent,
-    ModalComponent,
   ],
   imports: [
     CommonModule,

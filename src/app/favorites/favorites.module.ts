@@ -12,13 +12,11 @@ import { MatSnackBarModule } from '@angular/material/snack-bar';
 
 import { FavoritesComponent } from './components/favorites/favorites.component';
 import { FavoritesRoutingModule } from './favorites-routing.module';
-import { ModalComponent } from './components/modal/modal.component';
 
 
 @NgModule({
   declarations: [
     FavoritesComponent,
-    ModalComponent,
   ],
   imports: [
     CommonModule,

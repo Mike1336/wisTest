@@ -13,13 +13,11 @@ import { MatDialogModule } from '@angular/material/dialog';
 
 import { CartComponent } from './components/cart/cart.component';
 import { CartRoutingModule } from './cart-routing.module';
-import { ModalComponent } from './components/modal/modal.component';
 
 
 @NgModule({
   declarations: [
     CartComponent,
-    ModalComponent,
   ],
   imports: [
     CommonModule,

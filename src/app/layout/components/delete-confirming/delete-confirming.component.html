@@ -1,0 +1,11 @@
+<div id="topModal">
+    <h1 mat-dialog-title>Confirming delete </h1>
+    <mat-icon> clear</mat-icon>
+</div>
+<div mat-dialog-content *ngIf="data.storId === 1; else cartItem">Are you sure want to delete {{data.name}} from favorites?</div>
+<ng-template #cartItem>
+    <div mat-dialog-content>Are you sure want to delete {{data.name}} from your cart?</div>
+</ng-template>
+<div mat-dialog-actions>
+<button mat-button color="warn" [mat-dialog-close]="close()">Yes</button>
+</div>

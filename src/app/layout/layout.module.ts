@@ -10,12 +10,17 @@ import { MatMenuModule } from '@angular/material/menu';
 import { MatSnackBarModule } from '@angular/material/snack-bar';
 import { MatBadgeModule } from '@angular/material/badge';
 import { MatInputModule } from '@angular/material/input';
+import { MatDialogModule } from '@angular/material/dialog';
 
 import { HeaderComponent } from './components/header/header.component';
+import { ItemDetailsComponent } from './components/item-details/item-details.component';
+import { DeleteConfirmingComponent } from './components/delete-confirming/delete-confirming.component';
 
 @NgModule({
   declarations: [
     HeaderComponent,
+    ItemDetailsComponent,
+    DeleteConfirmingComponent,
   ],
   imports: [
     CommonModule,
@@ -28,6 +33,7 @@ import { HeaderComponent } from './components/header/header.component';
     MatSnackBarModule,
     MatBadgeModule,
     MatInputModule,
+    MatDialogModule,
   ],
   exports: [
     HeaderComponent,

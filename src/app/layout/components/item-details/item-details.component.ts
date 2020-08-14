@@ -5,15 +5,13 @@ import { MAT_DIALOG_DATA } from '@angular/material/dialog';
 
 import { FavoritesService } from '../../../favorites/services/favorites.service';
 import { CartService } from '../../../cart/services/cart.service';
-import { Item } from '../../interfaces/item';
-
+import { Item } from '../../../items/interfaces/item';
 
 @Component({
-  selector: 'app-modal',
-  templateUrl: './modal.component.html',
-  styleUrls: ['./modal.component.scss'],
+  templateUrl: './item-details.component.html',
+  styleUrls: ['./item-details.component.scss'],
 })
-export class ModalComponent implements OnInit {
+export class ItemDetailsComponent implements OnInit {
 
   constructor(
     @Inject(MAT_DIALOG_DATA)

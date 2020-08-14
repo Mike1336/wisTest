@@ -8,7 +8,9 @@ import { takeUntil } from 'rxjs/operators';
 
 import { CartService } from '../../services/cart.service';
 import { FavoritesService } from '../../../favorites/services/favorites.service';
-import { ModalComponent } from '../modal/modal.component';
+import { DeleteConfirmingComponent } from '../../../layout/components/delete-confirming/delete-confirming.component';
+
+import { ItemDetailsComponent } from './../../../layout/components/item-details/item-details.component';
 
 
 @Component({
@@ -32,11 +34,6 @@ export class CartComponent implements OnInit, OnDestroy {
     private _snackBar: MatSnackBar,
     ) { }
 
-  public ngOnDestroy(): void {
-    this.destroy$.next(null);
-    this.destroy$.complete();
-  }
-
   public ngOnInit(): void {
     this.cartObs$ = this.cartService.getList();
     this.cartObs$
@@ -51,6 +48,10 @@ export class CartComponent implements OnInit, OnDestroy {
       .subscribe((totalPrice) => {
         this.totalPrice = totalPrice;
       });
+  }
+  public ngOnDestroy(): void {
+    this.destroy$.next(null);
+    this.destroy$.complete();
   }
   public updateTotalPrice(item: any): void {
     this.cartService.updateTotalPrice();
@@ -75,7 +76,7 @@ export class CartComponent implements OnInit, OnDestroy {
     return this.favoritesService.check(item);
   }
   public openDialog(item: any): void {
-    const confirmModal = this.dialog.open(ModalComponent, { // отправление данных в компонент модалки после открытия
+    const confirmModal = this.dialog.open(DeleteConfirmingComponent, { // отправление данных в компонент модалки после открытия
       data: {
         id: item.id,
         name: item.name,
@@ -91,6 +92,16 @@ export class CartComponent implements OnInit, OnDestroy {
           this.updateTotalPrice(item);
         }
       });
+  }
+  public openItemDetails(item: any): void {
+    this.dialog.open(ItemDetailsComponent, { // отправление данных в компонент модалки после открытия
+      data: {
+        id: item.id,
+        img: item.img,
+        name: item.name,
+        price: item.price,
+      },
+    });
   }
   public delFromCart(id: number, name: string): void {
     const index = this.cartService.list.findIndex((i) => {

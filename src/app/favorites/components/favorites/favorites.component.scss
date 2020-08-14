@@ -15,6 +15,7 @@ h1{
 
         p{
             text-align: center;
+            cursor: pointer;
         }
         button{
             @include pos-right;
@@ -27,6 +28,7 @@ h1{
         width: auto;
         height: 150px;
         @include pos-center;
+        cursor: pointer;
     }
 }
 .button-container{

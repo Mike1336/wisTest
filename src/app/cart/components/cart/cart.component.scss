@@ -8,6 +8,7 @@ h1,h2{
 img{
     width: auto;
     height: 100px;
+    cursor: pointer;
 }
 .button-container{
     button{
@@ -39,6 +40,9 @@ img{
         #itemInfo{
             width: 165px;
             line-height: 1.2;
+            p{
+                cursor: pointer;
+            }
         }
 
     }

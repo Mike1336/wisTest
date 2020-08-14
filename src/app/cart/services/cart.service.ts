@@ -9,7 +9,7 @@ import { Item } from '../../items/interfaces/item';
 })
 export class CartService {
 
-  public list = [];
+  public list: any[] = [];
   public totalPrice: number = 0;
 
   private tprice$ = new BehaviorSubject(this.totalPrice);
@@ -28,13 +28,13 @@ export class CartService {
     });
     if (index >= 0) {
       delete item.quantity;
-      this.list.splice(index, 1);
-      this.updateTotalPrice();
+      this.ilist$.next(this.list.splice(index, 1));
     } else {
       item.quantity = 1;
       this.list.push(item);
-      this.updateTotalPrice();
+      this.ilist$.next(this.list);
     }
+    this.updateTotalPrice();
 
     return index;
   }

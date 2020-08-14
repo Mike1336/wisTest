@@ -9,8 +9,9 @@ import { takeUntil } from 'rxjs/operators';
 import { ItemsService } from '../../services/items.service';
 import { CartService } from '../../../cart/services/cart.service';
 import { FavoritesService } from '../../../favorites/services/favorites.service';
-import { ModalComponent } from '../modal/modal.component';
 import { Item } from '../../interfaces/item';
+
+import { ItemDetailsComponent } from './../../../layout/components/item-details/item-details.component';
 
 
 @Component({
@@ -95,7 +96,7 @@ export class ItemsComponent implements OnInit, OnDestroy {
   }
 
   public openDialog(item: Item): void {
-    this.dialog.open(ModalComponent, { // отправление данных в компонент модалки после открытия
+    this.dialog.open(ItemDetailsComponent, { // отправление данных в компонент модалки после открытия
       data: {
         id: item.id,
         img: item.img,

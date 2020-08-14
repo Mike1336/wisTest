@@ -16,10 +16,10 @@
           <mat-icon>delete_sweep</mat-icon>
         </button>
       </mat-card-header>
-        <img mat-card-image src="{{item.img}}">
+        <img mat-card-image src="{{item.img}}" (click)="openItemDetails(item)">
       <div id="itemInfo">
-        <p class="itemName">{{item.name}}</p>
-        <p class="itemPrice"><strong>{{item.price}} ₽</strong></p>
+        <p class="itemName" (click)="openItemDetails(item)">{{item.name}}</p>
+        <p class="itemPrice" (click)="openItemDetails(item)"><strong>{{item.price}} ₽</strong></p>
         <mat-form-field class="example-full-width" >
           <mat-label>Quantity</mat-label>
           <input type="number" min ='0' max="10" matInput  [(ngModel)]="item.quantity" (ngModelChange)="updateTotalPrice(item)">

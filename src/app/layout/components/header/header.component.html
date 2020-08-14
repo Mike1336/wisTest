@@ -13,9 +13,9 @@
       <mat-menu #shortFav="matMenu">
         <div class="shortMenu" *ngIf="favList.length > 0; else emptyFav">
           <div *ngFor="let item of favList">
-            <img [src]="item.img">
-            <span>{{item.name}}</span>
-            <button mat-icon-button (click)="delFromFavorites(item)">
+            <img [src]="item.img" (click)="openItemDetails(item)">
+            <span (click)="openItemDetails(item)">{{item.name}}</span>
+            <button mat-icon-button (click)="openDialog(1, item)">
               <mat-icon>delete</mat-icon>
             </button> 
           </div>
@@ -43,14 +43,14 @@
       <mat-menu #shortCart="matMenu">
         <div class="shortMenu" *ngIf="cartList.length > 0; else emptyCart">
           <div *ngFor="let item of cartList" >
-            <img src="{{item.img}}">
-            <span>{{item.name}}</span>
+            <img [src]="item.img" (click)="openItemDetails(item)">
+            <span (click)="openItemDetails(item)">{{item.name}}</span>
             <div>
               <mat-form-field class="example-full-width" >
                 <mat-label>Quantity</mat-label>
-                <input type="number" matInput  [(ngModel)]="item.quantity" (ngModelChange)="updateTotalPrice()">
+                <input type="number" matInput  [(ngModel)]="item.quantity" (ngModelChange)="updateTotalPrice(item)">
               </mat-form-field>
-              <button mat-icon-button (click)="delFromCart(item)">
+              <button mat-icon-button (click)="openDialog(2, item)">
                 <mat-icon>delete</mat-icon>
               </button> 
             </div>
