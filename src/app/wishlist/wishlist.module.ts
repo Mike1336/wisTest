@@ -9,17 +9,18 @@ import { MatMenuModule } from '@angular/material/menu';
 import { MatDialogModule } from '@angular/material/dialog';
 import { MatSnackBarModule } from '@angular/material/snack-bar';
 
-
-import { FavoritesComponent } from './components/favorites/favorites.component';
-import { FavoritesRoutingModule } from './favorites-routing.module';
+import { WishlistRoutingModule } from './wishlist-routing.module';
+import { WishlistComponent } from './components/wishlist/wishlist.component';
 
 
 @NgModule({
   declarations: [
-    FavoritesComponent,
+    WishlistComponent,
   ],
   imports: [
+    // Angular
     CommonModule,
+    // Angular Material
     MatGridListModule,
     MatCardModule,
     MatIconModule,
@@ -27,7 +28,8 @@ import { FavoritesRoutingModule } from './favorites-routing.module';
     MatMenuModule,
     MatDialogModule,
     MatSnackBarModule,
-    FavoritesRoutingModule,
+    // Own
+    WishlistRoutingModule,
   ],
 })
-export class FavoritesModule { }
+export class WishlistModule { }

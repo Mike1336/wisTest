@@ -5,17 +5,17 @@
     <span class="example-spacer"></span>
     <div id='pages'>
       <button mat-icon-button [matMenuTriggerFor]="shortFav" class="example-icon favorite-icon" aria-label="Example icon-button with heart icon">
-        <mat-icon *ngIf="favList.length > 0; else simpleFavIcon" matBadge="{{favList.length}}" matBadgeColor="warn">favorite</mat-icon>
+        <mat-icon *ngIf="wishlist.list.length; else simpleFavIcon" matBadge="{{wishlist.list.length}}" matBadgeColor="warn">favorite</mat-icon>
           <ng-template #simpleFavIcon>
             <mat-icon>favorite</mat-icon>
           </ng-template>
       </button>
       <mat-menu #shortFav="matMenu">
-        <div class="shortMenu" *ngIf="favList.length > 0; else emptyFav">
-          <div *ngFor="let item of favList">
+        <div class="shortMenu" *ngIf="wishlist.list.length; else emptyFav">
+          <div *ngFor="let item of wishlist.list">
             <img [src]="item.img" (click)="openItemDetails(item)">
             <span (click)="openItemDetails(item)">{{item.name}}</span>
-            <button mat-icon-button (click)="openDialog(1, item)">
+            <button mat-icon-button (click)="openDeleteConfirmingFromWishlist(item)">
               <mat-icon>delete</mat-icon>
             </button> 
           </div>
@@ -34,28 +34,28 @@
       </mat-menu>
     
       <button mat-icon-button [matMenuTriggerFor]="shortCart" class="example-icon" aria-label="Example icon-button with share icon">
-        <mat-icon *ngIf="cartList.length > 0; else simpleCartIcon" matBadge="{{cartList.length}}" matBadgeColor="warn">shopping_cart</mat-icon>
+        <mat-icon *ngIf="cart.list.length > 0; else simpleCartIcon" matBadge="{{cart.list.length}}" matBadgeColor="warn">shopping_cart</mat-icon>
         <ng-template #simpleCartIcon>
           <mat-icon>shopping_cart</mat-icon>
         </ng-template>
       </button>
       
       <mat-menu #shortCart="matMenu">
-        <div class="shortMenu" *ngIf="cartList.length > 0; else emptyCart">
-          <div *ngFor="let item of cartList" >
+        <div class="shortMenu" *ngIf="cart.list.length; else emptyCart">
+          <div *ngFor="let item of cart.list" >
             <img [src]="item.img" (click)="openItemDetails(item)">
             <span (click)="openItemDetails(item)">{{item.name}}</span>
             <div>
               <mat-form-field class="example-full-width" >
                 <mat-label>Quantity</mat-label>
-                <input type="number" matInput  [(ngModel)]="item.quantity" (ngModelChange)="updateTotalPrice(item)">
+                <input type="number" min ='0' max="10" matInput  [ngModel]="item.quantity" (ngModelChange)="checkQuantityOfItem(item.quantity)">
               </mat-form-field>
-              <button mat-icon-button (click)="openDialog(2, item)">
+              <button mat-icon-button (click)="openDeleteConfirmingFromCart(item)">
                 <mat-icon>delete</mat-icon>
               </button> 
             </div>
           </div>
-          <h4><strong>Total price: {{totalPrice}} ₽</strong></h4>
+          <h4><strong>Total price: {{cart.totalPrice}} ₽</strong></h4>
         </div>
         <ng-template #emptyCart>
           <button mat-menu-item >

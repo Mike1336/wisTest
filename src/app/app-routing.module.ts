@@ -21,7 +21,7 @@ const routes: Routes = [
       },
       {
         path: 'favorites',
-        loadChildren: () => import('../app/favorites/favorites.module').then((m) => m.FavoritesModule),
+        loadChildren: () => import('./wishlist/wishlist.module').then((m) => m.WishlistModule),
       },
     ],
   },

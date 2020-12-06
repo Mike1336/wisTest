@@ -1,4 +1,4 @@
-<h1 *ngIf="list.length > 0; else emptyFavorites">Your favorite phones:</h1>
+<h1 *ngIf="wishlist.list.length; else emptyFavorites">Your favorite phones:</h1>
 <ng-template #emptyFavorites> 
     <h1>Favorite list is empty :[</h1> 
     <div class="button-container">
@@ -8,17 +8,17 @@
       </div>
 </ng-template>
 <div id="favorites">
-    <mat-card *ngFor="let item of list">
+    <mat-card *ngFor="let item of wishlist.list">
         <mat-card-header>
-          <button mat-icon-button *ngIf="checkItemForCart(item); else notInCart" class="example-icon addCart" (click)="addToCart(item)">
+          <button mat-icon-button *ngIf="checkItemForCart(item); else notInCart" class="example-icon addCart" (click)="checkInCart(item)">
             <mat-icon color="warn">remove_shopping_cart</mat-icon>
           </button>
           <ng-template #notInCart>
-            <button mat-icon-button  class="example-icon addCart" (click)="addToCart(item)">
+            <button mat-icon-button  class="example-icon addCart" (click)="checkInCart(item)">
               <mat-icon>add_shopping_cart</mat-icon>
             </button>
           </ng-template>
-          <button mat-icon-button  class="example-icon favorite-icon" (click)="openDialog(item)" >
+          <button mat-icon-button  class="example-icon favorite-icon" (click)="openDeleteConfirming(item)" >
             <mat-icon>delete_sweep</mat-icon>
           </button>
         </mat-card-header>

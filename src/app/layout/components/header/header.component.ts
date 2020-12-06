@@ -1,4 +1,4 @@
-import { Component, OnInit, OnDestroy } from '@angular/core';
+import { Component, OnDestroy } from '@angular/core';
 
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { MatDialog } from '@angular/material/dialog';
@@ -6,10 +6,13 @@ import { MatDialog } from '@angular/material/dialog';
 import { ReplaySubject, Observable } from 'rxjs';
 import { takeUntil } from 'rxjs/operators';
 
-import { FavoritesService } from '../../../favorites/services/favorites.service';
 import { CartService } from '../../../cart/services/cart.service';
-import { Item } from '../../../items/interfaces/item';
+import { IItem } from '../../../items/interfaces/item';
 
+import { Wishlist } from './../../../wishlist/wishlist/wishlist';
+import { WishlistService } from './../../../wishlist/services/wishlist.service';
+import { ICartItem } from './../../../items/interfaces/item';
+import { Cart } from './../../../cart/classes/cart';
 import { DeleteConfirmingComponent } from './../delete-confirming/delete-confirming.component';
 import { ItemDetailsComponent } from './../item-details/item-details.component';
 
@@ -18,71 +21,80 @@ import { ItemDetailsComponent } from './../item-details/item-details.component';
   templateUrl: './header.component.html',
   styleUrls: ['./header.component.scss'],
 })
-export class HeaderComponent implements OnInit, OnDestroy {
-
-  public favList: Item[] = [];
-  public cartList: any[] = [];
-  public totalPrice: number = 0;
-
-  private favObs$ : Observable<Item[]>;
-  private cartObs$: Observable<any[]>;
-  private tpriceObs$: Observable<number>;
+export class HeaderComponent implements OnDestroy {
 
   private destroy$: ReplaySubject<any> = new ReplaySubject<any>(1);
 
   constructor(
-    private favoritesService: FavoritesService,
-    private cartService: CartService,
     public dialog: MatDialog,
+    private _wishlistService: WishlistService,
+    private _cartService: CartService,
     private _snackBar: MatSnackBar,
   ) { }
 
-  public ngOnInit(): void {
-    this.favObs$ = this.favoritesService.getList();
-    this.favObs$
-      .pipe(takeUntil(this.destroy$))
-      .subscribe((favList) => {
-        this.favList = favList;
-      });
-    this.cartObs$ = this.cartService.getList();
-    this.cartObs$
-      .pipe(takeUntil(this.destroy$))
-      .subscribe((cartList) => {
-        this.cartList = cartList;
-      });
-    this.tpriceObs$ = this.cartService.getTotalPrice();
-    this.tpriceObs$
-      .pipe(takeUntil(this.destroy$))
-      .subscribe((totalPrice) => {
-        this.totalPrice = totalPrice;
-      });
+  public get cart(): Cart {
+    return this._cartService.cart;
   }
+
+  public get wishlist(): Wishlist {
+    return this._wishlistService.wishlist;
+  }
+
   public ngOnDestroy(): void {
     this.destroy$.next(null);
     this.destroy$.complete();
   }
 
-  public openDialog(storageId: number, item: any): void {
-    const confirmModal = this.dialog.open(DeleteConfirmingComponent, { // отправление данных в компонент модалки после открытия
+  public checkQuantityOfItem(item: ICartItem): void {
+    if (item.quantity > 0) {
+      return;
+    }
+    this.openDeleteConfirmingFromCart(item);
+  }
+
+  public openDeleteConfirmingFromCart(item: ICartItem): void {
+    // отправление данных в компонент модалки после открытия
+    const confirmModal = this.dialog.open(DeleteConfirmingComponent, {
       data: {
         id: item.id,
         name: item.name,
-        storId: storageId,
       },
     });
     confirmModal.afterClosed()
-      .pipe(takeUntil(this.destroy$))
+      .pipe(
+        takeUntil(this.destroy$),
+        )
       .subscribe((result) => { // получение данных после закрытия
-        if (result) {
-          this.delFromStorage(result.storId, result.id, result.name);
-        } else {
-          item.quantity = 1;
-          this.updateTotalPrice(item);
+        if (!result) {
+          return;
         }
+        this.deleteFromCart(item);
       });
   }
-  public openItemDetails(item: any): void {
-    this.dialog.open(ItemDetailsComponent, { // отправление данных в компонент модалки после открытия
+
+  public openDeleteConfirmingFromWishlist(item: IItem): void {
+    // отправление данных в компонент модалки после открытия
+    const confirmModal = this.dialog.open(DeleteConfirmingComponent, {
+      data: {
+        id: item.id,
+        name: item.name,
+      },
+    });
+    confirmModal.afterClosed()
+      .pipe(
+        takeUntil(this.destroy$),
+        )
+      .subscribe((result) => { // получение данных после закрытия
+        if (!result) {
+          return;
+        }
+        this.deleteFromWishlist(item);
+      });
+  }
+
+  public openItemDetails(item: IItem & ICartItem): void {
+    // отправление данных в компонент модалки после открытия
+    this.dialog.open(ItemDetailsComponent, {
       data: {
         id: item.id,
         img: item.img,
@@ -92,34 +104,17 @@ export class HeaderComponent implements OnInit, OnDestroy {
     });
   }
 
-  public updateTotalPrice(item: any): void {
-    if (item.quantity === 0) {
-      this.openDialog(2, item);
-    }
-    this.cartService.updateTotalPrice();
+  public deleteFromWishlist(item: IItem): void {
+    this.wishlist.updateList(item);
+    this._snackBar.open(`${name} was successfully deleted from your wishlist`, 'OK', {
+      duration: 2000,
+    });
   }
-
-  public delFromStorage(storageId: number, id: number, name: string): void {
-    switch (storageId) {
-      case 1:
-        const index1 = this.favoritesService.list.findIndex((i) => {
-          return i.id === id;
-        });
-        this.favoritesService.list.splice(index1, 1);
-        this._snackBar.open(`${name} was deleted from your favorites`, 'OK', {
-          duration: 2000,
-        });
-        break;
-      case 2:
-        const index2 = this.cartService.list.findIndex((i) => {
-          return i.id === id;
-        });
-        this.cartService.list.splice(index2, 1);
-        this._snackBar.open(`${name} successfully deleted from your cart`, 'OK', {
-          duration: 2000,
-        });
-        break;
-    }
+  public deleteFromCart(item: ICartItem): void {
+    this.cart.updateList(item);
+    this._snackBar.open(`${name} was successfully deleted from your cart`, 'OK', {
+      duration: 2000,
+    });
   }
 
 }

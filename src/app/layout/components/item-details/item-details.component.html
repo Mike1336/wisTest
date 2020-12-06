@@ -4,24 +4,24 @@
 </div>
 <div mat-dialog-content>
     <div id="topContent">
-        <img src="{{data.img}}">
+        <img [src]="item.img">
         <p>
             The Shiba Inu is the smallest of the six original and distinct spitz breeds of dog from Japan.
             A small, agile dog that copes very well with mountainous terrain, the Shiba Inu was originally
             bred for hunting.
         </p>
     </div>
-    <h2><strong>{{data.name}}</strong></h2>
-    <h2>{{data.price}} ₽</h2>
+    <h2><strong>{{item.name}}</strong></h2>
+    <h2>{{item.price}} ₽</h2>
 </div>
 <div id="modalBottom" mat-dialog-actions>
-<button mat-stroked-button *ngIf="!checkCart(data); else noCart" (click)="addToCart(data)"><mat-icon>add_shopping_cart</mat-icon>ADD TO CART</button>
+<button mat-stroked-button *ngIf="!checkCartExisting(item); else noCart" (click)="checkInCart(item)"><mat-icon>add_shopping_cart</mat-icon>ADD TO CART</button>
 <ng-template #noCart>
-    <button mat-stroked-button color="warn" (click)="addToCart(data)"><mat-icon color="warn">shopping_cart</mat-icon>IN YOUR CART</button>
+    <button mat-stroked-button color="warn" (click)="checkInCart(item)"><mat-icon color="warn">shopping_cart</mat-icon>IN YOUR CART</button>
 </ng-template>
 
-<button mat-stroked-button *ngIf="!checkFavorite(data); else noFav" (click)="addToFavotire(data)"><mat-icon>favorite_border</mat-icon>SAVE</button>
+<button mat-stroked-button *ngIf="!checkWishlistExisting(item); else noFav" (click)="checkInWishlist(item)"><mat-icon>favorite_border</mat-icon>SAVE</button>
 <ng-template #noFav>
-    <button mat-stroked-button color="warn" (click)="addToFavotire(data)"><mat-icon color="warn">favorite</mat-icon>SAVED</button>
+    <button mat-stroked-button color="warn" (click)="checkInWishlist(item)"><mat-icon color="warn">favorite</mat-icon>SAVED</button>
 </ng-template>
 </div>
